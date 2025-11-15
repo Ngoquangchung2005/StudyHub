@@ -37,36 +37,37 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/", "/login", "/register", "/download/**", "/ws/**", "/js/**", "/css/**").permitAll()
+                        // Cho phép tất cả mọi người truy cập trang chủ, login, register, file tĩnh
+                        .requestMatchers("/", "/login", "/register", "/js/**", "/css/**", "/ws/**").permitAll()
+                        // Cho phép API tải lịch sử chat (sẽ dùng ở Phần 3)
+                        .requestMatchers("/messages/**").authenticated()
+                        // Tất cả các yêu cầu khác đều cần đăng nhập
                         .anyRequest().authenticated()
                 )
-                // ... (phần code authorizeHttpRequests của bạn) ...
                 .formLogin(form -> form
-                        .loginPage("/login") // ĐƯỜNG DẪN TỚI TRANG ĐĂNG NHẬP (do ta tạo)
-                        .loginProcessingUrl("/login") // URL MÀ SPRING SẼ "LẮNG NGHE" YÊU CẦU POST
-                        .defaultSuccessUrl("/", true) // URL KHI ĐĂNG NHẬP THÀNH CÔNG
-                        .failureUrl("/login?error=true") // URL KHI ĐĂNG NHẬP THẤT BẠI
+                        .loginPage("/login")
+                        .loginProcessingUrl("/login")
+                        .defaultSuccessUrl("/", true) // Về trang chủ sau khi login
+                        .failureUrl("/login?error=true")
                         .permitAll()
                 )
                 .logout(logout -> logout
-                        .logoutUrl("/logout") // URL ĐỂ KÍCH HOẠT ĐĂNG XUẤT
-                        .logoutSuccessUrl("/login?logout=true") // URL SAU KHI ĐĂNG XUẤT
+                        .logoutUrl("/logout")
+                        .logoutSuccessUrl("/login?logout=true")
                         .permitAll()
                 )
-// ... (phần code còn lại của bạn) ...
                 .authenticationProvider(authenticationProvider())
-
-                // --- THÊM PHẦN NÀY ĐỂ CHO PHÉP BOOTSTRAP (CDN) ---
+                // Cấu hình CSP (Content Security Policy)
                 .headers(headers -> headers
                         .contentSecurityPolicy(csp -> csp
                                 .policyDirectives(
-                                        "default-src 'self'; " + // Mặc định chỉ cho phép từ domain của mình
-                                                "style-src 'self' https://cdn.jsdelivr.net; " + // Cho phép CSS từ domain của mình VÀ cdn
-                                                "script-src 'self' https://cdn.jsdelivr.net"  // Cho phép JS từ domain của mình VÀ cdn
+                                        "default-src 'self'; " +
+                                                "style-src 'self' https://cdn.jsdelivr.net; " +
+                                                "script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; " +
+                                                "connect-src 'self' ws://localhost:8080 wss://localhost:8080"
                                 )
                         )
                 );
-        // --- KẾT THÚC PHẦN THÊM ---
 
         return http.build();
     }

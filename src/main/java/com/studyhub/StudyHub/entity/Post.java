@@ -1,7 +1,6 @@
 package com.studyhub.StudyHub.entity;
 
 
-
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -13,32 +12,35 @@ import java.util.Set;
 
 @Setter
 @Getter
-@Entity // Báo cho Spring biết đây là một bảng trong CSDL
-@Table(name = "posts") // Tên của bảng
+@Entity
+@Table(name = "posts")
 public class Post {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, columnDefinition = "TEXT") // Nội dung có thể rất dài
+    @Column(columnDefinition = "TEXT")
     private String content;
 
-    @CreationTimestamp // Tự động điền ngày giờ tạo
-    @Column(updatable = false) // Không cho phép cập nhật
+    @CreationTimestamp
+    @Column(updatable = false)
     private LocalDateTime createdAt;
 
-    // --- Quan hệ Nhiều-Một (Nhiều Post thuộc về Một User) ---
-    @ManyToOne(fetch = FetchType.LAZY) // LAZY: Chỉ tải User khi thực sự cần
-    @JoinColumn(name = "user_id", nullable = false) // Khóa ngoại trỏ đến bảng 'users'
+    // Tác giả bài đăng
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    // Chúng ta sẽ thêm danh sách Document (tài liệu) ở đây sau
-    // ... (code của Post ở trên) ...
-
-    // --- Quan hệ Một-Nhiều (Một Post có Nhiều Document) ---
+    // Danh sách file đính kèm
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
-    // cascade = ALL: Khi lưu Post, tự động lưu Document
-    // orphanRemoval = true: Khi xóa Document khỏi Post, tự động xóa Document khỏi CSDL
     private Set<Document> documents = new HashSet<>();
+
+    // Danh sách bình luận
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Comment> comments = new HashSet<>();
+
+    // Danh sách lượt thích
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Reaction> reactions = new HashSet<>();
 }

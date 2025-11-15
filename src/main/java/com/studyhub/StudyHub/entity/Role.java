@@ -1,14 +1,12 @@
 package com.studyhub.StudyHub.entity;
-
-
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
 @Setter
 @Getter
-@Entity // Báo cho Spring biết đây là một bảng trong CSDL
-@Table(name = "roles") // Tên của bảng
+@Entity
+@Table(name = "roles")
 public class Role {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

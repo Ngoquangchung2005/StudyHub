@@ -19,13 +19,12 @@ public class Document {
     private String fileName; // Tên file gốc (vi.pdf)
 
     @Column(nullable = false)
-    private String fileType; // Loại file (application/pdf)
+    private String fileType; // application/pdf
 
     @Column(nullable = false, unique = true)
-    private String storagePath; // Đường dẫn lưu file trên server (ví dụ: uploads/abc-123.pdf)
+    private String storagePath; // Tên file duy nhất (abc-123.pdf)
 
-    // --- Quan hệ Nhiều-Một (Nhiều Document thuộc về Một Post) ---
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "post_id", nullable = false) // Khóa ngoại trỏ đến bảng 'posts'
+    @JoinColumn(name = "post_id", nullable = false)
     private Post post;
 }

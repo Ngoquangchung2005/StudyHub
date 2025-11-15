@@ -1,6 +1,5 @@
 package com.studyhub.StudyHub.entity;
 
-
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -10,29 +9,31 @@ import java.time.LocalDateTime;
 
 @Setter
 @Getter
-@Entity // Báo cho Spring biết đây là một bảng trong CSDL
-@Table(name = "messages") // Tên của bảng
+@Entity
+@Table(name = "messages")
 public class Message {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(columnDefinition = "TEXT") // Nội dung tin nhắn
+    @Column(columnDefinition = "TEXT")
     private String content;
 
-    @CreationTimestamp // Tự động điền ngày giờ tạo
+    @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime timestamp;
 
-    // --- Quan hệ Nhiều-Một (Nhiều Message gửi từ Một User - NGƯỜI GỬI) ---
+    // Người gửi
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "sender_id", nullable = false) // Khóa ngoại trỏ đến bảng 'users'
+    @JoinColumn(name = "sender_id", nullable = false)
     private User sender;
 
-    // --- Quan hệ Nhiều-Một (Nhiều Message gửi đến Một User - NGƯỜI NHẬN) ---
-    // (Chúng ta sẽ làm chat 1-1 trước, chat nhóm sau)
+    // Phòng chat (thay vì recipient_id)
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "recipient_id", nullable = false) // Khóa ngoại trỏ đến bảng 'users'
-    private User recipient;
+    @JoinColumn(name = "room_id", nullable = false)
+    private ChatRoom room;
+
+    // (Sẽ mở rộng sau)
+    // private MessageType type; // TEXT, FILE, SHARED_POST
 }

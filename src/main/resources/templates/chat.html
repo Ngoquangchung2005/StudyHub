@@ -5,69 +5,72 @@
       layout:decorate="~{layout.html}">
 <head>
   <title>Chat Realtime</title>
-  <style>
-    .chat-container { height: 600px; }
-    .user-list { height: 100%; overflow-y: auto; border-right: 1px solid #ddd; }
-    .chat-window { height: 100%; display: flex; flex-direction: column; }
-    .chat-messages { flex-grow: 1; overflow-y: auto; padding: 10px; }
-    .message { margin-bottom: 10px; }
-    .message.sent { text-align: right; }
-    .message.received .message-content { background-color: #f1f1f1; }
-    .message-content {
-      display: inline-block; padding: 8px 12px; border-radius: 12px;
-    }
-  </style>
 </head>
 <body>
 
 <div layout:fragment="content">
 
-  <input type="hidden" id="current-username" th:value="${#authentication.name}" />
-  <input type="hidden" id="current-user-id" th:value="${currentUser.id}" />
+  <input type="hidden" id="current-user-id" th:value="${currentUserId}" />
+  <input type="hidden" id="current-username" th:value="${currentUsername}" />
 
-  <div class="card chat-container">
-    <div class="row g-0 h-100">
+  <div class="chat-app-container">
 
-      <div class="col-md-4 user-list">
-        <div class="list-group list-group-flush">
-          <div class="list-group-item list-group-item-action active"
-               aria-current="true">
-            Tất cả Người dùng
-          </div>
-          <a th:each="user : ${allUsers}"
-             th:if="${user.id != currentUser.id}"
-             href="#"
-             class="list-group-item list-group-item-action user-select-item"
-             th:data-user-id="${user.id}"
-             th:data-user-name="${user.name}">
-
-            <span th:text="${user.name}">Tên User</span>
-            <small class="d-block text-muted" th:text="${user.username}">@username</small>
-          </a>
-        </div>
+    <aside class="chat-sidebar">
+      <div class="sidebar-header">
+        <h5 class="mb-0">Tin nhắn</h5>
+        <button class="btn btn-primary btn-sm" id="new-chat-btn"
+                data-bs-toggle="modal" data-bs-target="#newUserChatModal">
+          + Tin nhắn mới
+        </button>
       </div>
 
-      <div class="col-md-8 chat-window">
+      <div class="sidebar-content" id="chat-room-list">
+      </div>
+    </aside>
 
-        <div class="card-header bg-light" id="chat-with-header">
-          <h5 class="mb-0">Vui lòng chọn một người để bắt đầu chat</h5>
+    <main class="chat-main" id="chat-main-window" style="display: none;">
+
+      <header class="chat-header" id="chat-main-header">
+      </header>
+
+      <div class="chat-messages" id="chat-messages-window">
+      </div>
+
+      <div class="typing-indicator" id="typing-indicator-area">
+      </div>
+
+      <footer class="chat-footer">
+        <form id="messageForm" name="messageForm" class="d-flex">
+          <input type="text" id="message" autocomplete="off"
+                 class="form-control" placeholder="Nhập tin nhắn..." disabled />
+          <button type="submit" class="btn btn-primary ms-2" disabled>Gửi</button>
+        </form>
+      </footer>
+    </main>
+
+    <main class="chat-main" id="chat-welcome-screen">
+      <div>
+        <h4>Chọn một cuộc trò chuyện</h4>
+        <p>Bắt đầu chat 1-1 hoặc chat nhóm.</p>
+      </div>
+    </main>
+
+  </div> <div class="modal fade" id="newUserChatModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Bắt đầu chat mới</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>Chọn một người để bắt đầu trò chuyện 1-1:</p>
+        <div id="new-chat-user-list">
         </div>
-
-        <div class="chat-messages" id="chat-messages-area">
-        </div>
-
-        <div class="card-footer" id="message-form-area" style="display: none;">
-          <form id="messageForm" name="messageForm" class="d-flex">
-            <input type="text" id="message" autocomplete="off"
-                   class="form-control" placeholder="Nhập tin nhắn..." />
-            <button type="submit" class="btn btn-primary ms-2">Gửi</button>
-          </form>
-        </div>
-
       </div>
     </div>
   </div>
 </div>
 
+</div>
 </body>
 </html>

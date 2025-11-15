@@ -1,10 +1,11 @@
 package com.studyhub.StudyHub.controller;
 
 
-
-import com.studyhub.StudyHub.dto.ChatMessage;
+import com.studyhub.StudyHub.dto.ChatDTOs;
+import com.studyhub.StudyHub.entity.ChatRoom;
 import com.studyhub.StudyHub.entity.Message;
 import com.studyhub.StudyHub.entity.User;
+import com.studyhub.StudyHub.repository.ChatRoomRepository;
 import com.studyhub.StudyHub.repository.MessageRepository;
 import com.studyhub.StudyHub.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,51 +13,62 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.security.Principal;
 
 @Controller
 public class ChatController {
 
-    @Autowired
-    private SimpMessagingTemplate simpMessagingTemplate; // Dùng để gửi tin nhắn
+    @Autowired private SimpMessagingTemplate messagingTemplate;
+    @Autowired private MessageRepository messageRepository;
+    @Autowired private UserRepository userRepository;
+    @Autowired private ChatRoomRepository chatRoomRepository;
 
-    @Autowired
-    private MessageRepository messageRepository;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    // --- HÀM XỬ LÝ CHAT 1-1 ---
-
-    // "Bắt" các tin nhắn được gửi đến địa chỉ "/app/chat.sendMessage"
+    /**
+     * Xử lý gửi tin nhắn (Client -> Server)
+     */
     @MessageMapping("/chat.sendMessage")
-    public void sendMessage(@Payload ChatMessage chatMessage) {
+    @Transactional // Dùng Transactional để lấy sender và room
+    public void sendMessage(@Payload ChatDTOs.SendMessageDto dto, Principal principal) {
 
-        // 1. Tìm người gửi và người nhận trong CSDL
-        User sender = userRepository.findByUsername(chatMessage.getSenderUsername())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy người gửi"));
+        // === SỬA LỖI Ở ĐÂY ===
+        // 1. Lấy email (principal.getName())
+        String usernameOrEmail = principal.getName();
+        // 2. Tìm bằng findByUsernameOrEmail
+        User sender = userRepository.findByUsernameOrEmail(usernameOrEmail, usernameOrEmail)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy user: " + usernameOrEmail));
+        // === KẾT THÚC SỬA LỖI ===
 
-        User recipient = userRepository.findById(chatMessage.getRecipientId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy người nhận"));
+        // 3. Tìm phòng chat
+        ChatRoom room = chatRoomRepository.findById(dto.getRoomId())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy phòng: " + dto.getRoomId()));
 
-        // 2. Tạo đối tượng Message (Entity) để lưu vào CSDL
+        // 4. Tạo và lưu tin nhắn
         Message message = new Message();
         message.setSender(sender);
-        message.setRecipient(recipient);
-        message.setContent(chatMessage.getContent());
-        message.setTimestamp(LocalDateTime.now());
+        message.setRoom(room);
+        message.setContent(dto.getContent());
 
-        // 3. Lưu tin nhắn vào CSDL
-        messageRepository.save(message);
+        Message savedMessage = messageRepository.save(message);
 
-        // 4. Gửi tin nhắn đến "hàng đợi" (queue) CÁ NHÂN của người nhận
-        // Chỉ người nhận (recipient) mới nhận được tin nhắn này
-        // Ví dụ: Gửi đến /queue/user-123-messages
-        simpMessagingTemplate.convertAndSendToUser(
-                recipient.getUsername(), // Tên của người nhận
-                "/queue/messages",       // Endpoint cá nhân
-                chatMessage              // Nội dung tin nhắn
-        );
+        // 5. Tạo DTO trả về (đầy đủ)
+        ChatDTOs.MessageDto messageDto = new ChatDTOs.MessageDto(savedMessage);
+
+        // 6. Gửi tin nhắn đến TẤT CẢ MỌI NGƯỜI trong phòng
+        messagingTemplate.convertAndSend("/topic/room/" + room.getId(), messageDto);
+    }
+
+    /**
+     * Xử lý sự kiện "đang gõ"
+     */
+    @MessageMapping("/chat.typing")
+    public void handleTyping(@Payload ChatDTOs.TypingDto dto, Principal principal) {
+        // Gán username (chứ không phải email) của người gõ
+        // (Lưu ý: Nếu principal là email, chúng ta cần tìm username)
+        User user = userRepository.findByUsernameOrEmail(principal.getName(), principal.getName()).orElseThrow();
+        dto.setUsername(user.getUsername()); // Gửi username thật
+
+        messagingTemplate.convertAndSend("/topic/room/" + dto.getRoomId() + "/typing", dto);
     }
 }

@@ -16,16 +16,11 @@ public class FileController {
     @Autowired
     private StorageService storageService;
 
-    // Endpoint này sẽ "bắt" các yêu cầu có dạng /download/ten-file-uuid.pdf
+    // /download/abc-123.pdf
     @GetMapping("/download/{fileName:.+}")
     public ResponseEntity<Resource> downloadFile(@PathVariable String fileName) {
-
-        // 1. Tải file từ service
         Resource resource = storageService.loadFileAsResource(fileName);
 
-        // 2. Tạo tiêu đề (Header) "Content-Disposition"
-        // Tiêu đề này "bảo" trình duyệt MỞ HỘP THOẠI DOWNLOAD
-        // thay vì cố gắng hiển thị file (ví dụ: trình duyệt tự mở PDF)
         String headerValue = "attachment; filename=\"" + resource.getFilename() + "\"";
 
         return ResponseEntity.ok()

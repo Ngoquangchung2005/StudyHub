@@ -4,35 +4,31 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
 import java.util.HashSet;
 import java.util.Set;
 
 @Setter
 @Getter
-@NoArgsConstructor // Lombok: Tự tạo constructor không tham số
-@Entity // Báo cho Spring biết đây là một bảng trong CSDL
+@NoArgsConstructor
+@Entity
 @Table(name = "users", uniqueConstraints = {
-        @UniqueConstraint(columnNames = "username"), // Tên đăng nhập không được trùng
-        @UniqueConstraint(columnNames = "email") // Email không được trùng
+        @UniqueConstraint(columnNames = "username"),
+        @UniqueConstraint(columnNames = "email")
 })
 public class User {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
     private String name;
     private String username;
     private String email;
     private String password;
 
-    // Quan hệ Nhiều-Nhiều (Một User có Nhiều Role, một Role có Nhiều User)
-    @ManyToMany(fetch = FetchType.EAGER) // EAGER: Tải Role ngay khi tải User
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
-            name = "user_roles", // Tên bảng trung gian
-            joinColumns = @JoinColumn(name = "user_id"), // Khóa ngoại trỏ đến User
-            inverseJoinColumns = @JoinColumn(name = "role_id") // Khóa ngoại trỏ đến Role
+            name = "user_roles",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id")
     )
     private Set<Role> roles = new HashSet<>();
 }
