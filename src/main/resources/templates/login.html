@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout.html}">
+<head>
+  <title>Đăng nhập</title>
+</head>
+<body>
+
+<div layout:fragment="content">
+  <div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+      <h2 class="text-center mb-4">Đăng Nhập StudyHub</h2>
+
+      <div th:if="${param.error}" class="alert alert-danger" role="alert">
+        Sai tên đăng nhập hoặc mật khẩu. Vui lòng thử lại.
+      </div>
+
+      <div th:if="${successMessage}" class="alert alert-success" role="alert">
+        <span th:text="${successMessage}"></span>
+      </div>
+
+      <div th:if="${param.logout}" class="alert alert-info" role="alert">
+        Bạn đã đăng xuất thành công.
+      </div>
+
+      <form th:action="@{/login}" method="POST">
+
+        <div class="mb-3">
+          <label for="username" class="form-label">Tên đăng nhập (hoặc Email)</label>
+          <input type="text" class="form-control" id="username" name="username" required>
+        </div>
+
+        <div class="mb-3">
+          <label for="password" class="form-label">Mật khẩu</label>
+          <input type="password" class="form-control" id="password" name="password" required>
+        </div>
+
+        <div class="d-grid">
+          <button type="submit" class="btn btn-primary btn-lg">Đăng Nhập</button>
+        </div>
+      </form>
+
+      <div class="text-center mt-3">
+        <p>Chưa có tài khoản? <a th:href="@{/register}">Đăng ký ngay</a></p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
