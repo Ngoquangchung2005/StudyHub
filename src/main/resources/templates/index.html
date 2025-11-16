@@ -32,8 +32,6 @@
                 <span th:text="${successMessage}"></span>
             </div>
 
-
-
             <h2 class="h4 mb-3">Bài đăng gần đây</h2>
 
             <div th:if="${posts == null || posts.isEmpty()}" class="alert alert-info">
@@ -55,17 +53,18 @@
                                 A
                             </span>
                             </div>
-                            <div class="ms-2">
-                                <div class="fw-bold" th:text="${post.user.name}">Tên Tác Giả</div>
-                                <div class="text-muted small">
+                        </a> <div class="ms-2">
+                        <a class="fw-bold" style="text-decoration: none; color: inherit;"
+                           th:href="@{/profile/{username}(username=${post.user.username})}"
+                           th:text="${post.user.name}">Tên Tác Giả</a>
+                        <div class="text-muted small">
                                 <span th:text="${#temporals.format(post.createdAt, 'HH:mm ''ngày'' dd/MM/yyyy')}">
                                     Ngày đăng
                                 </span>
-                            </div>
                         </div>
                     </div>
-
-                    <p class="card-text" th:if="${post.content != null && !post.content.isEmpty()}" th:text="${post.content}">Nội dung bài đăng...</p>
+                    </div> <p class="card-text" th:if="${post.content != null && !post.content.isEmpty()}"
+                              th:text="${post.content}">Nội dung bài đăng...</p>
 
                     <div th:if="${post.documents != null && !post.documents.isEmpty()}" class="mt-3">
 
@@ -81,7 +80,8 @@
                                 <div class="d-flex w-100 justify-content-between align-items-center">
                                     <h5 class="mb-1 fw-bold" style="font-size: 1.1rem;">
                                         📄
-                                        <span th:text="${doc.title != null && !doc.title.isEmpty() ? doc.title : doc.fileName}">
+                                        <span
+                                                th:text="${doc.title != null && !doc.title.isEmpty() ? doc.title : doc.fileName}">
                                             Tiêu đề tài liệu
                                         </span>
                                     </h5>
@@ -102,7 +102,8 @@
                                           class="badge bg-secondary me-2"
                                           th:text="${doc.category.name}">Category</span>
 
-                                    <span th:text="${doc.fileName} + ' (' + (${doc.fileSize < 1024*1024 ? #numbers.formatDecimal(doc.fileSize / 1024.0, 1, 'COMMA', 1, 'POINT') + ' KB' : #numbers.formatDecimal(doc.fileSize / 1024.0 / 1024.0, 1, 'COMMA', 1, 'POINT') + ' MB'}) + ')'">
+                                    <span
+                                            th:text="${doc.fileName} + ' (' + (${doc.fileSize < 1024*1024 ? #numbers.formatDecimal(doc.fileSize / 1024.0, 1, 'COMMA', 1, 'POINT') + ' KB' : #numbers.formatDecimal(doc.fileSize / 1024.0 / 1024.0, 1, 'COMMA', 1, 'POINT') + ' MB'}) + ')'">
                                         ten_file.pdf (1.2 MB)
                                     </span>
                                 </small>
@@ -131,10 +132,26 @@
 
                     <div class="comments-section">
                         <div th:each="comment : ${post.comments}" class="mb-2 d-flex">
-                            <div class="ms-2">
-                                <strong th:text="${comment.user.name}">Tên User</strong>
+                            <div class="post-author-avatar me-2" style="width: 32px; height: 32px; font-size: 0.9rem;">
+                                <img th:if="${comment.user.avatarUrl != null}"
+                                     th:src="@{/view-file/{fileName}(fileName=${comment.user.avatarUrl})}"
+                                     alt="Avatar">
+                                <span th:if="${comment.user.avatarUrl == null}"
+                                      th:text="${#strings.substring(comment.user.name, 0, 1)}">
+                                </span>
+                            </div>
+
+                            <div class="ms-2" style="background-color: #f0f2f5; border-radius: 15px; padding: 8px 12px; flex-grow: 1;">
+                                <strong>
+                                    <a th:href="@{/profile/{username}(username=${comment.user.username})}"
+                                       th:text="${comment.user.name}"
+                                       style="text-decoration: none; color: inherit;">
+                                        Tên User
+                                    </a>
+                                </strong>
                                 <p th:text="${comment.content}" class="mb-0">Nội dung bình luận.</p>
-                                <small class="text-muted" th:text="${#temporals.format(comment.createdAt, 'HH:mm dd/MM/yyyy')}"></small>
+                                <small class="text-muted"
+                                       th:text="${#temporals.format(comment.createdAt, 'HH:mm dd/MM/yyyy')}"></small>
                             </div>
                         </div>
                     </div>
@@ -142,25 +159,68 @@
                     <div class="mt-3" sec:authorize="isAuthenticated()">
                         <form th:action="@{/posts/{postId}/comment(postId=${post.id})}"
                               th:object="${commentDto}" method="POST" class="d-flex">
+
+                            <div class="post-author-avatar me-2" style="width: 32px; height: 32px; font-size: 0.9rem;">
+                                <img th:if="${currentUser != null && currentUser.avatarUrl != null}"
+                                     th:src="@{/view-file/{fileName}(fileName=${currentUser.avatarUrl})}"
+                                     alt="Avatar">
+                                <span th:if="${currentUser == null || currentUser.avatarUrl == null}"
+                                      th:text="${currentUser != null ? #strings.substring(currentUser.name, 0, 1) : '?'}">
+                                </span>
+                            </div>
+
                             <input type="text" class="form-control" th:field="*{content}"
-                                   placeholder="Viết bình luận..."/>
-                            <button type="submit" class="btn btn-primary ms-2">Gửi</button>
+                                   placeholder="Viết bình luận..." style="border-radius: 20px;"/>
+                            <button type="submit" class="btn btn-primary ms-2" style="border-radius: 20px;">Gửi</button>
                         </form>
                     </div>
 
                 </div>
             </div>
 
-        </div> <div class="col-lg-3 d-none d-lg-block">
+        </div> <div class="col-lg-3 col-md-4">
         <div class="card sidebar-right">
             <div class="card-body">
                 <h5 class="card-title">Liên hệ</h5>
-                <p>(Danh sách bạn bè online sẽ ở đây)</p>
+
+                <div class="user-list-container" th:if="${contacts != null && !contacts.isEmpty()}">
+
+                    <div th:each="contact : ${contacts}"
+                         th:if="${contact.type == T(com.studyhub.StudyHub.entity.ChatRoom.RoomType).ONE_TO_ONE}">
+
+                        <a th:href="@{/chat(withUser=${contact.oneToOnePartnerId})}"
+                           class="user-list-item-link">
+
+                            <div th:with="isOnline = ${onlineUsers.contains(contact.oneToOnePartnerUsername)}"
+                                 class="user-list-item">
+
+                                <div class="user-avatar-container">
+                                    <img th:if="${contact.oneToOnePartnerAvatarUrl != null}"
+                                         th:src="@{/view-file/{fileName}(fileName=${contact.oneToOnePartnerAvatarUrl})}"
+                                         class="user-avatar-image">
+                                    <div th:if="${contact.oneToOnePartnerAvatarUrl == null}"
+                                         class="user-avatar-default">
+                                            <span
+                                                    th:text="${#strings.substring(contact.oneToOnePartnerName, 0, 1)}"></span>
+                                    </div>
+                                    <span class="status-dot"
+                                          th:classappend="${isOnline ? 'online' : ''}"></span>
+                                </div>
+
+                                <div class="user-info">
+                                        <span class="user-name"
+                                              th:text="${contact.oneToOnePartnerName}">Tên Bạn Bè</span>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+
+                <p th:if="${contacts == null || contacts.isEmpty()}" class="text-muted small">
+                    Bạn chưa nhắn tin với ai.
+                </p>
+
             </div>
         </div>
-    </div>
-
-    </div> </div>
-
-</body>
+    </div> </div> </div> </body>
 </html>

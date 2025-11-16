@@ -11,43 +11,118 @@
 
 <div layout:fragment="content">
 
-  <div class="card mb-4">
-    <div class="card-body p-4 text-center">
+  <div class="profile-header-container">
 
-      <img th:if="${profileUser.avatarUrl != null}"
-           th:src="@{/view-file/{fileName}(fileName=${profileUser.avatarUrl})}"
-           alt="Avatar"
-           class="profile-avatar">
+    <div class="profile-cover-photo"
+         th:style="${profileUser.coverPhotoUrl != null}
+         ? 'background-image: url(' + @{/view-file/{fileName}(fileName=${profileUser.coverPhotoUrl})} + ')'
+         : 'background-color: #e0e0e0;'">
+    </div>
 
-      <div th:if="${profileUser.avatarUrl == null}"
-           class="profile-avatar-default">
-        <span th:text="${#strings.substring(profileUser.name, 0, 1)}">U</span>
+    <div class="profile-info-bar">
+      <div class="profile-avatar-container">
+        <img th:if="${profileUser.avatarUrl != null}"
+             th:src="@{/view-file/{fileName}(fileName=${profileUser.avatarUrl})}"
+             alt="Avatar">
+
+        <div th:if="${profileUser.avatarUrl == null}"
+             class="profile-avatar-container-default">
+          <span th:text="${#strings.substring(profileUser.name, 0, 1)}">U</span>
+        </div>
       </div>
-
-      <h2 class="mt-3 mb-1" th:text="${profileUser.name}">Tên User</h2>
-      <p class="text-muted" th:text="'@' + ${profileUser.username}">@username</p>
-
-      <p class="mt-3" th:if="${profileUser.bio != null && !profileUser.bio.isEmpty()}"
-         th:text="${profileUser.bio}"
-         style="max-width: 600px; margin-left: auto; margin-right: auto;">
-        Tiểu sử của user.
-      </p>
-
-      <div class="mt-3" sec:authorize="isAuthenticated()"
+      <div class="profile-name-bio">
+        <h2 class="mt-3 mb-1" th:text="${profileUser.name}">Tên User</h2>
+        <p th:if="${profileUser.bio != null && !profileUser.bio.isEmpty()}"
+           th:text="${profileUser.bio}">
+          Tiểu sử của user.
+        </p>
+      </div>
+      <div class="profile-buttons"
+           sec:authorize="isAuthenticated()"
            th:if="${currentUser != null && currentUser.id == profileUser.id}">
-        <a th:href="@{/profile/edit}" class="btn btn-outline-primary">
+        <a th:href="@{/profile/edit}" class="btn btn-primary">
           ⚙️ Chỉnh sửa trang cá nhân
         </a>
       </div>
     </div>
+
+    <nav class="profile-nav">
+      <div class="nav nav-tabs" id="profile-tab">
+        <button class="nav-link active" id="posts-tab" data-bs-toggle="tab"
+                data-bs-target="#posts-content" type="button">
+          Bài viết
+        </button>
+        <button class="nav-link" id="about-tab" data-bs-toggle="tab"
+                data-bs-target="#about-content" type="button">
+          Giới thiệu
+        </button>
+        <button class="nav-link" id="docs-tab" data-bs-toggle="tab"
+                data-bs-target="#docs-content" type="button">
+          Tài liệu
+        </button>
+      </div>
+    </nav>
   </div>
 
   <div class="row justify-content-center">
+    <div class="col-lg-4 d-none d-lg-block">
+      <div class="card profile-info-box">
+        <div class="card-body">
+          <h5>Giới thiệu</h5>
+
+          <div class="info-item" th:if="${profileUser.userType != null}">
+            <span class="info-icon">🎓</span>
+            <p>
+              Là <strong th:text="${profileUser.userType.displayName}">Sinh viên</strong>
+              <span th:if="${profileUser.school != null}">
+                tại <strong><span th:text="${profileUser.school}"></span></strong>
+              </span>
+            </p>
+          </div>
+
+          <div class="info-item" th:if="${profileUser.major != null}">
+            <span class="info-icon">💻</span>
+            <p>Học <strong th:text="${profileUser.major}">Chuyên ngành</strong></p>
+          </div>
+
+          <div class="info-item" th:if="${profileUser.location != null}">
+            <span class="info-icon">📍</span>
+            <p>Sống ở <strong><span th:text="${profileUser.location}"></span></strong></p>
+          </div>
+
+          <div class="info-item" th:if="${profileUser.hometown != null}">
+            <span class="info-icon">🏠</span>
+            <p>Đến từ <strong><span th:text="${profileUser.hometown}"></span></strong></p>
+          </div>
+
+          <div class="info-item" th:if="${profileUser.birthday != null}">
+            <span class="info-icon">🎂</span>
+            <p>
+              Sinh ngày <strong th:text="${#temporals.format(profileUser.birthday, 'dd/MM/yyyy')}"></strong>
+            </p>
+          </div>
+
+          <hr>
+
+          <h5>Thông tin liên hệ</h5>
+
+          <div class="info-item" th:if="${profileUser.email != null}">
+            <span class="info-icon">✉️</span>
+            <p>Email: <strong th:text="${profileUser.email}"></strong></p>
+          </div>
+
+          <div class="info-item" th:if="${profileUser.contactPhone != null}">
+            <span class="info-icon">📞</span>
+            <p>SĐT: <strong th:text="${profileUser.contactPhone}"></strong></p>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
     <div class="col-lg-8 col-md-10">
 
-      <h2 class="h4 mb-3 text-white">Bài đăng của
-        <span th:text="${profileUser.name}">User</span>
-      </h2>
+      <h2 class="h4 mb-3" style="color: white; opacity: 0.9;">Bài đăng</h2>
 
       <div th:if="${posts == null || posts.isEmpty()}" class="alert alert-info">
         Chưa có bài đăng nào.
@@ -57,17 +132,14 @@
         <div class="card-body">
 
           <div class="d-flex align-items-center mb-2">
-
             <div class="post-author-avatar">
               <img th:if="${post.user.avatarUrl != null}"
                    th:src="@{/view-file/{fileName}(fileName=${post.user.avatarUrl})}"
                    alt="Avatar">
               <span th:if="${post.user.avatarUrl == null}"
                     th:text="${#strings.substring(post.user.name, 0, 1)}">
-                                A
-                            </span>
+              </span>
             </div>
-
             <div class="ms-2">
               <div class="fw-bold">
                 <a th:href="@{/profile/{username}(username=${post.user.username})}"
@@ -76,9 +148,9 @@
                 </a>
               </div>
               <div class="text-muted small">
-                                <span th:text="${#temporals.format(post.createdAt, 'HH:mm ''ngày'' dd/MM/yyyy')}">
-                                    Ngày đăng
-                                </span>
+                <span th:text="${#temporals.format(post.createdAt, 'HH:mm ''ngày'' dd/MM/yyyy')}">
+                    Ngày đăng
+                </span>
               </div>
             </div>
           </div>
@@ -93,8 +165,8 @@
                   <h5 class="mb-1 fw-bold" style="font-size: 1.1rem;">
                     📄
                     <span th:text="${doc.title != null && !doc.title.isEmpty() ? doc.title : doc.fileName}">
-                                            Tiêu đề tài liệu
-                                        </span>
+                        Tiêu đề tài liệu
+                    </span>
                   </h5>
                   <a th:href="@{/download/{fileName}(fileName=${doc.storagePath})}"
                      class="btn btn-sm btn-primary ms-3 flex-shrink-0">
@@ -109,13 +181,13 @@
                 </p>
 
                 <small class="text-muted d-block mt-2">
-                                    <span th:if="${doc.category != null}"
-                                          class="badge bg-secondary me-2"
-                                          th:text="${doc.category.name}">Category</span>
+                    <span th:if="${doc.category != null}"
+                          class="badge bg-secondary me-2"
+                          th:text="${doc.category.name}">Category</span>
 
                   <span th:text="${doc.fileName} + ' (' + (${doc.fileSize < 1024*1024 ? #numbers.formatDecimal(doc.fileSize / 1024.0, 1, 'COMMA', 1, 'POINT') + ' KB' : #numbers.formatDecimal(doc.fileSize / 1024.0 / 1024.0, 1, 'COMMA', 1, 'POINT') + ' MB'}) + ')'">
-                                        ten_file.pdf (1.2 MB)
-                                    </span>
+                      ten_file.pdf (1.2 MB)
+                  </span>
                 </small>
               </div>
             </div>
@@ -148,7 +220,7 @@
                      alt="Avatar">
                 <span th:if="${comment.user.avatarUrl == null}"
                       th:text="${#strings.substring(comment.user.name, 0, 1)}">
-                                </span>
+                </span>
               </div>
               <div class="ms-2" style="background-color: #f0f2f5; border-radius: 15px; padding: 8px 12px; flex-grow: 1;">
                 <strong>
@@ -172,7 +244,7 @@
                      alt="Avatar">
                 <span th:if="${currentUser == null || currentUser.avatarUrl == null}"
                       th:text="${currentUser != null ? #strings.substring(currentUser.name, 0, 1) : '?'}">
-                                </span>
+                </span>
               </div>
 
               <input type="text" class="form-control" th:field="*{content}"
@@ -180,12 +252,12 @@
               <button type="submit" class="btn btn-primary ms-2" style="border-radius: 20px;">Gửi</button>
             </form>
           </div>
-
         </div>
       </div>
 
-        </div>
-      </div>
+    </div>
+  </div>
+
 </div>
 </body>
 </html>

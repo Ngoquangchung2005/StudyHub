@@ -6,61 +6,102 @@
 <head>
   <title>Cài đặt tài khoản</title>
   <link th:href="@{/css/auth.css}" rel="stylesheet" />
+  <style>
+    /* CSS cho ảnh bìa preview */
+    .cover-photo-preview {
+      height: 200px;
+      width: 100%;
+      background-color: #e0e0e0;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      background-size: cover;
+      background-position: center;
+      border: 2px dashed #ccc;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 768px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
 <body>
 
 <div layout:fragment="content">
 
   <div class="auth-page" style="min-height: 0; padding-top: 20px; padding-bottom: 20px; background: transparent;">
-    <div class="auth-container" style="max-width: 700px;">
-      <div class="auth-card">
+    <div class="auth-container" style="max-width: 900px;"> <div class="auth-card">
 
-        <div class="auth-header" style="padding-top: 30px; padding-bottom: 30px;">
-          <div class="auth-logo">⚙️</div>
-          <h2>Cài đặt tài khoản</h2>
-          <p>Cập nhật thông tin cá nhân và avatar của bạn</p>
+      <div class="auth-header" style="padding-top: 30px; padding-bottom: 30px;">
+        <div class="auth-logo">⚙️</div>
+        <h2>Cài đặt tài khoản</h2>
+        <p>Cập nhật thông tin cá nhân và profile của bạn</p>
+      </div>
+
+      <div class="auth-body">
+
+        <div th:if="${successMessage}" class="alert-custom alert-success-custom">
+          ✅ <span th:text="${successMessage}"></span>
+        </div>
+        <div th:if="${errorMessage}" class="alert-custom alert-danger-custom">
+          ❌ <span th:text="${errorMessage}"></span>
         </div>
 
-        <div class="auth-body">
+        <form th:action="@{/profile/edit}"
+              th:object="${profileDto}"
+              method="POST"
+              enctype="multipart/form-data">
 
-          <div th:if="${successMessage}" class="alert-custom alert-success-custom">
-            ✅ <span th:text="${successMessage}"></span>
+          <div class="form-group text-center">
+            <label>Ảnh bìa hiện tại</label>
+            <div class="cover-photo-preview"
+                 th:style="${currentCoverPhotoUrl != null} ? 'background-image: url(' + @{/view-file/{fileName}(fileName=${currentCoverPhotoUrl})} + ')' : 'background-color: #e0e0e0;'">
+            </div>
           </div>
-          <div th:if="${errorMessage}" class="alert-custom alert-danger-custom">
-            ❌ <span th:text="${errorMessage}"></span>
+
+          <div class="form-group">
+            <label for="coverPhotoFile">Tải lên ảnh bìa mới</label>
+            <input type="file"
+                   class="form-control-auth"
+                   id="coverPhotoFile"
+                   th:field="*{coverPhotoFile}"
+                   accept="image/png, image/jpeg, image/gif">
           </div>
 
-          <form th:action="@{/profile/edit}"
-                th:object="${profileDto}"
-                method="POST"
-                enctype="multipart/form-data">
-
-            <div class="form-group text-center">
-              <label>Avatar hiện tại</label>
-              <div class="mt-2">
-                <img th:if="${currentAvatarUrl != null}"
-                     th:src="@{/view-file/{fileName}(fileName=${currentAvatarUrl})}"
-                     alt="Avatar"
-                     style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 4px solid #ddd;">
-                <div th:if="${currentAvatarUrl == null}"
-                     class="auth-logo"
-                     style="width: 120px; height: 120px; font-size: 60px; margin-bottom: 0;">
-                  👤
-                </div>
+          <div class="form-group text-center">
+            <label>Avatar hiện tại</label>
+            <div class="mt-2">
+              <img th:if="${currentAvatarUrl != null}"
+                   th:src="@{/view-file/{fileName}(fileName=${currentAvatarUrl})}"
+                   alt="Avatar"
+                   style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 4px solid #ddd;">
+              <div th:if="${currentAvatarUrl == null}"
+                   class="auth-logo"
+                   style="width: 120px; height: 120px; font-size: 60px; margin-bottom: 0;">
+                👤
               </div>
             </div>
+          </div>
 
-            <div class="form-group">
-              <label for="avatarFile">Tải lên avatar mới</label>
-              <input type="file"
-                     class="form-control-auth"
-                     id="avatarFile"
-                     th:field="*{avatarFile}"
-                     accept="image/png, image/jpeg, image/gif">
-            </div>
+          <div class="form-group">
+            <label for="avatarFile">Tải lên avatar mới</label>
+            <input type="file"
+                   class="form-control-auth"
+                   id="avatarFile"
+                   th:field="*{avatarFile}"
+                   accept="image/png, image/jpeg, image/gif">
+          </div>
 
+          <hr class="my-4">
+
+          <div class="form-grid">
             <div class="form-group">
-              <label for="name">Họ và tên</label>
+              <label for="name">Họ và tên <span>*</span></label>
               <input type="text"
                      class="form-control-auth"
                      id="name"
@@ -69,22 +110,86 @@
             </div>
 
             <div class="form-group">
-              <label for="bio">Tiểu sử (Bio)</label>
-              <textarea class="form-control-auth"
-                        id="bio"
-                        th:field="*{bio}"
-                        rows="4"
-                        placeholder="Viết gì đó về bạn..."></textarea>
+              <label for="userType">Vai trò</label>
+              <select class="form-control-auth" id="userType" th:field="*{userType}">
+                <option th:each="type : ${userTypes}"
+                        th:value="${type}"
+                        th:text="${type.displayName}">
+                </option>
+              </select>
             </div>
 
-            <button type="submit" class="btn-auth">
-              💾 Lưu thay đổi
-            </button>
+            <div class="form-group">
+              <label for="school">Trường học</label>
+              <input type="text"
+                     class="form-control-auth"
+                     id="school"
+                     th:field="*{school}"
+                     placeholder="VD: Đại học Bách khoa Đà Nẵng">
+            </div>
 
-          </form>
-        </div>
+            <div class="form-group">
+              <label for="major">Chuyên ngành</label>
+              <input type="text"
+                     class="form-control-auth"
+                     id="major"
+                     th:field="*{major}"
+                     placeholder="VD: Công nghệ phần mềm">
+            </div>
 
+            <div class="form-group">
+              <label for="location">Sống ở</label>
+              <input type="text"
+                     class="form-control-auth"
+                     id="location"
+                     th:field="*{location}"
+                     placeholder="VD: Đà Nẵng">
+            </div>
+
+            <div class="form-group">
+              <label for="hometown">Đến từ</label>
+              <input type="text"
+                     class="form-control-auth"
+                     id="hometown"
+                     th:field="*{hometown}"
+                     placeholder="VD: Huế">
+            </div>
+
+            <div class="form-group">
+              <label for="birthday">Ngày sinh</label>
+              <input type="date"
+                     class="form-control-auth"
+                     id="birthday"
+                     th:field="*{birthday}">
+            </div>
+
+            <div class="form-group">
+              <label for="contactPhone">Số điện thoại</label>
+              <input type="tel"
+                     class="form-control-auth"
+                     id="contactPhone"
+                     th:field="*{contactPhone}"
+                     placeholder="VD: 0905123456">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="bio">Tiểu sử (Bio)</label>
+            <textarea class="form-control-auth"
+                      id="bio"
+                      th:field="*{bio}"
+                      rows="4"
+                      placeholder="Viết gì đó về bạn..."></textarea>
+          </div>
+
+          <button type="submit" class="btn-auth">
+            💾 Lưu thay đổi
+          </button>
+
+        </form>
       </div>
+
+    </div>
     </div>
   </div>
 

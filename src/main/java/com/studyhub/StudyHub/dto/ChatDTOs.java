@@ -18,11 +18,13 @@ public class ChatDTOs {
         private Long id;
         private String name;
         private String username;
+        private String avatarUrl; // <-- THÊM DÒNG NÀY
 
         public UserDto(User user) {
             this.id = user.getId();
             this.name = user.getName();
             this.username = user.getUsername();
+            this.avatarUrl = user.getAvatarUrl(); // <-- THÊM DÒNG NÀY
         }
     }
 
@@ -33,8 +35,15 @@ public class ChatDTOs {
         private String name;
         private ChatRoom.RoomType type;
         private Set<UserDto> members;
+
         // Dùng cho chat 1-1, để hiển thị tên "người kia"
         private String oneToOnePartnerName;
+        // === THÊM CÁC TRƯỜNG MỚI ===
+        private Long oneToOnePartnerId;
+        private String oneToOnePartnerUsername;
+        private String oneToOnePartnerAvatarUrl;
+        // === KẾT THÚC TRƯỜNG MỚI ===
+
 
         public ChatRoomDto(ChatRoom room, User currentUser) {
             this.id = room.getId();
@@ -44,14 +53,22 @@ public class ChatDTOs {
                     .map(UserDto::new)
                     .collect(Collectors.toSet());
 
-            // Tìm tên "người kia"
+            // === THAY THẾ KHỐI LỆNH if (this.type == ...) ===
             if (this.type == ChatRoom.RoomType.ONE_TO_ONE) {
-                this.oneToOnePartnerName = room.getMembers().stream()
+                room.getMembers().stream()
                         .filter(member -> !member.getId().equals(currentUser.getId()))
                         .findFirst()
-                        .map(User::getName)
-                        .orElse("Chat");
+                        .ifPresent(partner -> {
+                            this.oneToOnePartnerName = partner.getName();
+                            this.oneToOnePartnerId = partner.getId();
+                            this.oneToOnePartnerUsername = partner.getUsername();
+                            this.oneToOnePartnerAvatarUrl = partner.getAvatarUrl();
+                        });
+                if (this.oneToOnePartnerName == null) {
+                    this.oneToOnePartnerName = "Chat";
+                }
             }
+            // === KẾT THÚC THAY THẾ ===
         }
     }
 

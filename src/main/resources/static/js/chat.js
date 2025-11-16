@@ -67,6 +67,37 @@ async function onConnected() {
 function onError(error) {
     console.error('Không thể kết nối WebSocket: ' + error);
 }
+async function checkUrlForRedirect() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const userIdToChat = urlParams.get('withUser');
+
+    if (userIdToChat) {
+        console.log("Phát hiện redirect, mở chat với user ID:", userIdToChat);
+        try {
+            // 1. Gọi API để lấy/tạo phòng (giống hệt onStartNewChat)
+            const response = await fetch(`/api/chat/room/with/${userIdToChat}`);
+            if (!response.ok) throw new Error('Không thể tạo phòng chat từ redirect');
+            const roomDto = await response.json();
+
+            // 2. Tải lại danh sách phòng (để đảm bảo phòng mới/cũ xuất hiện)
+            // (Hàm loadChatRooms() đã được gọi trong onConnected,
+            // nhưng gọi lại để chắc chắn)
+            await loadChatRooms();
+
+            // 3. Chọn phòng đó
+            selectRoom(roomDto.id, roomDto.oneToOnePartnerName);
+
+            // 4. Xóa param khỏi URL để tránh load lại khi F5
+            history.replaceState(null, '', window.location.pathname);
+
+        } catch (error) {
+            console.error(error);
+            // Xóa param khỏi URL nếu có lỗi
+            history.replaceState(null, '', window.location.pathname);
+        }
+    }
+}
+// === KẾT THÚC THÊM MỚI ===
 
 // ===========================================
 // === 2. TẢI DỮ LIỆU (API)

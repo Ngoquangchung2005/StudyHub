@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.time.LocalDate; // <-- THÊM
 import java.util.HashSet;
 import java.util.Set;
 
@@ -24,13 +26,40 @@ public class User {
     private String email;
     private String password;
 
-    // === THÊM 2 TRƯỜNG MỚI ===
+    // === TRƯỜNG CŨ (PROFILE) ===
     @Column(length = 255)
     private String avatarUrl; // Sẽ lưu tên file duy nhất (VD: abc-123.jpg)
 
     @Column(columnDefinition = "TEXT")
     private String bio; // Mô tả tiểu sử
+
+    // === THÊM TRƯỜNG MỚI (GIỐNG FACEBOOK) ===
+    @Column(length = 255)
+    private String coverPhotoUrl; // Ảnh bìa
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 30)
+    private UserType userType; // Sinh viên, Giảng viên
+
+    @Column(length = 255)
+    private String school; // Trường học
+
+    @Column(length = 255)
+    private String major; // Chuyên ngành
+
+    @Column(length = 255)
+    private String location; // Sống ở
+
+    @Column(length = 255)
+    private String hometown; // Đến từ
+
+    @Column
+    private LocalDate birthday; // Ngày sinh
+
+    @Column(length = 20)
+    private String contactPhone; // Số điện thoại
     // === KẾT THÚC TRƯỜNG MỚI ===
+
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
