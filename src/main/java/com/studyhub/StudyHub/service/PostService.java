@@ -4,6 +4,7 @@ package com.studyhub.StudyHub.service;
 import com.studyhub.StudyHub.dto.CommentDto;
 import com.studyhub.StudyHub.dto.PostDto;
 import com.studyhub.StudyHub.entity.Post;
+import com.studyhub.StudyHub.entity.User;
 
 import java.security.Principal;
 import java.util.List;
@@ -11,6 +12,7 @@ import java.util.List;
 public interface PostService {
     // Lấy tất cả bài đăng
     List<Post> getAllPostsSortedByDate();
+    List<Post> getPostsByUser(User user);
 
     // Tạo bài đăng mới
     void createPost(PostDto postDto, Principal principal);

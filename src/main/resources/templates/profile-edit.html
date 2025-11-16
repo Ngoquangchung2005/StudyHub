@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout.html}">
+<head>
+  <title>Cài đặt tài khoản</title>
+  <link th:href="@{/css/auth.css}" rel="stylesheet" />
+</head>
+<body>
+
+<div layout:fragment="content">
+
+  <div class="auth-page" style="min-height: 0; padding-top: 20px; padding-bottom: 20px; background: transparent;">
+    <div class="auth-container" style="max-width: 700px;">
+      <div class="auth-card">
+
+        <div class="auth-header" style="padding-top: 30px; padding-bottom: 30px;">
+          <div class="auth-logo">⚙️</div>
+          <h2>Cài đặt tài khoản</h2>
+          <p>Cập nhật thông tin cá nhân và avatar của bạn</p>
+        </div>
+
+        <div class="auth-body">
+
+          <div th:if="${successMessage}" class="alert-custom alert-success-custom">
+            ✅ <span th:text="${successMessage}"></span>
+          </div>
+          <div th:if="${errorMessage}" class="alert-custom alert-danger-custom">
+            ❌ <span th:text="${errorMessage}"></span>
+          </div>
+
+          <form th:action="@{/profile/edit}"
+                th:object="${profileDto}"
+                method="POST"
+                enctype="multipart/form-data">
+
+            <div class="form-group text-center">
+              <label>Avatar hiện tại</label>
+              <div class="mt-2">
+                <img th:if="${currentAvatarUrl != null}"
+                     th:src="@{/view-file/{fileName}(fileName=${currentAvatarUrl})}"
+                     alt="Avatar"
+                     style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 4px solid #ddd;">
+                <div th:if="${currentAvatarUrl == null}"
+                     class="auth-logo"
+                     style="width: 120px; height: 120px; font-size: 60px; margin-bottom: 0;">
+                  👤
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="avatarFile">Tải lên avatar mới</label>
+              <input type="file"
+                     class="form-control-auth"
+                     id="avatarFile"
+                     th:field="*{avatarFile}"
+                     accept="image/png, image/jpeg, image/gif">
+            </div>
+
+            <div class="form-group">
+              <label for="name">Họ và tên</label>
+              <input type="text"
+                     class="form-control-auth"
+                     id="name"
+                     th:field="*{name}"
+                     required>
+            </div>
+
+            <div class="form-group">
+              <label for="bio">Tiểu sử (Bio)</label>
+              <textarea class="form-control-auth"
+                        id="bio"
+                        th:field="*{bio}"
+                        rows="4"
+                        placeholder="Viết gì đó về bạn..."></textarea>
+            </div>
+
+            <button type="submit" class="btn-auth">
+              💾 Lưu thay đổi
+            </button>
+
+          </form>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

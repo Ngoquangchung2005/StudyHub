@@ -1,21 +1,115 @@
-/* Đổi màu nền body giống Facebook */
+/*
+  CSS CHO GIAO DIỆN FEED (TRANG CHỦ)
+*/
+
+/* 1. Đổi màu nền body giống trang Login (dùng gradient) */
 body {
-    background-color: #f0f2f5;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background-attachment: fixed; /* Giữ gradient cố định khi cuộn */
 }
 
-/* Tùy chỉnh thẻ .card (bài đăng)
-  - Bỏ viền (border)
-  - Bo tròn (border-radius)
-*/
+/* 2. Tùy chỉnh thẻ .card (bài đăng) */
 .card {
     border: none;
-    border-radius: 0.5rem; /* 8px */
+    border-radius: 0.75rem; /* 12px */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    background-color: #fff; /* <-- SỬA LỖI: Luôn đảm bảo card có nền trắng */
 }
 
-/* Styling cho sidebar (chưa dùng nhiều)
-  Chúng ta có thể làm cho nó "dính" lại khi cuộn sau
-*/
+/* 3. Styling cho sidebar */
 .sidebar-left, .sidebar-right {
     position: sticky;
-    top: 76px; /* 76px = chiều cao của navbar + margin-bottom */
+    top: 1.5rem;
+}
+
+/* Bọc sidebar trong thẻ card để có nền trắng */
+.sidebar-left .card, .sidebar-right .card {
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    background-color: #fff; /* <-- SỬA LỖI: Đảm bảo cả sidebar card có nền trắng */
+}
+
+/* === THÊM LỚP MỚI CHO AVATAR TRANG PROFILE === */
+/* Dùng cho avatar thật (ảnh) */
+.profile-avatar {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover; /* Đảm bảo ảnh vừa vặn */
+    border: 4px solid #fff;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+/* Dùng cho avatar mặc định (chữ cái) */
+.profile-avatar-default {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    background: #667eea;
+    color: white;
+    display: inline-flex; /* Dùng inline-flex để căn giữa chữ */
+    align-items: center;
+    justify-content: center;
+    font-size: 80px;
+    font-weight: bold;
+    border: 4px solid #fff;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+/* === THÊM CSS CHO AVATAR BÀI ĐĂNG === */
+.post-author-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #667eea;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.1rem;
+    overflow: hidden; /* Đảm bảo ảnh cũng bị bo tròn */
+    flex-shrink: 0; /* Không bị co lại */
+}
+
+.post-author-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+/* Thêm vào file CSS của bạn */
+.navbar-avatar {
+    /* Thu nhỏ kích thước từ 32px xuống 28px (hoặc 24px tùy bạn) */
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    margin-right: 8px;
+    flex-shrink: 0; /* Đảm bảo avatar không bị co lại */
+
+    /* ----- Dùng cho avatar ảnh thật (img) ----- */
+    object-fit: cover; /* Đảm bảo ảnh vừa vặn */
+
+    /* ----- Dùng cho avatar mặc định (div) ----- */
+    /* Các thuộc tính này sẽ được thẻ <img> bỏ qua */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    background-color: #f0f2f5;
+    color: #764ba2;
+    font-size: 0.85rem; /* Giảm kích thước chữ cho vừa với khung 28px */
+}
+/* === ẨN GẠCH CHÂN LINK TRONG BÀI ĐĂNG === */
+
+/* Target tất cả thẻ <a> (link) bên trong phần .card-body của bài đăng
+*/
+.card .card-body a {
+    text-decoration: none; /* Tắt gạch chân */
+    color: inherit;      /* Giúp link có màu giống hệt text bình thường (đen hoặc xám) */
+}
+
+/* (Tùy chọn) Thêm lại gạch chân khi di chuột qua,
+  trừ các nút (như nút "Tải xuống")
+*/
+.card .card-body a:not(.btn):hover {
+    text-decoration: underline;
 }

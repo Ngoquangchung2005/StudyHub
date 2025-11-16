@@ -24,6 +24,14 @@ public class User {
     private String email;
     private String password;
 
+    // === THÊM 2 TRƯỜNG MỚI ===
+    @Column(length = 255)
+    private String avatarUrl; // Sẽ lưu tên file duy nhất (VD: abc-123.jpg)
+
+    @Column(columnDefinition = "TEXT")
+    private String bio; // Mô tả tiểu sử
+    // === KẾT THÚC TRƯỜNG MỚI ===
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_roles",

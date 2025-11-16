@@ -2,6 +2,7 @@ package com.studyhub.StudyHub.repository;
 
 
 import com.studyhub.StudyHub.entity.Post;
+import com.studyhub.StudyHub.entity.User; // <-- THÊM IMPORT
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -17,4 +18,14 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             "LEFT JOIN FETCH c.user " +
             "LEFT JOIN FETCH p.reactions")
     List<Post> findAllWithDetails(Sort sort);
+
+    // === THÊM METHOD MỚI ===
+    @Query("SELECT p FROM Post p " +
+            "LEFT JOIN FETCH p.user " +
+            "LEFT JOIN FETCH p.documents " +
+            "LEFT JOIN FETCH p.comments c " +
+            "LEFT JOIN FETCH c.user " +
+            "LEFT JOIN FETCH p.reactions " +
+            "WHERE p.user = :user")
+    List<Post> findAllByUserWithDetails(User user, Sort sort);
 }

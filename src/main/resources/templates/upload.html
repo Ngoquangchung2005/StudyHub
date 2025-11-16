@@ -5,282 +5,7 @@
       layout:decorate="~{layout.html}">
 <head>
     <title>Đăng tải tài liệu</title>
-    <style>
-        body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-        }
-        .upload-container {
-            max-width: 900px;
-            margin: 40px auto;
-            background: white;
-            border-radius: 25px;
-            padding: 50px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            animation: slideUp 0.6s ease;
-        }
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(50px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .upload-header {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-        .upload-header h1 {
-            font-size: 36px;
-            font-weight: 800;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 10px;
-        }
-        .upload-header p {
-            color: #666;
-            font-size: 16px;
-        }
-
-        /* FILE UPLOAD ZONE */
-        .file-upload-zone {
-            border: 3px dashed #ddd;
-            border-radius: 20px;
-            padding: 60px 30px;
-            text-align: center;
-            background: #f8f9fa;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-bottom: 30px;
-            position: relative;
-        }
-        .file-upload-zone:hover {
-            border-color: #667eea;
-            background: #f0f2ff;
-            transform: scale(1.02);
-        }
-        .file-upload-zone.dragover {
-            border-color: #667eea;
-            background: #e7eaff;
-            border-width: 4px;
-        }
-        .file-icon-big {
-            font-size: 80px;
-            margin-bottom: 20px;
-            animation: bounce 2s infinite;
-        }
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
-        .file-upload-zone h4 {
-            font-size: 24px;
-            font-weight: 700;
-            color: #333;
-            margin-bottom: 10px;
-        }
-        .file-upload-zone p {
-            color: #666;
-            font-size: 15px;
-        }
-        .file-upload-zone strong {
-            color: #667eea;
-        }
-
-        /* FILE SELECTED */
-        .file-selected {
-            display: none;
-            background: linear-gradient(135deg, #e7eaff, #f0f2ff);
-            border: 2px solid #667eea;
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 30px;
-            align-items: center;
-            gap: 20px;
-            animation: fadeIn 0.5s ease;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        .file-selected.show {
-            display: flex;
-        }
-        .file-preview-icon {
-            font-size: 60px;
-            animation: rotate 2s linear infinite;
-        }
-        @keyframes rotate {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-        .file-info h5 {
-            margin: 0 0 5px 0;
-            font-weight: 700;
-            color: #333;
-        }
-        .file-info small {
-            color: #666;
-        }
-
-        /* FORM GROUPS */
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 25px;
-        }
-        .form-group {
-            margin-bottom: 25px;
-        }
-        .form-group label {
-            display: block;
-            font-weight: 700;
-            color: #333;
-            margin-bottom: 8px;
-            font-size: 15px;
-        }
-        .form-group label span {
-            color: #ff4444;
-        }
-        .form-control {
-            width: 100%;
-            padding: 14px 18px;
-            border: 2px solid #e0e0e0;
-            border-radius: 12px;
-            font-size: 15px;
-            transition: all 0.3s ease;
-            font-family: inherit;
-        }
-        .form-control:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
-        }
-        textarea.form-control {
-            resize: vertical;
-            min-height: 120px;
-        }
-        select.form-control {
-            cursor: pointer;
-        }
-
-        /* CATEGORY GRID */
-        .category-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 15px;
-            margin-bottom: 25px;
-        }
-        .category-item {
-            position: relative;
-        }
-        .category-item input[type="radio"] {
-            display: none;
-        }
-        .category-label {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px 10px;
-            border: 2px solid #e0e0e0;
-            border-radius: 15px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            background: white;
-        }
-        .category-label:hover {
-            border-color: #667eea;
-            transform: translateY(-5px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
-        }
-        .category-item input[type="radio"]:checked + .category-label {
-            border-color: #667eea;
-            background: linear-gradient(135deg, #e7eaff, #f0f2ff);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
-        }
-        .category-icon {
-            font-size: 40px;
-            margin-bottom: 8px;
-        }
-        .category-name {
-            font-size: 14px;
-            font-weight: 600;
-            color: #333;
-        }
-
-        /* TAGS INPUT */
-        .tag-hint {
-            font-size: 13px;
-            color: #666;
-            margin-top: 5px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        /* PRIVACY TOGGLE */
-        .privacy-option {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-bottom: 15px;
-        }
-        .privacy-option:hover {
-            border-color: #667eea;
-        }
-        .privacy-option input[type="radio"] {
-            width: 20px;
-            height: 20px;
-            cursor: pointer;
-        }
-        .privacy-option input[type="radio"]:checked + .privacy-label {
-            color: #667eea;
-            font-weight: 700;
-        }
-
-        /* SUBMIT BUTTON */
-        .btn-submit {
-            width: 100%;
-            padding: 18px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            border-radius: 15px;
-            font-size: 18px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
-        }
-        .btn-submit:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.5);
-        }
-        .btn-submit:active {
-            transform: translateY(0);
-        }
-        .btn-submit:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        @media (max-width: 768px) {
-            .upload-container {
-                padding: 30px 20px;
-                margin: 20px;
-            }
-            .form-row {
-                grid-template-columns: 1fr;
-            }
-            .category-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-    </style>
+    <link th:href="@{/css/upload.css}" rel="stylesheet" />
 </head>
 <body>
 
@@ -288,20 +13,17 @@
 
     <div class="upload-container">
 
-        <!-- HEADER -->
         <div class="upload-header">
             <h1>📤 Đăng tải tài liệu</h1>
             <p>Chia sẻ kiến thức của bạn với cộng đồng học tập</p>
         </div>
 
-        <!-- FORM -->
         <form th:action="@{/posts/create}"
               th:object="${postDto}"
               method="POST"
               enctype="multipart/form-data"
               id="uploadForm">
 
-            <!-- FILE UPLOAD ZONE -->
             <div class="file-upload-zone" id="dropZone">
                 <div class="file-icon-big">📁</div>
                 <h4>Kéo thả file vào đây</h4>
@@ -316,7 +38,6 @@
                        required>
             </div>
 
-            <!-- FILE SELECTED -->
             <div class="file-selected" id="fileSelected">
                 <div class="file-preview-icon" id="fileIcon">📄</div>
                 <div class="file-info">
@@ -328,7 +49,6 @@
                 </button>
             </div>
 
-            <!-- TITLE & DESCRIPTION -->
             <div class="form-row">
                 <div class="form-group">
                     <label>📝 Tiêu đề tài liệu <span>*</span></label>
@@ -350,7 +70,6 @@
                 </div>
             </div>
 
-            <!-- DESCRIPTION -->
             <div class="form-group">
                 <label>📄 Mô tả chi tiết</label>
                 <textarea class="form-control"
@@ -358,7 +77,6 @@
                           placeholder="Mô tả nội dung, đối tượng phù hợp, kiến thức cần có..."></textarea>
             </div>
 
-            <!-- CATEGORY (DẠNG GRID) -->
             <div class="form-group">
                 <label>📂 Chọn danh mục <span>*</span></label>
                 <div class="category-grid">
@@ -376,7 +94,6 @@
                 </div>
             </div>
 
-            <!-- PRIVACY -->
             <div class="form-group">
                 <label>🔒 Quyền riêng tư</label>
 
@@ -397,7 +114,6 @@
                 </label>
             </div>
 
-            <!-- SUBMIT BUTTON -->
             <button type="submit" class="btn-submit" id="submitBtn">
                 🚀 Đăng tải ngay
             </button>
@@ -408,7 +124,7 @@
 
 </div>
 
-<script>
+<script layout:fragment="scripts">
     // === FILE HANDLING ===
     const dropZone = document.getElementById('dropZone');
     const fileInput = document.getElementById('fileInput');

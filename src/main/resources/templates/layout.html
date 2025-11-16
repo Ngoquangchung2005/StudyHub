@@ -12,12 +12,13 @@
     <link th:href="@{/css/feed.css}" rel="stylesheet" />
     <link th:href="@{/css/documents.css}" rel="stylesheet" />
     <link th:href="@{/css/auth.css}" rel="stylesheet" />
+    <link th:href="@{/css/upload.css}" rel="stylesheet" />
 </head>
 <body>
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
     <div class="container-fluid">
-        <a class="navbar-brand fw-bold" th:href="@{/documents}">
+        <a class="navbar-brand fw-bold" th:href="@{/}">
             📚 StudyHub
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -25,7 +26,6 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav">
-                <!-- === THÊM DÒNG NÀY === -->
                 <li class="nav-item" sec:authorize="isAuthenticated()">
                     <a class="nav-link" th:href="@{/upload}">
                         ⬆️ Đăng tải
@@ -37,13 +37,17 @@
                     </a>
                 </li>
                 <li class="nav-item" sec:authorize="isAuthenticated()">
+                    <a class="nav-link" th:href="@{/documents}">
+                        📂 Tài liệu
+                    </a>
+                </li>
+                <li class="nav-item" sec:authorize="isAuthenticated()">
                     <a class="nav-link" th:href="@{/chat}">
                         💬 Chat
                     </a>
                 </li>
             </ul>
 
-            <!-- User not logged in -->
             <ul class="navbar-nav ms-auto" sec:authorize="isAnonymous()">
                 <li class="nav-item">
                     <a class="nav-link" th:href="@{/login}">🔐 Đăng nhập</a>
@@ -55,17 +59,40 @@
                 </li>
             </ul>
 
-            <!-- User logged in -->
             <ul class="navbar-nav ms-auto" sec:authorize="isAuthenticated()">
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown"
+                    <a class="nav-link dropdown-toggle d-flex align-items-center"
+                       href="#" id="navbarDropdown"
                        role="button" data-bs-toggle="dropdown">
-                        👤 <span sec:authentication="name">User</span>
+
+                        <img th:if="${currentUser != null && currentUser.avatarUrl != null}"
+                             th:src="@{/view-file/{fileName}(fileName=${currentUser.avatarUrl})}"
+                             alt="Avatar"
+                             class="navbar-avatar">
+
+                        <div th:if="${currentUser == null || currentUser.avatarUrl == null}"
+                             class="navbar-avatar">
+                            <span th:text="${currentUser != null ? #strings.substring(currentUser.name, 0, 1) : '?'}">?</span>
+                        </div>
+
+                        <span class="ms-1" th:text="${currentUser != null ? currentUser.name : 'User'}">User</span>
+
                     </a>
+
+
                     <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="#">👤 Trang cá nhân</a></li>
+                        <li>
+                            <a class ="dropdown-item"
+                            th:href="@{/profile/{username}(username=${currentUser.username})}">
+                            👤 Trang cá nhân
+                            </a>
+                        </li>
                         <li><a class="dropdown-item" href="#">📁 Tài liệu của tôi</a></li>
-                        <li><a class="dropdown-item" href="#">⚙️ Cài đặt</a></li>
+                        <li>
+                            <a class="dropdown-item" th:href="@{/profile/edit}">
+                                ⚙️ Cài đặt & Avatar
+                            </a>
+                        </li>
                         <li><hr class="dropdown-divider"></li>
                         <li>
                             <form th:action="@{/logout}" method="POST">
@@ -83,19 +110,20 @@
 
 <main class="container">
     <div layout:fragment="content">
-        <!-- Nội dung trang con sẽ được chèn vào đây -->
     </div>
 </main>
 
-<!-- Modals (nếu có) -->
 <div layout:fragment="modals">
-    <!-- Modal sẽ được chèn vào đây -->
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+
 <script th:src="@{/js/chat.js}"></script>
+
+<div layout:fragment="scripts">
+</div>
 
 </body>
 </html>

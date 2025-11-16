@@ -50,6 +50,22 @@ public class PostServiceImpl implements PostService {
         Post post = new Post();
         post.setContent(postDto.getContent());
         post.setUser(user);
+        // --- BỔ SUNG LOGIC ---
+        // Nếu content trống (đăng từ trang /upload),
+        // thì tự động dùng Description hoặc Title của tài liệu làm content chính
+        if (post.getContent() == null || post.getContent().trim().isEmpty()) {
+            if (postDto.getDescription() != null && !postDto.getDescription().trim().isEmpty()) {
+                // Ưu tiên 1: Dùng Description
+                post.setContent(postDto.getDescription());
+            } else if (postDto.getTitle() != null && !postDto.getTitle().trim().isEmpty()) {
+                // Ưu tiên 2: Dùng Title (nếu Description cũng trống)
+                post.setContent("Đã đăng tải tài liệu: " + postDto.getTitle());
+            } else if (postDto.getFiles() != null && postDto.getFiles().length > 0 && !postDto.getFiles()[0].isEmpty()) {
+                // Ưu tiên 3: Dùng tên file (nếu cả Title và Description đều trống)
+                post.setContent("Đã đăng tải: " + postDto.getFiles()[0].getOriginalFilename());
+            }
+        }
+        // --- KẾT THÚC BỔ SUNG ---
 
         // === THÊM ĐOẠN NÀY: Xử lý upload file ===
         Set<Document> documents = new HashSet<>();
@@ -123,5 +139,11 @@ public class PostServiceImpl implements PostService {
             reaction.setPost(post);
             reactionRepository.save(reaction);
         }
+    }
+    @Override
+    @Transactional(readOnly = true)
+    public List<Post> getPostsByUser(User user) {
+        // Gọi method mới từ repository
+        return postRepository.findAllByUserWithDetails(user, Sort.by(Sort.Direction.DESC, "createdAt"));
     }
 }

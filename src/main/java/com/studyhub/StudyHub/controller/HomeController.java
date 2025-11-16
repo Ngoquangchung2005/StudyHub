@@ -34,8 +34,6 @@ public class HomeController {
 
         model.addAttribute("pageTitle", "Trang Chủ");
 
-        // Gửi 1 PostDto rỗng để form tạo bài đăng hoạt động
-        model.addAttribute("postDto", new PostDto());
         // Gửi 1 CommentDto rỗng để form bình luận hoạt động
         model.addAttribute("commentDto", new CommentDto());
 

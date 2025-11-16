@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      layout:decorate="~{layout.html}">
+<head>
+  <title th:text="${profileUser.name}">Trang cá nhân</title>
+</head>
+<body>
+
+<div layout:fragment="content">
+
+  <div class="card mb-4">
+    <div class="card-body p-4 text-center">
+
+      <img th:if="${profileUser.avatarUrl != null}"
+           th:src="@{/view-file/{fileName}(fileName=${profileUser.avatarUrl})}"
+           alt="Avatar"
+           class="profile-avatar">
+
+      <div th:if="${profileUser.avatarUrl == null}"
+           class="profile-avatar-default">
+        <span th:text="${#strings.substring(profileUser.name, 0, 1)}">U</span>
+      </div>
+
+      <h2 class="mt-3 mb-1" th:text="${profileUser.name}">Tên User</h2>
+      <p class="text-muted" th:text="'@' + ${profileUser.username}">@username</p>
+
+      <p class="mt-3" th:if="${profileUser.bio != null && !profileUser.bio.isEmpty()}"
+         th:text="${profileUser.bio}"
+         style="max-width: 600px; margin-left: auto; margin-right: auto;">
+        Tiểu sử của user.
+      </p>
+
+      <div class="mt-3" sec:authorize="isAuthenticated()"
+           th:if="${currentUser != null && currentUser.id == profileUser.id}">
+        <a th:href="@{/profile/edit}" class="btn btn-outline-primary">
+          ⚙️ Chỉnh sửa trang cá nhân
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-8 col-md-10">
+
+      <h2 class="h4 mb-3 text-white">Bài đăng của
+        <span th:text="${profileUser.name}">User</span>
+      </h2>
+
+      <div th:if="${posts == null || posts.isEmpty()}" class="alert alert-info">
+        Chưa có bài đăng nào.
+      </div>
+
+      <div class="card mb-3" th:each="post : ${posts}">
+        <div class="card-body">
+
+          <div class="d-flex align-items-center mb-2">
+
+            <div class="post-author-avatar">
+              <img th:if="${post.user.avatarUrl != null}"
+                   th:src="@{/view-file/{fileName}(fileName=${post.user.avatarUrl})}"
+                   alt="Avatar">
+              <span th:if="${post.user.avatarUrl == null}"
+                    th:text="${#strings.substring(post.user.name, 0, 1)}">
+                                A
+                            </span>
+            </div>
+
+            <div class="ms-2">
+              <div class="fw-bold">
+                <a th:href="@{/profile/{username}(username=${post.user.username})}"
+                   th:text="${post.user.name}">
+                  Tên Tác Giả
+                </a>
+              </div>
+              <div class="text-muted small">
+                                <span th:text="${#temporals.format(post.createdAt, 'HH:mm ''ngày'' dd/MM/yyyy')}">
+                                    Ngày đăng
+                                </span>
+              </div>
+            </div>
+          </div>
+          <p class="card-text" th:if="${post.content != null && !post.content.isEmpty()}" th:text="${post.content}">Nội dung bài đăng...</p>
+
+          <div th:if="${post.documents != null && !post.documents.isEmpty()}" class="mt-3">
+            <div class="list-group">
+              <div th:each="doc : ${post.documents}"
+                   class="list-group-item list-group-item-action flex-column align-items-start mb-2 border rounded p-3">
+
+                <div class="d-flex w-100 justify-content-between align-items-center">
+                  <h5 class="mb-1 fw-bold" style="font-size: 1.1rem;">
+                    📄
+                    <span th:text="${doc.title != null && !doc.title.isEmpty() ? doc.title : doc.fileName}">
+                                            Tiêu đề tài liệu
+                                        </span>
+                  </h5>
+                  <a th:href="@{/download/{fileName}(fileName=${doc.storagePath})}"
+                     class="btn btn-sm btn-primary ms-3 flex-shrink-0">
+                    Tải xuống
+                  </a>
+                </div>
+
+                <p class="mb-1"
+                   th:if="${doc.description != null && !doc.description.isEmpty() && doc.description != post.content}"
+                   th:text="${doc.description}">
+                  Mô tả tài liệu...
+                </p>
+
+                <small class="text-muted d-block mt-2">
+                                    <span th:if="${doc.category != null}"
+                                          class="badge bg-secondary me-2"
+                                          th:text="${doc.category.name}">Category</span>
+
+                  <span th:text="${doc.fileName} + ' (' + (${doc.fileSize < 1024*1024 ? #numbers.formatDecimal(doc.fileSize / 1024.0, 1, 'COMMA', 1, 'POINT') + ' KB' : #numbers.formatDecimal(doc.fileSize / 1024.0 / 1024.0, 1, 'COMMA', 1, 'POINT') + ' MB'}) + ')'">
+                                        ten_file.pdf (1.2 MB)
+                                    </span>
+                </small>
+              </div>
+            </div>
+          </div>
+
+          <hr>
+
+          <div class="d-flex gap-3">
+            <form th:action="@{/posts/{postId}/like(postId=${post.id})}" method="POST" class="d-inline">
+              <button type="submit" class="btn btn-link text-decoration-none p-0"
+                      th:with="liked = ${#lists.contains(post.reactions.![user.id], currentUserId)}"
+                      th:classappend="${liked ? 'text-primary fw-bold' : 'text-dark'}">
+                👍 Thích
+                <span th:text="${post.reactions.size()}">0</span>
+              </button>
+            </form>
+            <a href="#" class="text-decoration-none text-dark">
+              💬 Bình luận
+              <span th:text="${post.comments.size()}">0</span>
+            </a>
+          </div>
+
+          <hr>
+
+          <div class="comments-section">
+            <div th:each="comment : ${post.comments}" class="mb-2 d-flex">
+              <div class="post-author-avatar me-2" style="width: 32px; height: 32px; font-size: 0.9rem;">
+                <img th:if="${comment.user.avatarUrl != null}"
+                     th:src="@{/view-file/{fileName}(fileName=${comment.user.avatarUrl})}"
+                     alt="Avatar">
+                <span th:if="${comment.user.avatarUrl == null}"
+                      th:text="${#strings.substring(comment.user.name, 0, 1)}">
+                                </span>
+              </div>
+              <div class="ms-2" style="background-color: #f0f2f5; border-radius: 15px; padding: 8px 12px; flex-grow: 1;">
+                <strong>
+                  <a th:href="@{/profile/{username}(username=${comment.user.username})}"
+                     th:text="${comment.user.name}">
+                    Tên User
+                  </a>
+                </strong>
+                <p th:text="${comment.content}" class="mb-0">Nội dung bình luận.</p>
+                <small class="text-muted" th:text="${#temporals.format(comment.createdAt, 'HH:mm dd/MM/yyyy')}"></small>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-3" sec:authorize="isAuthenticated()">
+            <form th:action="@{/posts/{postId}/comment(postId=${post.id})}"
+                  th:object="${commentDto}" method="POST" class="d-flex">
+              <div class="post-author-avatar me-2" style="width: 32px; height: 32px; font-size: 0.9rem;">
+                <img th:if="${currentUser != null && currentUser.avatarUrl != null}"
+                     th:src="@{/view-file/{fileName}(fileName=${currentUser.avatarUrl})}"
+                     alt="Avatar">
+                <span th:if="${currentUser == null || currentUser.avatarUrl == null}"
+                      th:text="${currentUser != null ? #strings.substring(currentUser.name, 0, 1) : '?'}">
+                                </span>
+              </div>
+
+              <input type="text" class="form-control" th:field="*{content}"
+                     placeholder="Viết bình luận..." style="border-radius: 20px;"/>
+              <button type="submit" class="btn btn-primary ms-2" style="border-radius: 20px;">Gửi</button>
+            </form>
+          </div>
+
+        </div>
+      </div>
+
+        </div>
+      </div>
+</div>
+</body>
+</html>
