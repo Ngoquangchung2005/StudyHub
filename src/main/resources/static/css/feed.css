@@ -1,0 +1,21 @@
+/* Đổi màu nền body giống Facebook */
+body {
+    background-color: #f0f2f5;
+}
+
+/* Tùy chỉnh thẻ .card (bài đăng)
+  - Bỏ viền (border)
+  - Bo tròn (border-radius)
+*/
+.card {
+    border: none;
+    border-radius: 0.5rem; /* 8px */
+}
+
+/* Styling cho sidebar (chưa dùng nhiều)
+  Chúng ta có thể làm cho nó "dính" lại khi cuộn sau
+*/
+.sidebar-left, .sidebar-right {
+    position: sticky;
+    top: 76px; /* 76px = chiều cao của navbar + margin-bottom */
+}
