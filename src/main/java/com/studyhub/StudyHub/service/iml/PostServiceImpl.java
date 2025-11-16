@@ -27,7 +27,9 @@ public class PostServiceImpl implements PostService {
     @Autowired private CommentRepository commentRepository;
     @Autowired private ReactionRepository reactionRepository;
 
-    // Helper: Lấy user hiện tại
+    // === THÊM DÒNG NÀY ===
+    @Autowired private CategoryRepository categoryRepository;
+
     private User getCurrentUser(Principal principal) {
         String username = principal.getName();
         return userRepository.findByUsernameOrEmail(username, username)
@@ -35,14 +37,13 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    @Transactional(readOnly = true) // Chỉ đọc
+    @Transactional(readOnly = true)
     public List<Post> getAllPostsSortedByDate() {
-        // Dùng query tối ưu (N+1)
         return postRepository.findAllWithDetails(Sort.by(Sort.Direction.DESC, "createdAt"));
     }
 
     @Override
-    @Transactional // Có ghi CSDL
+    @Transactional
     public void createPost(PostDto postDto, Principal principal) {
         User user = getCurrentUser(principal);
 
@@ -50,28 +51,44 @@ public class PostServiceImpl implements PostService {
         post.setContent(postDto.getContent());
         post.setUser(user);
 
-        // Xử lý Upload File
+        // === THÊM ĐOẠN NÀY: Xử lý upload file ===
         Set<Document> documents = new HashSet<>();
         if (postDto.getFiles() != null && postDto.getFiles().length > 0) {
             for (MultipartFile file : postDto.getFiles()) {
                 if (!file.isEmpty()) {
-                    String storagePath = storageService.saveFile(file); // Lưu file
+                    String storagePath = storageService.saveFile(file);
 
                     Document doc = new Document();
                     doc.setFileName(file.getOriginalFilename());
                     doc.setFileType(file.getContentType());
                     doc.setStoragePath(storagePath);
                     doc.setPost(post);
+                    doc.setUser(user); // THÊM: Lưu user upload
+
+                    // === THÊM: Lưu thông tin mới ===
+                    doc.setTitle(postDto.getTitle() != null ? postDto.getTitle() : file.getOriginalFilename());
+                    doc.setDescription(postDto.getDescription());
+                    doc.setTags(postDto.getTags());
+                    doc.setFileSize(file.getSize());
+                    doc.setIsPublic(postDto.getIsPublic() != null ? postDto.getIsPublic() : true);
+
+                    // === THÊM: Gán category nếu có ===
+                    if (postDto.getCategoryId() != null) {
+                        Category category = categoryRepository.findById(postDto.getCategoryId())
+                                .orElse(null);
+                        doc.setCategory(category);
+                    }
+
                     documents.add(doc);
                 }
             }
         }
         post.setDocuments(documents);
 
-        // Lưu Post (và Document sẽ tự động lưu theo nhờ CascadeType.ALL)
         postRepository.save(post);
     }
 
+    // === CÁC METHOD CŨ (GIỮ NGUYÊN) ===
     @Override
     @Transactional
     public void addComment(Long postId, CommentDto commentDto, Principal principal) {
@@ -85,7 +102,6 @@ public class PostServiceImpl implements PostService {
         comment.setPost(post);
 
         commentRepository.save(comment);
-        // (Sẽ nâng cấp gửi thông báo ở Phần 4)
     }
 
     @Override
@@ -93,14 +109,11 @@ public class PostServiceImpl implements PostService {
     public void toggleLike(Long postId, Principal principal) {
         User user = getCurrentUser(principal);
 
-        // Kiểm tra xem đã like chưa
         Optional<Reaction> existingLike = reactionRepository.findByPostIdAndUserId(postId, user.getId());
 
         if (existingLike.isPresent()) {
-            // Đã like -> Xóa like (Unlike)
             reactionRepository.delete(existingLike.get());
         } else {
-            // Chưa like -> Thêm like
             Post post = postRepository.findById(postId)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy Post"));
 
@@ -109,7 +122,6 @@ public class PostServiceImpl implements PostService {
             reaction.setUser(user);
             reaction.setPost(post);
             reactionRepository.save(reaction);
-            // (Sẽ nâng cấp gửi thông báo ở Phần 4)
         }
     }
 }
