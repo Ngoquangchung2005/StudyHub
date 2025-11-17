@@ -71,18 +71,17 @@ public class ChatDTOs {
         private Long fileSize;
         private String mimeType;
     }
-
     @Data
     public static class MessageDto {
         private Long id;
         private String content;
-        private LocalDateTime timestamp;
+        private String timestamp; // <--- ĐỔI TỪ LocalDateTime SANG String
         private Long senderId;
         private String senderName;
         private Long roomId;
         private boolean isRecalled;
 
-        // === THÊM CÁC TRƯỜNG MỚI ===
+        // Các trường file
         private Message.MessageType type;
         private String filePath;
         private String fileName;
@@ -92,7 +91,14 @@ public class ChatDTOs {
         public MessageDto(Message msg) {
             this.id = msg.getId();
             this.content = msg.getContent();
-            this.timestamp = msg.getTimestamp();
+
+            // <--- SỬA ĐOẠN NÀY: Format ngày giờ thành chuỗi ISO chuẩn
+            if (msg.getTimestamp() != null) {
+                this.timestamp = msg.getTimestamp().toString(); // VD: "2023-11-17T10:30:00"
+            } else {
+                this.timestamp = java.time.LocalDateTime.now().toString();
+            }
+
             this.senderId = msg.getSender().getId();
             this.senderName = msg.getSender().getName();
             this.roomId = msg.getRoom().getId();
@@ -104,7 +110,6 @@ public class ChatDTOs {
             this.mimeType = msg.getMimeType();
         }
     }
-
     @Data
     public static class TypingDto {
         private Long roomId;

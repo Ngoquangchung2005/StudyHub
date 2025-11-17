@@ -2,8 +2,8 @@
 
 // --- Biến toàn cục ---
 const messageForm = document.querySelector('#messageForm');
-const messageInput = document.querySelector('#message');
-const messageSendBtn = messageForm.querySelector('button');
+const messageInput = document.querySelector('#message');// Sửa selector để chọn đúng nút có type="submit"
+const messageSendBtn = messageForm.querySelector('button[type="submit"]');
 const messageArea = document.querySelector('#chat-messages-window');
 const chatRoomList = document.querySelector('#chat-room-list');
 const chatMainWindow = document.querySelector('#chat-main-window');
@@ -148,13 +148,21 @@ async function uploadFile(file) {
     const formData = new FormData();
     formData.append('file', file);
 
+    // === LẤY TOKEN CSRF TỪ META TAGS (Đã thêm ở Bước 2) ===
+    const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+    const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+
     try {
         const response = await fetch('/api/chat/upload', {
             method: 'POST',
+            headers: {
+                // === THÊM HEADER CSRF VÀO REQUEST ===
+                [csrfHeader]: csrfToken
+            },
             body: formData
         });
 
-        if (!response.ok) throw new Error('Upload thất bại');
+        if (!response.ok) throw new Error('Upload thất bại (' + response.status + ')');
 
         const data = await response.json();
         uploadedFilePath = data.filePath;
@@ -163,7 +171,7 @@ async function uploadFile(file) {
 
     } catch (error) {
         console.error('Lỗi upload:', error);
-        alert('Lỗi upload file!');
+        alert('Lỗi upload file! Vui lòng thử lại.');
         cancelFileUpload();
     }
 }
