@@ -36,4 +36,6 @@ public class Message {
 
     // (Sẽ mở rộng sau)
     // private MessageType type; // TEXT, FILE, SHARED_POST
+    @Column(name = "is_recalled", nullable = false)
+    private boolean isRecalled = false;
 }

@@ -88,6 +88,7 @@ public class ChatDTOs {
         private Long senderId;
         private String senderName;
         private Long roomId;
+        private boolean isRecalled; // <-- THÊM
 
         public MessageDto(com.studyhub.StudyHub.entity.Message msg) {
             this.id = msg.getId();
@@ -96,6 +97,7 @@ public class ChatDTOs {
             this.senderId = msg.getSender().getId();
             this.senderName = msg.getSender().getName();
             this.roomId = msg.getRoom().getId();
+            this.isRecalled = msg.isRecalled(); // <-- THÊM
         }
     }
 
