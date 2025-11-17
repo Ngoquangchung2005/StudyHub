@@ -64,7 +64,8 @@ public class SecurityConfig {
                                         "default-src 'self'; " +
                                                 "style-src 'self' https://cdn.jsdelivr.net; " +
                                                 "script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; " +
-                                                "connect-src 'self' ws://localhost:8080 wss://localhost:8080"
+                                                "img-src 'self' data:; " + // Cho phép ảnh
+                                                "connect-src 'self' ws: wss: http: https:;" // <-- DÒNG QUAN TRỌNG ĐỂ CHAT LAN
                                 )
                         )
                 );
