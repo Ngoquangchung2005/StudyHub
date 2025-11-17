@@ -213,103 +213,113 @@ function onMessageSubmit(event) {
         cancelFileUpload();
         sendTypingEvent(false);
     }
-}
-
+}// ===========================================
+// === THU HỒI TIN NHẮN (ĐÃ SỬA: BỎ CONFIRM) ===
 // ===========================================
-// === HIỂN THỊ TIN NHẮN
+function recallMessage(messageId) {
+    // KHÔNG DÙNG CONFIRM NỮA
+    const recallDto = {
+        messageId: messageId,
+        roomId: currentRoomId
+    };
+    stompClient.send("/app/chat.recallMessage", {}, JSON.stringify(recallDto));
+}
+// ===========================================
+// === HIỂN THỊ TIN NHẮN (VỚI POPUP MENU) ===
 // ===========================================
 function displayMessage(messageDto) {
     const messageContainer = document.createElement('div');
     messageContainer.classList.add('msg-container');
     messageContainer.setAttribute('data-message-id', messageDto.id);
 
-    const type = messageDto.senderId == currentUserId ? 'sent' : 'received';
+    const type = String(messageDto.senderId) === String(currentUserId) ? 'sent' : 'received';
     messageContainer.classList.add(type);
 
-    const time = new Date(messageDto.timestamp);
-    const formattedTime = time.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    // Time formatting
+    let formattedTime = '';
+    try {
+        const time = new Date(messageDto.timestamp);
+        formattedTime = time.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    } catch (e) {}
 
+    // Content
     let bubbleContent = '';
-
-    // === XỬ LÝ TIN NHẮN BỊ THU HỒI ===
     if (messageDto.isRecalled) {
         messageContainer.innerHTML = `
-            <div class="msg-bubble recalled">
-                <em>Tin nhắn đã được thu hồi</em>
-            </div>
+            <div class="msg-bubble recalled"><em>Tin nhắn đã được thu hồi</em></div>
             <div class="msg-time">${formattedTime}</div>
         `;
         messageArea.appendChild(messageContainer);
         return;
     }
 
-    // === XỬ LÝ THEO LOẠI TIN NHẮN ===
     if (messageDto.type === 'IMAGE') {
-        bubbleContent = `
-            ${type === 'received' ? `<strong class="d-block">${messageDto.senderName}</strong>` : ''}
-            <img src="/view-file/${messageDto.filePath}" 
-                 style="max-width: 300px; border-radius: 10px; cursor: pointer;"
-                 onclick="window.open('/view-file/${messageDto.filePath}', '_blank')">
-            ${messageDto.content ? `<p class="mt-2 mb-0">${messageDto.content}</p>` : ''}
-        `;
+        bubbleContent = `<img src="/view-file/${messageDto.filePath}" style="max-width: 300px; border-radius: 10px; cursor: pointer;" onclick="window.open('/view-file/${messageDto.filePath}')">`;
     } else if (messageDto.type === 'FILE') {
-        const fileIcon = getFileIcon(messageDto.mimeType);
-        const fileSize = (messageDto.fileSize / 1024 / 1024).toFixed(2) + ' MB';
+        const fileSize = messageDto.fileSize ? (messageDto.fileSize / 1024 / 1024).toFixed(2) + ' MB' : '';
         bubbleContent = `
-            ${type === 'received' ? `<strong class="d-block">${messageDto.senderName}</strong>` : ''}
             <div class="file-message">
-                <span style="font-size: 2rem;">${fileIcon}</span>
-                <div class="ms-2">
-                    <strong>${messageDto.fileName}</strong>
-                    <br><small>${fileSize}</small>
-                </div>
-                <a href="/download/${messageDto.filePath}" class="btn btn-sm btn-primary ms-2">
-                    Tải xuống
-                </a>
+                <span style="font-size: 2rem;">${getFileIcon(messageDto.mimeType || '')}</span>
+                <div class="ms-2"><strong>${messageDto.fileName}</strong><br><small>${fileSize}</small></div>
+                <a href="/download/${messageDto.filePath}" class="btn btn-sm btn-primary ms-2">Tải</a>
             </div>
-            ${messageDto.content ? `<p class="mt-2 mb-0">${messageDto.content}</p>` : ''}
         `;
     } else {
-        // TEXT
-        bubbleContent = `
-            ${type === 'received' ? `<strong class="d-block">${messageDto.senderName}</strong>` : ''}
-            ${messageDto.content}
+        bubbleContent = messageDto.content;
+    }
+
+    if (messageDto.content && messageDto.type !== 'TEXT') {
+        bubbleContent += `<p class="mt-2 mb-0">${messageDto.content}</p>`;
+    }
+
+    // === MENU POPUP ===
+    let actionHtml = '';
+    if (type === 'sent') {
+        actionHtml = `
+            <div class="msg-actions">
+                <button type="button" class="btn-option">⋯</button>
+                <div class="action-popup">
+                    <div class="action-item btn-confirm-recall">Thu hồi</div>
+                </div>
+            </div>
         `;
     }
 
-    // === THÊM NÚT THU HỒI (CHỈ CHO TIN NHẮN CỦA MÌNH) ===
-    const recallBtn = type === 'sent' ? `
-        <div class="msg-actions">
-            <button class="btn btn-sm btn-secondary" onclick="recallMessage(${messageDto.id})">
-                ⋯
-            </button>
-        </div>
-    ` : '';
-
     messageContainer.innerHTML = `
-        ${recallBtn}
-        <div class="msg-bubble">
-            ${bubbleContent}
-        </div>
+        ${actionHtml}
+        <div class="msg-bubble">${bubbleContent}</div>
         <div class="msg-time">${formattedTime}</div>
     `;
 
+    // === GÁN SỰ KIỆN CLICK ===
+    if (type === 'sent') {
+        const btnOption = messageContainer.querySelector('.btn-option');
+        const popup = messageContainer.querySelector('.action-popup');
+        const btnRecall = messageContainer.querySelector('.btn-confirm-recall');
+
+        // 1. Mở/Đóng Popup
+        btnOption.addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.querySelectorAll('.action-popup.show').forEach(el => { if(el !== popup) el.classList.remove('show'); });
+            popup.classList.toggle('show');
+        });
+
+        // 2. Bấm "Thu hồi" -> Gửi lệnh ngay
+        btnRecall.addEventListener('click', (e) => {
+            e.stopPropagation();
+            recallMessage(messageDto.id);
+            popup.classList.remove('show');
+        });
+    }
+
     messageArea.appendChild(messageContainer);
 }
+// Đóng popup khi click ra ngoài
+document.addEventListener('click', () => {
+    document.querySelectorAll('.action-popup.show').forEach(el => el.classList.remove('show'));
+});
 
-// ===========================================
-// === THU HỒI TIN NHẮN
-// ===========================================
-function recallMessage(messageId) {
-    if (!confirm('Bạn có chắc muốn thu hồi tin nhắn này?')) return;
 
-    const recallDto = {
-        messageId: messageId,
-        roomId: currentRoomId
-    };
-
-    stompClient.send("/app/chat.recallMessage", {}, JSON.stringify(recallDto));
-}
 
 // ===========================================
 // === CÁC HÀM CŨ (GIỮ NGUYÊN)
@@ -513,12 +523,34 @@ function updateTypingIndicator() {
         typingIndicator.textContent = "Nhiều người đang gõ...";
     }
 }
-
+// ===========================================
+// === XỬ LÝ TIN NHẮN REALTIME (KHÔNG RELOAD) ===
+// ===========================================
 function onMessageReceived(payload) {
     const messageDto = JSON.parse(payload.body);
+
     if (messageDto.roomId == currentRoomId) {
-        displayMessage(messageDto);
-        scrollToBottom();
+        // 1. Tìm tin nhắn cũ trên màn hình
+        const existingElement = document.querySelector(`.msg-container[data-message-id="${messageDto.id}"]`);
+
+        if (existingElement) {
+            // === UPDATE (KHI THU HỒI) ===
+            if (messageDto.isRecalled) {
+                const bubble = existingElement.querySelector('.msg-bubble');
+
+                // Cập nhật giao diện ngay lập tức
+                bubble.innerHTML = '<em>Tin nhắn đã được thu hồi</em>';
+                bubble.classList.add('recalled');
+
+                // Xóa menu đi
+                const actions = existingElement.querySelector('.msg-actions');
+                if (actions) actions.remove();
+            }
+        } else {
+            // === TIN NHẮN MỚI ===
+            displayMessage(messageDto);
+            scrollToBottom();
+        }
     }
 }
 

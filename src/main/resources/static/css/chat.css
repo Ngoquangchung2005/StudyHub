@@ -83,98 +83,115 @@
     background-color: #f0f2f5;
 }
 
-/* --- BONG BÓNG CHAT --- */
+/* =========================================
+   PHẦN SỬA LỖI NÚT 3 CHẤM (ÁP DỤNG TOÀN BỘ)
+   ========================================= */
 .msg-container {
     display: flex;
     margin-bottom: 10px;
     position: relative;
+    align-items: center; /* Căn giữa dọc để nút luôn thẳng hàng với tin nhắn */
 }
+
 .msg-bubble {
-    padding: 10px 15px; border-radius: 18px;
-    max-width: 70%; word-wrap: break-word;
+    padding: 10px 15px;
+    border-radius: 18px;
+    max-width: 70%;
+    word-wrap: break-word;
 }
+
 .msg-container.sent { justify-content: flex-end; }
 .msg-container.sent .msg-bubble { background-color: #007bff; color: white; }
+
 .msg-container.received { justify-content: flex-start; }
 .msg-container.received .msg-bubble { background-color: #e9e9eb; color: black; }
-.msg-time { font-size: 0.75rem; color: #6c757d; margin-top: 4px; }
-.msg-container.sent .msg-time { text-align: right; }
 
-/* --- TIN NHẮN BỊ THU HỒI --- */
-.msg-bubble.recalled {
-    background-color: transparent !important;
-    color: #6c757d !important;
-    border: 1px solid #e9e9eb;
-    font-style: italic;
+.msg-time {
+    font-size: 0.75rem;
+    color: #6c757d;
+    margin-top: 4px;
+    width: 100%; /* Để thời gian xuống dòng */
+    flex-basis: 100%;
+    display: none; /* Ẩn thời gian mặc định cho gọn, hoặc bỏ dòng này nếu muốn hiện */
 }
+/* ============================================
+   CSS CHO POPUP MENU THU HỒI
+   ============================================ */
 
-/* --- NÚT THU HỒI (...) --- */
+/* Container chứa nút 3 chấm và menu */
 .msg-actions {
-    visibility: hidden;
-    opacity: 0;
-    transition: opacity 0.2s;
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
+    position: relative; /* Để menu con định vị theo nó */
 }
 
-.msg-container.sent .msg-actions {
-    left: -30px;
-}
-.msg-container.received .msg-actions {
-    right: -30px;
-}
-
-.msg-container:hover .msg-actions {
-    visibility: visible;
-    opacity: 1;
-}
-
-.msg-actions .btn {
-    padding: 0.1rem 0.4rem;
-    font-size: 0.8rem;
-    line-height: 1;
+/* Nút 3 chấm */
+.msg-actions .btn-option {
     border: none;
-}
-
-/* --- FILE MESSAGE --- */
-.file-message {
+    background: #f0f2f5;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 10px;
-    background-color: rgba(255,255,255,0.1);
-    border-radius: 10px;
+    justify-content: center;
+    cursor: pointer;
+    color: #65676b;
+    transition: background 0.2s;
 }
 
-.msg-container.sent .file-message {
-    background-color: rgba(255,255,255,0.2);
+.msg-actions .btn-option:hover {
+    background: #e4e6eb;
 }
 
-.msg-container.received .file-message {
-    background-color: rgba(0,0,0,0.05);
+/* Menu Popup (Mặc định ẩn) */
+.action-popup {
+    display: none; /* Ẩn */
+    position: absolute;
+    bottom: 100%; /* Hiện bên trên nút */
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    padding: 5px;
+    min-width: 100px;
+    z-index: 1000;
+    margin-bottom: 5px;
+    animation: fadeIn 0.2s ease;
 }
 
-/* --- TRẠNG THÁI CHƯA CHỌN --- */
-#chat-welcome-screen {
-    display: flex; align-items: center; justify-content: center;
-    height: 100%; flex-direction: column; color: #6c757d;
+/* Mũi tên nhỏ trỏ xuống (trang trí) */
+.action-popup::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: white transparent transparent transparent;
 }
 
-/* --- RESPONSIVE --- */
-@media (max-width: 768px) {
-    .chat-sidebar {
-        width: 100%;
-        min-width: 0;
-    }
+/* Class để hiện menu */
+.action-popup.show {
+    display: block;
+}
 
-    .msg-bubble {
-        max-width: 85%;
-    }
+/* Item trong menu (Nút Thu hồi) */
+.action-item {
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    color: #dc3545; /* Màu đỏ cho cảnh báo */
+    cursor: pointer;
+    border-radius: 4px;
+    text-align: center;
+    font-weight: 500;
+}
 
-    .msg-actions {
-        position: static;
-        transform: none;
-        margin-left: 5px;
-    }
+.action-item:hover {
+    background-color: #f8f9fa;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translate(-50%, 10px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
 }
