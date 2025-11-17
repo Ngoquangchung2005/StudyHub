@@ -1,9 +1,3 @@
-/* Tắt file css này vì bạn đã có file feed.css
-   (Chúng ta sẽ dùng chung 1 file, hoặc bạn có thể
-    di chuyển CSS từ feed.css sang chat.css nếu muốn)
-   -> Quyết định: Dùng file `chat.css` ở lần trước chúng ta đã làm
-*/
-
 /* --- TỔNG THỂ GIAO DIỆN CHAT --- */
 .chat-app-container {
     display: flex;
@@ -11,7 +5,7 @@
     border: 1px solid #ddd;
     border-radius: 0.25rem;
     overflow: hidden;
-    background-color: #fff; /* Nền trắng */
+    background-color: #fff;
 }
 
 /* --- CỘT BÊN TRÁI (DANH SÁCH USER/ROOM) --- */
@@ -31,7 +25,7 @@
 }
 .sidebar-content { overflow-y: auto; flex-grow: 1; }
 
-.user-list-item { /* Dùng cho cả room và user */
+.user-list-item {
     display: flex;
     align-items: center;
     padding: 0.75rem 1rem;
@@ -51,9 +45,9 @@
 .status-dot {
     height: 10px; width: 10px; border-radius: 50%;
     display: inline-block; margin-right: 5px;
-    background-color: #ccc; /* Offline */
+    background-color: #ccc;
 }
-.status-dot.online { background-color: #28a745; /* Online */ }
+.status-dot.online { background-color: #28a745; }
 
 /* --- CỘT GIỮA (KHUNG CHAT CHÍNH) --- */
 .chat-main {
@@ -82,56 +76,55 @@
     padding: 0 1rem;
 }
 
+/* --- FILE PREVIEW BAR --- */
+.file-preview-bar {
+    padding: 0.75rem 1rem;
+    border-top: 1px solid #ddd;
+    background-color: #f0f2f5;
+}
+
 /* --- BONG BÓNG CHAT --- */
-.msg-container { display: flex; margin-bottom: 10px; }
+.msg-container {
+    display: flex;
+    margin-bottom: 10px;
+    position: relative;
+}
 .msg-bubble {
     padding: 10px 15px; border-radius: 18px;
     max-width: 70%; word-wrap: break-word;
 }
-/* Tin nhắn đã gửi (bên phải) */
 .msg-container.sent { justify-content: flex-end; }
 .msg-container.sent .msg-bubble { background-color: #007bff; color: white; }
-/* Tin nhắn đã nhận (bên trái) */
 .msg-container.received { justify-content: flex-start; }
 .msg-container.received .msg-bubble { background-color: #e9e9eb; color: black; }
 .msg-time { font-size: 0.75rem; color: #6c757d; margin-top: 4px; }
 .msg-container.sent .msg-time { text-align: right; }
 
-/* Trạng thái "chưa chọn" */
-#chat-welcome-screen {
-    display: flex; align-items: center; justify-content: center;
-    height: 100%; flex-direction: column; color: #6c757d;
-}
-/* ... (Tất cả CSS cũ của bạn) ... */
-
-/* --- CSS CHO TIN NHẮN BỊ THU HỒI --- */
+/* --- TIN NHẮN BỊ THU HỒI --- */
 .msg-bubble.recalled {
     background-color: transparent !important;
-    color: #6c757d !important; /* Màu xám */
+    color: #6c757d !important;
     border: 1px solid #e9e9eb;
     font-style: italic;
 }
 
-/* --- CSS CHO NÚT "..." (THU HỒI) --- */
+/* --- NÚT THU HỒI (...) --- */
 .msg-actions {
-    visibility: hidden; /* Ẩn nút */
+    visibility: hidden;
     opacity: 0;
     transition: opacity 0.2s;
-
-    /* Đặt nút ở bên trái hoặc phải */
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
 }
 
 .msg-container.sent .msg-actions {
-    left: -30px; /* Bên trái bong bóng chat */
+    left: -30px;
 }
 .msg-container.received .msg-actions {
-    right: -30px; /* Bên phải bong bóng chat */
+    right: -30px;
 }
 
-/* Khi hover vào tin nhắn, hiện nút */
 .msg-container:hover .msg-actions {
     visibility: visible;
     opacity: 1;
@@ -142,4 +135,46 @@
     font-size: 0.8rem;
     line-height: 1;
     border: none;
+}
+
+/* --- FILE MESSAGE --- */
+.file-message {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background-color: rgba(255,255,255,0.1);
+    border-radius: 10px;
+}
+
+.msg-container.sent .file-message {
+    background-color: rgba(255,255,255,0.2);
+}
+
+.msg-container.received .file-message {
+    background-color: rgba(0,0,0,0.05);
+}
+
+/* --- TRẠNG THÁI CHƯA CHỌN --- */
+#chat-welcome-screen {
+    display: flex; align-items: center; justify-content: center;
+    height: 100%; flex-direction: column; color: #6c757d;
+}
+
+/* --- RESPONSIVE --- */
+@media (max-width: 768px) {
+    .chat-sidebar {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .msg-bubble {
+        max-width: 85%;
+    }
+
+    .msg-actions {
+        position: static;
+        transform: none;
+        margin-left: 5px;
+    }
 }

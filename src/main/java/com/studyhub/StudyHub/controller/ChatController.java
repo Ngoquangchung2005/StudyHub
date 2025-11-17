@@ -1,6 +1,5 @@
 package com.studyhub.StudyHub.controller;
 
-
 import com.studyhub.StudyHub.dto.ChatDTOs;
 import com.studyhub.StudyHub.entity.ChatRoom;
 import com.studyhub.StudyHub.entity.Message;
@@ -26,37 +25,73 @@ public class ChatController {
     @Autowired private ChatRoomRepository chatRoomRepository;
 
     /**
-     * Xử lý gửi tin nhắn (Client -> Server)
+     * Xử lý gửi tin nhắn (TEXT, IMAGE, FILE)
      */
     @MessageMapping("/chat.sendMessage")
-    @Transactional // Dùng Transactional để lấy sender và room
+    @Transactional
     public void sendMessage(@Payload ChatDTOs.SendMessageDto dto, Principal principal) {
 
-        // === SỬA LỖI Ở ĐÂY ===
-        // 1. Lấy email (principal.getName())
         String usernameOrEmail = principal.getName();
-        // 2. Tìm bằng findByUsernameOrEmail
         User sender = userRepository.findByUsernameOrEmail(usernameOrEmail, usernameOrEmail)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy user: " + usernameOrEmail));
-        // === KẾT THÚC SỬA LỖI ===
 
-        // 3. Tìm phòng chat
         ChatRoom room = chatRoomRepository.findById(dto.getRoomId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy phòng: " + dto.getRoomId()));
 
-        // 4. Tạo và lưu tin nhắn
+        // Tạo và lưu tin nhắn
         Message message = new Message();
         message.setSender(sender);
         message.setRoom(room);
         message.setContent(dto.getContent());
 
+        // === XỬ LÝ FILE/IMAGE ===
+        if (dto.getType() != null) {
+            message.setType(dto.getType());
+        } else {
+            message.setType(Message.MessageType.TEXT);
+        }
+
+        message.setFilePath(dto.getFilePath());
+        message.setFileName(dto.getFileName());
+        message.setFileSize(dto.getFileSize());
+        message.setMimeType(dto.getMimeType());
+
         Message savedMessage = messageRepository.save(message);
 
-        // 5. Tạo DTO trả về (đầy đủ)
+        // Tạo DTO trả về
         ChatDTOs.MessageDto messageDto = new ChatDTOs.MessageDto(savedMessage);
 
-        // 6. Gửi tin nhắn đến TẤT CẢ MỌI NGƯỜI trong phòng
+        // Gửi tin nhắn đến tất cả mọi người trong phòng
         messagingTemplate.convertAndSend("/topic/room/" + room.getId(), messageDto);
+    }
+
+    /**
+     * Xử lý thu hồi tin nhắn
+     */
+    @MessageMapping("/chat.recallMessage")
+    @Transactional
+    public void recallMessage(@Payload ChatDTOs.RecallMessageDto dto, Principal principal) {
+
+        String usernameOrEmail = principal.getName();
+        User currentUser = userRepository.findByUsernameOrEmail(usernameOrEmail, usernameOrEmail)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy user"));
+
+        Message message = messageRepository.findById(dto.getMessageId())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy tin nhắn"));
+
+        // Kiểm tra quyền thu hồi (chỉ người gửi mới được thu hồi)
+        if (!message.getSender().getId().equals(currentUser.getId())) {
+            throw new RuntimeException("Bạn không có quyền thu hồi tin nhắn này");
+        }
+
+        // Đánh dấu tin nhắn đã thu hồi
+        message.setRecalled(true);
+        message.setContent("Tin nhắn đã được thu hồi");
+        messageRepository.save(message);
+
+        // Gửi thông báo thu hồi đến tất cả mọi người
+        ChatDTOs.MessageDto messageDto = new ChatDTOs.MessageDto(message);
+        messagingTemplate.convertAndSend("/topic/room/" + dto.getRoomId(), messageDto);
     }
 
     /**
@@ -64,11 +99,8 @@ public class ChatController {
      */
     @MessageMapping("/chat.typing")
     public void handleTyping(@Payload ChatDTOs.TypingDto dto, Principal principal) {
-        // Gán username (chứ không phải email) của người gõ
-        // (Lưu ý: Nếu principal là email, chúng ta cần tìm username)
         User user = userRepository.findByUsernameOrEmail(principal.getName(), principal.getName()).orElseThrow();
-        dto.setUsername(user.getUsername()); // Gửi username thật
-
+        dto.setUsername(user.getUsername());
         messagingTemplate.convertAndSend("/topic/room/" + dto.getRoomId() + "/typing", dto);
     }
 }

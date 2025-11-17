@@ -4,72 +4,106 @@
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorate="~{layout.html}">
 <head>
-  <title>Chat Realtime</title>
+    <title>Chat Realtime</title>
 </head>
 <body>
 
 <div layout:fragment="content">
 
-  <input type="hidden" id="current-user-id" th:value="${currentUserId}" />
-  <input type="hidden" id="current-username" th:value="${currentUsername}" />
+    <input type="hidden" id="current-user-id" th:value="${currentUserId}" />
+    <input type="hidden" id="current-username" th:value="${currentUsername}" />
 
-  <div class="chat-app-container">
+    <div class="chat-app-container">
 
-    <aside class="chat-sidebar">
-      <div class="sidebar-header">
-        <h5 class="mb-0">Tin nhắn</h5>
-        <button class="btn btn-primary btn-sm" id="new-chat-btn"
-                data-bs-toggle="modal" data-bs-target="#newUserChatModal">
-          + Tin nhắn mới
-        </button>
-      </div>
+        <aside class="chat-sidebar">
+            <div class="sidebar-header">
+                <h5 class="mb-0">Tin nhắn</h5>
+                <button class="btn btn-primary btn-sm" id="new-chat-btn"
+                        data-bs-toggle="modal" data-bs-target="#newUserChatModal">
+                    + Tin nhắn mới
+                </button>
+            </div>
 
-      <div class="sidebar-content" id="chat-room-list">
-      </div>
-    </aside>
+            <div class="sidebar-content" id="chat-room-list">
+            </div>
+        </aside>
 
-    <main class="chat-main" id="chat-main-window" style="display: none;">
+        <main class="chat-main" id="chat-main-window" style="display: none;">
 
-      <header class="chat-header" id="chat-main-header">
-      </header>
+            <header class="chat-header" id="chat-main-header">
+            </header>
 
-      <div class="chat-messages" id="chat-messages-window">
-      </div>
+            <div class="chat-messages" id="chat-messages-window">
+            </div>
 
-      <div class="typing-indicator" id="typing-indicator-area">
-      </div>
+            <div class="typing-indicator" id="typing-indicator-area">
+            </div>
 
-      <footer class="chat-footer">
-        <form id="messageForm" name="messageForm" class="d-flex">
-          <input type="text" id="message" autocomplete="off"
-                 class="form-control" placeholder="Nhập tin nhắn..." disabled />
-          <button type="submit" class="btn btn-primary ms-2" disabled>Gửi</button>
-        </form>
-      </footer>
-    </main>
+            <!-- === FILE PREVIEW === -->
+            <div id="file-preview" class="file-preview-bar" style="display: none;">
+                <div class="d-flex align-items-center">
+                    <span id="preview-file-icon" style="font-size: 2rem;">📁</span>
+                    <div class="ms-2">
+                        <strong id="preview-file-name">file.pdf</strong><br>
+                        <small id="preview-file-size">0 MB</small>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-danger ms-auto" id="cancel-file-btn">
+                        ❌ Hủy
+                    </button>
+                </div>
+            </div>
 
-    <main class="chat-main" id="chat-welcome-screen">
-      <div>
-        <h4>Chọn một cuộc trò chuyện</h4>
-        <p>Bắt đầu chat 1-1 hoặc chat nhóm.</p>
-      </div>
-    </main>
+            <footer class="chat-footer">
+                <form id="messageForm" name="messageForm" class="d-flex align-items-center gap-2">
 
-  </div> <div class="modal fade" id="newUserChatModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Bắt đầu chat mới</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <p>Chọn một người để bắt đầu trò chuyện 1-1:</p>
-        <div id="new-chat-user-list">
-        </div>
-      </div>
+                    <!-- Input file ẩn -->
+                    <input type="file" id="file-input" style="display: none;" />
+
+                    <!-- Nút gửi ảnh -->
+                    <button type="button" class="btn btn-outline-secondary" id="image-btn" title="Gửi ảnh">
+                        🖼️
+                    </button>
+
+                    <!-- Nút gửi file -->
+                    <button type="button" class="btn btn-outline-secondary" id="file-btn" title="Gửi file">
+                        📎
+                    </button>
+
+                    <!-- Input tin nhắn -->
+                    <input type="text" id="message" autocomplete="off"
+                           class="form-control" placeholder="Nhập tin nhắn..." disabled />
+
+                    <!-- Nút gửi -->
+                    <button type="submit" class="btn btn-primary" disabled>Gửi</button>
+                </form>
+            </footer>
+        </main>
+
+        <main class="chat-main" id="chat-welcome-screen">
+            <div>
+                <h4>Chọn một cuộc trò chuyện</h4>
+                <p>Bắt đầu chat 1-1 hoặc chat nhóm.</p>
+            </div>
+        </main>
+
     </div>
-  </div>
-</div>
+
+    <!-- Modal chọn user -->
+    <div class="modal fade" id="newUserChatModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Bắt đầu chat mới</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Chọn một người để bắt đầu trò chuyện 1-1:</p>
+                    <div id="new-chat-user-list">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
 </div>
 </body>

@@ -1,49 +1,40 @@
 package com.studyhub.StudyHub.dto;
 
-
-
 import com.studyhub.StudyHub.entity.ChatRoom;
+import com.studyhub.StudyHub.entity.Message;
 import com.studyhub.StudyHub.entity.User;
 import lombok.Data;
 import java.time.LocalDateTime;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-// Dùng 1 file để chứa các DTOs con
 public class ChatDTOs {
 
-    // Thông tin 1 User cơ bản
     @Data
     public static class UserDto {
         private Long id;
         private String name;
         private String username;
-        private String avatarUrl; // <-- THÊM DÒNG NÀY
+        private String avatarUrl;
 
         public UserDto(User user) {
             this.id = user.getId();
             this.name = user.getName();
             this.username = user.getUsername();
-            this.avatarUrl = user.getAvatarUrl(); // <-- THÊM DÒNG NÀY
+            this.avatarUrl = user.getAvatarUrl();
         }
     }
 
-    // Thông tin 1 Phòng chat (cho sidebar)
     @Data
     public static class ChatRoomDto {
         private Long id;
         private String name;
         private ChatRoom.RoomType type;
         private Set<UserDto> members;
-
-        // Dùng cho chat 1-1, để hiển thị tên "người kia"
         private String oneToOnePartnerName;
-        // === THÊM CÁC TRƯỜNG MỚI ===
         private Long oneToOnePartnerId;
         private String oneToOnePartnerUsername;
         private String oneToOnePartnerAvatarUrl;
-        // === KẾT THÚC TRƯỜNG MỚI ===
-
 
         public ChatRoomDto(ChatRoom room, User currentUser) {
             this.id = room.getId();
@@ -53,7 +44,6 @@ public class ChatDTOs {
                     .map(UserDto::new)
                     .collect(Collectors.toSet());
 
-            // === THAY THẾ KHỐI LỆNH if (this.type == ...) ===
             if (this.type == ChatRoom.RoomType.ONE_TO_ONE) {
                 room.getMembers().stream()
                         .filter(member -> !member.getId().equals(currentUser.getId()))
@@ -68,18 +58,20 @@ public class ChatDTOs {
                     this.oneToOnePartnerName = "Chat";
                 }
             }
-            // === KẾT THÚC THAY THẾ ===
         }
     }
 
-    // Gói tin khi Client GỬI tin nhắn
     @Data
     public static class SendMessageDto {
         private Long roomId;
         private String content;
+        private Message.MessageType type; // TEXT, IMAGE, FILE
+        private String filePath; // Đường dẫn file đã upload
+        private String fileName;
+        private Long fileSize;
+        private String mimeType;
     }
 
-    // Gói tin khi Server TRẢ VỀ tin nhắn (cho lịch sử và real-time)
     @Data
     public static class MessageDto {
         private Long id;
@@ -88,20 +80,31 @@ public class ChatDTOs {
         private Long senderId;
         private String senderName;
         private Long roomId;
-        private boolean isRecalled; // <-- THÊM
+        private boolean isRecalled;
 
-        public MessageDto(com.studyhub.StudyHub.entity.Message msg) {
+        // === THÊM CÁC TRƯỜNG MỚI ===
+        private Message.MessageType type;
+        private String filePath;
+        private String fileName;
+        private Long fileSize;
+        private String mimeType;
+
+        public MessageDto(Message msg) {
             this.id = msg.getId();
             this.content = msg.getContent();
             this.timestamp = msg.getTimestamp();
             this.senderId = msg.getSender().getId();
             this.senderName = msg.getSender().getName();
             this.roomId = msg.getRoom().getId();
-            this.isRecalled = msg.isRecalled(); // <-- THÊM
+            this.isRecalled = msg.isRecalled();
+            this.type = msg.getType();
+            this.filePath = msg.getFilePath();
+            this.fileName = msg.getFileName();
+            this.fileSize = msg.getFileSize();
+            this.mimeType = msg.getMimeType();
         }
     }
 
-    // Gói tin cho sự kiện "Đang gõ"
     @Data
     public static class TypingDto {
         private Long roomId;
@@ -109,10 +112,16 @@ public class ChatDTOs {
         private boolean isTyping;
     }
 
-    // Gói tin cho sự kiện Online/Offline
     @Data
     public static class PresenceDto {
         private String username;
-        private String status; // "ONLINE" hoặc "OFFLINE"
+        private String status;
+    }
+
+    // === DTO MỚI CHO THU HỒI TIN NHẮN ===
+    @Data
+    public static class RecallMessageDto {
+        private Long messageId;
+        private Long roomId;
     }
 }

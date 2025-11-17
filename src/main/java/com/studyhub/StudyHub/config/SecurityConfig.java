@@ -41,6 +41,7 @@ public class SecurityConfig {
                         .requestMatchers("/", "/login", "/register", "/js/**", "/css/**", "/ws/**").permitAll()
                         // Cho phép API tải lịch sử chat (sẽ dùng ở Phần 3)
                         .requestMatchers("/messages/**").authenticated()
+                        .requestMatchers("/api/chat/**").authenticated() // THÊM DÒNG NÀY
                         // Tất cả các yêu cầu khác đều cần đăng nhập
                         .anyRequest().authenticated()
                 )

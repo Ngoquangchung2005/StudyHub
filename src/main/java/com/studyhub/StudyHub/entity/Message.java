@@ -29,13 +29,41 @@ public class Message {
     @JoinColumn(name = "sender_id", nullable = false)
     private User sender;
 
-    // Phòng chat (thay vì recipient_id)
+    // Phòng chat
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "room_id", nullable = false)
     private ChatRoom room;
 
-    // (Sẽ mở rộng sau)
-    // private MessageType type; // TEXT, FILE, SHARED_POST
+    // Thu hồi tin nhắn
     @Column(name = "is_recalled", nullable = false)
     private boolean isRecalled = false;
+
+    // === THÊM CÁC TRƯỜNG MỚI ===
+
+    // Loại tin nhắn: TEXT, IMAGE, FILE
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20, nullable = false)
+    private MessageType type = MessageType.TEXT;
+
+    // Đường dẫn file (nếu là IMAGE hoặc FILE)
+    @Column(length = 500)
+    private String filePath;
+
+    // Tên file gốc
+    @Column(length = 255)
+    private String fileName;
+
+    // Kích thước file (bytes)
+    @Column
+    private Long fileSize;
+
+    // Loại MIME
+    @Column(length = 100)
+    private String mimeType;
+
+    public enum MessageType {
+        TEXT,
+        IMAGE,
+        FILE
+    }
 }

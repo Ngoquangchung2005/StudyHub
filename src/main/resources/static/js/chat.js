@@ -1,6 +1,6 @@
 'use strict';
 
-// --- Biến toàn cục (DOM Elements) ---
+// --- Biến toàn cục ---
 const messageForm = document.querySelector('#messageForm');
 const messageInput = document.querySelector('#message');
 const messageSendBtn = messageForm.querySelector('button');
@@ -13,22 +13,28 @@ const typingIndicator = document.querySelector('#typing-indicator-area');
 const newChatBtn = document.querySelector('#new-chat-btn');
 const newUserChatList = document.querySelector('#new-chat-user-list');
 
-// --- Biến STOMP và User ---
+// === THÊM CÁC ELEMENT MỚI ===
+const fileInput = document.querySelector('#file-input');
+const fileBtn = document.querySelector('#file-btn');
+const imageBtn = document.querySelector('#image-btn');
+const filePreview = document.querySelector('#file-preview');
+const cancelFileBtn = document.querySelector('#cancel-file-btn');
+
 const currentUserId = document.querySelector('#current-user-id').value;
 const currentUsername = document.querySelector('#current-username').value;
 let stompClient = null;
-
-// --- Biến Trạng thái ---
 let currentRoomId = null;
 let subscriptions = new Map();
 let typingTimeout = null;
-let presenceStatus = new Map(); // { username -> "ONLINE" | "OFFLINE" }
+let presenceStatus = new Map();
+let typingUsers = new Map();
 
-// === PHẦN "ĐANG GÕ" (1): Biến lưu ai đang gõ ===
-let typingUsers = new Map(); // { username -> timestamp }
+// === BIẾN MỚI CHO UPLOAD FILE ===
+let selectedFile = null;
+let uploadedFilePath = null;
 
 // ===========================================
-// === 1. KẾT NỐI VÀ KHỞI TẠO
+// === KẾT NỐI VÀ KHỞI TẠO
 // ===========================================
 function connect() {
     const socket = new SockJS('/ws');
@@ -39,11 +45,9 @@ function connect() {
 async function onConnected() {
     console.log('Đã kết nối WebSocket!');
 
-    // 1. Đăng ký các kênh
     stompClient.subscribe('/topic/presence', onPresenceMessageReceived);
     stompClient.subscribe(`/user/${currentUsername}/queue/notify`, onNotificationReceived);
 
-    // 2. HỎI SERVER AI ĐANG ONLINE (Fix lỗi Race Condition)
     try {
         const response = await fetch('/api/chat/online-users');
         const onlineUsernames = await response.json();
@@ -54,19 +58,32 @@ async function onConnected() {
         console.error("Không thể tải danh sách online:", error);
     }
 
-    // 3. TẢI DANH SÁCH PHÒNG CHAT
     loadChatRooms();
-
-    // 4. Gán sự kiện
     messageForm.addEventListener('submit', onMessageSubmit, true);
-    // === PHẦN "ĐANG GÕ" (2): Gán sự kiện cho ô input ===
     messageInput.addEventListener('input', onTypingInput);
     newChatBtn.addEventListener('click', loadUsersForNewChat);
+
+    // === GÁN SỰ KIỆN CHO NÚT FILE/IMAGE ===
+    fileBtn.addEventListener('click', () => {
+        fileInput.setAttribute('accept', '*/*');
+        fileInput.click();
+    });
+
+    imageBtn.addEventListener('click', () => {
+        fileInput.setAttribute('accept', 'image/*');
+        fileInput.click();
+    });
+
+    fileInput.addEventListener('change', handleFileSelect);
+    cancelFileBtn.addEventListener('click', cancelFileUpload);
+
+    checkUrlForRedirect();
 }
 
 function onError(error) {
     console.error('Không thể kết nối WebSocket: ' + error);
 }
+
 async function checkUrlForRedirect() {
     const urlParams = new URLSearchParams(window.location.search);
     const userIdToChat = urlParams.get('withUser');
@@ -74,36 +91,221 @@ async function checkUrlForRedirect() {
     if (userIdToChat) {
         console.log("Phát hiện redirect, mở chat với user ID:", userIdToChat);
         try {
-            // 1. Gọi API để lấy/tạo phòng (giống hệt onStartNewChat)
             const response = await fetch(`/api/chat/room/with/${userIdToChat}`);
             if (!response.ok) throw new Error('Không thể tạo phòng chat từ redirect');
             const roomDto = await response.json();
-
-            // 2. Tải lại danh sách phòng (để đảm bảo phòng mới/cũ xuất hiện)
-            // (Hàm loadChatRooms() đã được gọi trong onConnected,
-            // nhưng gọi lại để chắc chắn)
             await loadChatRooms();
-
-            // 3. Chọn phòng đó
             selectRoom(roomDto.id, roomDto.oneToOnePartnerName);
-
-            // 4. Xóa param khỏi URL để tránh load lại khi F5
             history.replaceState(null, '', window.location.pathname);
-
         } catch (error) {
             console.error(error);
-            // Xóa param khỏi URL nếu có lỗi
             history.replaceState(null, '', window.location.pathname);
         }
     }
 }
-// === KẾT THÚC THÊM MỚI ===
 
 // ===========================================
-// === 2. TẢI DỮ LIỆU (API)
+// === XỬ LÝ UPLOAD FILE
 // ===========================================
+function handleFileSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
 
-// Tải danh sách phòng chat cho sidebar
+    // Kiểm tra kích thước (max 50MB)
+    if (file.size > 50 * 1024 * 1024) {
+        alert('File quá lớn! Tối đa 50MB.');
+        return;
+    }
+
+    selectedFile = file;
+
+    // Hiển thị preview
+    const fileName = file.name;
+    const fileSize = (file.size / 1024 / 1024).toFixed(2) + ' MB';
+    const fileIcon = getFileIcon(file.type);
+
+    document.querySelector('#preview-file-name').textContent = fileName;
+    document.querySelector('#preview-file-size').textContent = fileSize;
+    document.querySelector('#preview-file-icon').textContent = fileIcon;
+
+    filePreview.style.display = 'flex';
+
+    // Upload ngay lập tức
+    uploadFile(file);
+}
+
+function getFileIcon(mimeType) {
+    if (mimeType.startsWith('image/')) return '🖼️';
+    if (mimeType.includes('pdf')) return '📄';
+    if (mimeType.includes('word')) return '📝';
+    if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return '📊';
+    if (mimeType.includes('presentation')) return '📽️';
+    if (mimeType.includes('zip') || mimeType.includes('rar')) return '📦';
+    return '📁';
+}
+
+async function uploadFile(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        const response = await fetch('/api/chat/upload', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) throw new Error('Upload thất bại');
+
+        const data = await response.json();
+        uploadedFilePath = data.filePath;
+
+        console.log('Upload thành công:', data);
+
+    } catch (error) {
+        console.error('Lỗi upload:', error);
+        alert('Lỗi upload file!');
+        cancelFileUpload();
+    }
+}
+
+function cancelFileUpload() {
+    selectedFile = null;
+    uploadedFilePath = null;
+    fileInput.value = '';
+    filePreview.style.display = 'none';
+}
+
+// ===========================================
+// === GỬI TIN NHẮN
+// ===========================================
+function onMessageSubmit(event) {
+    event.preventDefault();
+
+    const messageContent = messageInput.value.trim();
+
+    // Kiểm tra: Phải có nội dung HOẶC file
+    if (!messageContent && !uploadedFilePath) {
+        return;
+    }
+
+    if (stompClient && currentRoomId) {
+        const sendMessageDto = {
+            roomId: currentRoomId,
+            content: messageContent || '',
+            type: uploadedFilePath ? (selectedFile.type.startsWith('image/') ? 'IMAGE' : 'FILE') : 'TEXT',
+            filePath: uploadedFilePath,
+            fileName: selectedFile ? selectedFile.name : null,
+            fileSize: selectedFile ? selectedFile.size : null,
+            mimeType: selectedFile ? selectedFile.type : null
+        };
+
+        stompClient.send("/app/chat.sendMessage", {}, JSON.stringify(sendMessageDto));
+
+        messageInput.value = '';
+        cancelFileUpload();
+        sendTypingEvent(false);
+    }
+}
+
+// ===========================================
+// === HIỂN THỊ TIN NHẮN
+// ===========================================
+function displayMessage(messageDto) {
+    const messageContainer = document.createElement('div');
+    messageContainer.classList.add('msg-container');
+    messageContainer.setAttribute('data-message-id', messageDto.id);
+
+    const type = messageDto.senderId == currentUserId ? 'sent' : 'received';
+    messageContainer.classList.add(type);
+
+    const time = new Date(messageDto.timestamp);
+    const formattedTime = time.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+
+    let bubbleContent = '';
+
+    // === XỬ LÝ TIN NHẮN BỊ THU HỒI ===
+    if (messageDto.isRecalled) {
+        messageContainer.innerHTML = `
+            <div class="msg-bubble recalled">
+                <em>Tin nhắn đã được thu hồi</em>
+            </div>
+            <div class="msg-time">${formattedTime}</div>
+        `;
+        messageArea.appendChild(messageContainer);
+        return;
+    }
+
+    // === XỬ LÝ THEO LOẠI TIN NHẮN ===
+    if (messageDto.type === 'IMAGE') {
+        bubbleContent = `
+            ${type === 'received' ? `<strong class="d-block">${messageDto.senderName}</strong>` : ''}
+            <img src="/view-file/${messageDto.filePath}" 
+                 style="max-width: 300px; border-radius: 10px; cursor: pointer;"
+                 onclick="window.open('/view-file/${messageDto.filePath}', '_blank')">
+            ${messageDto.content ? `<p class="mt-2 mb-0">${messageDto.content}</p>` : ''}
+        `;
+    } else if (messageDto.type === 'FILE') {
+        const fileIcon = getFileIcon(messageDto.mimeType);
+        const fileSize = (messageDto.fileSize / 1024 / 1024).toFixed(2) + ' MB';
+        bubbleContent = `
+            ${type === 'received' ? `<strong class="d-block">${messageDto.senderName}</strong>` : ''}
+            <div class="file-message">
+                <span style="font-size: 2rem;">${fileIcon}</span>
+                <div class="ms-2">
+                    <strong>${messageDto.fileName}</strong>
+                    <br><small>${fileSize}</small>
+                </div>
+                <a href="/download/${messageDto.filePath}" class="btn btn-sm btn-primary ms-2">
+                    Tải xuống
+                </a>
+            </div>
+            ${messageDto.content ? `<p class="mt-2 mb-0">${messageDto.content}</p>` : ''}
+        `;
+    } else {
+        // TEXT
+        bubbleContent = `
+            ${type === 'received' ? `<strong class="d-block">${messageDto.senderName}</strong>` : ''}
+            ${messageDto.content}
+        `;
+    }
+
+    // === THÊM NÚT THU HỒI (CHỈ CHO TIN NHẮN CỦA MÌNH) ===
+    const recallBtn = type === 'sent' ? `
+        <div class="msg-actions">
+            <button class="btn btn-sm btn-secondary" onclick="recallMessage(${messageDto.id})">
+                ⋯
+            </button>
+        </div>
+    ` : '';
+
+    messageContainer.innerHTML = `
+        ${recallBtn}
+        <div class="msg-bubble">
+            ${bubbleContent}
+        </div>
+        <div class="msg-time">${formattedTime}</div>
+    `;
+
+    messageArea.appendChild(messageContainer);
+}
+
+// ===========================================
+// === THU HỒI TIN NHẮN
+// ===========================================
+function recallMessage(messageId) {
+    if (!confirm('Bạn có chắc muốn thu hồi tin nhắn này?')) return;
+
+    const recallDto = {
+        messageId: messageId,
+        roomId: currentRoomId
+    };
+
+    stompClient.send("/app/chat.recallMessage", {}, JSON.stringify(recallDto));
+}
+
+// ===========================================
+// === CÁC HÀM CŨ (GIỮ NGUYÊN)
+// ===========================================
 async function loadChatRooms() {
     try {
         const response = await fetch('/api/chat/rooms');
@@ -145,7 +347,6 @@ async function loadChatRooms() {
     }
 }
 
-// Tải danh sách user (cho modal chat mới)
 async function loadUsersForNewChat() {
     try {
         newUserChatList.innerHTML = '<p>Đang tải danh sách...</p>';
@@ -180,11 +381,6 @@ async function loadUsersForNewChat() {
     }
 }
 
-// ===========================================
-// === 3. XỬ LÝ SỰ KIỆN (EVENTS)
-// ===========================================
-
-// (Event) Bấm vào 1 user để chat
 async function onStartNewChat(event) {
     event.preventDefault();
     const otherUserId = event.currentTarget.getAttribute('data-user-id');
@@ -204,7 +400,6 @@ async function onStartNewChat(event) {
     }
 }
 
-// (Event) Bấm vào 1 phòng chat trong sidebar
 function onRoomSelected(event) {
     event.preventDefault();
     const roomId = event.currentTarget.getAttribute('data-room-id');
@@ -212,7 +407,6 @@ function onRoomSelected(event) {
     selectRoom(roomId, roomName);
 }
 
-// (Action) Logic chọn phòng chat
 async function selectRoom(roomId, roomName) {
     if (currentRoomId === roomId) return;
     currentRoomId = roomId;
@@ -239,7 +433,6 @@ async function selectRoom(roomId, roomName) {
         </div>
     `;
 
-    // === PHẦN "ĐANG GÕ" (3): Xóa indicator khi đổi phòng ===
     typingUsers.clear();
     updateTypingIndicator();
 
@@ -263,35 +456,14 @@ async function selectRoom(roomId, roomName) {
     }
 }
 
-// (Event) Gửi tin nhắn
-function onMessageSubmit(event) {
-    event.preventDefault();
-    const messageContent = messageInput.value.trim();
-    if (messageContent && stompClient && currentRoomId) {
-        const sendMessageDto = {
-            roomId: currentRoomId,
-            content: messageContent
-        };
-        stompClient.send("/app/chat.sendMessage", {}, JSON.stringify(sendMessageDto));
-        messageInput.value = '';
-
-        // === PHẦN "ĐANG GÕ" (4): Gửi 'stop' khi bấm Gửi ===
-        sendTypingEvent(false);
-    }
-}
-
-// === PHẦN "ĐANG GÕ" (5): Tất cả logic xử lý "đang gõ" ===
-
-// (Event) Đang gõ
 function onTypingInput() {
     sendTypingEvent(true);
     clearTimeout(typingTimeout);
     typingTimeout = setTimeout(() => {
         sendTypingEvent(false);
-    }, 3000); // 3 giây
+    }, 3000);
 }
 
-// (Action) Gửi sự kiện gõ
 function sendTypingEvent(isTyping) {
     if (stompClient && currentRoomId) {
         const typingDto = {
@@ -302,10 +474,9 @@ function sendTypingEvent(isTyping) {
     }
 }
 
-// (STOMP) Nhận sự kiện "đang gõ"
 function onTypingReceived(payload) {
     const typingDto = JSON.parse(payload.body);
-    if (typingDto.username === currentUsername) return; // Bỏ qua chính mình
+    if (typingDto.username === currentUsername) return;
 
     if (typingDto.isTyping) {
         typingUsers.set(typingDto.username, new Date());
@@ -315,10 +486,8 @@ function onTypingReceived(payload) {
     updateTypingIndicator();
 }
 
-// (DOM) Cập nhật text "đang gõ" dựa trên danh sách
 function updateTypingIndicator() {
     const now = new Date();
-    // Xóa những ai đã gõ quá 5 giây (phòng khi "stop" event bị lạc)
     typingUsers.forEach((time, username) => {
         if (now - time > 5000) {
             typingUsers.delete(username);
@@ -336,14 +505,7 @@ function updateTypingIndicator() {
         typingIndicator.textContent = "Nhiều người đang gõ...";
     }
 }
-// === KẾT THÚC PHẦN "ĐANG GÕ" ===
 
-
-// ===========================================
-// === 4. XỬ LÝ NHẬN (STOMP)
-// ===========================================
-
-// (STOMP) Nhận tin nhắn mới
 function onMessageReceived(payload) {
     const messageDto = JSON.parse(payload.body);
     if (messageDto.roomId == currentRoomId) {
@@ -352,14 +514,12 @@ function onMessageReceived(payload) {
     }
 }
 
-// (STOMP) Nhận sự kiện Online/Offline
 function onPresenceMessageReceived(payload) {
     const presenceDto = JSON.parse(payload.body);
     presenceStatus.set(presenceDto.username, presenceDto.status);
     updateAllPresenceIndicators(presenceDto.username, presenceDto.status);
 }
 
-// (STOMP) Nhận thông báo (VD: có phòng mới)
 function onNotificationReceived(payload) {
     console.log("Nhận được thông báo:", payload.body);
     if (payload.body === "NEW_ROOM") {
@@ -367,42 +527,14 @@ function onNotificationReceived(payload) {
     }
 }
 
-// ===========================================
-// === 5. TIỆN ÍCH (DOM)
-// ===========================================
-
-// Hiển thị 1 bong bóng chat
-function displayMessage(messageDto) {
-    const messageContainer = document.createElement('div');
-    messageContainer.classList.add('msg-container');
-
-    const type = messageDto.senderId == currentUserId ? 'sent' : 'received';
-    messageContainer.classList.add(type);
-
-    const time = new Date(messageDto.timestamp);
-    const formattedTime = time.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-
-    messageContainer.innerHTML = `
-        <div class="msg-bubble">
-            ${type === 'received' ? `<strong class="d-block">${messageDto.senderName}</strong>` : ''}
-            ${messageDto.content}
-        </div>
-        <div class="msg-time">${formattedTime}</div>
-    `;
-    messageArea.appendChild(messageContainer);
-}
-
-// Cuộn xuống dưới cùng
 function scrollToBottom() {
     messageArea.scrollTop = messageArea.scrollHeight;
 }
 
-// Cập nhật tất cả "chấm" online/offline cho 1 user
 function updateAllPresenceIndicators(username, status) {
     const statusText = status === 'ONLINE' ? 'Online' : 'Offline';
     const statusClass = status === 'ONLINE' ? 'online' : '';
 
-    // Selector tìm đúng thẻ .user-info dựa trên data-username
     const selector = `.user-info[data-username="${username}"]`;
 
     document.querySelectorAll(selector).forEach(userInfo => {
@@ -414,10 +546,6 @@ function updateAllPresenceIndicators(username, status) {
     });
 }
 
-// ===========================================
-// === 6. KÍCH HOẠT
-// ===========================================
-// Chỉ chạy khi ở trang chat
 if (document.querySelector('.chat-app-container')) {
     connect();
 }
