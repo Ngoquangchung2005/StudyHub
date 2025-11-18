@@ -3,6 +3,7 @@ package com.studyhub.StudyHub.dto;
 import com.studyhub.StudyHub.entity.ChatRoom;
 import com.studyhub.StudyHub.entity.Message;
 import com.studyhub.StudyHub.entity.User;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import java.time.LocalDateTime;
 import java.util.Set;
@@ -65,23 +66,26 @@ public class ChatDTOs {
     public static class SendMessageDto {
         private Long roomId;
         private String content;
-        private Message.MessageType type; // TEXT, IMAGE, FILE
-        private String filePath; // Đường dẫn file đã upload
+        private Message.MessageType type;
+        private String filePath;
         private String fileName;
         private Long fileSize;
         private String mimeType;
     }
+
     @Data
     public static class MessageDto {
         private Long id;
         private String content;
-        private String timestamp; // <--- ĐỔI TỪ LocalDateTime SANG String
+        private String timestamp;
         private Long senderId;
         private String senderName;
         private Long roomId;
+
+        // ====== QUAN TRỌNG: Thêm annotation để JSON serialize đúng tên field ======
+        @JsonProperty("isRecalled")  // ← Bắt buộc JSON dùng tên "isRecalled"
         private boolean isRecalled;
 
-        // Các trường file
         private Message.MessageType type;
         private String filePath;
         private String fileName;
@@ -92,9 +96,8 @@ public class ChatDTOs {
             this.id = msg.getId();
             this.content = msg.getContent();
 
-            // <--- SỬA ĐOẠN NÀY: Format ngày giờ thành chuỗi ISO chuẩn
             if (msg.getTimestamp() != null) {
-                this.timestamp = msg.getTimestamp().toString(); // VD: "2023-11-17T10:30:00"
+                this.timestamp = msg.getTimestamp().toString();
             } else {
                 this.timestamp = java.time.LocalDateTime.now().toString();
             }
@@ -102,7 +105,7 @@ public class ChatDTOs {
             this.senderId = msg.getSender().getId();
             this.senderName = msg.getSender().getName();
             this.roomId = msg.getRoom().getId();
-            this.isRecalled = msg.isRecalled();
+            this.isRecalled = msg.isRecalled();  // ← Getter vẫn dùng isRecalled()
             this.type = msg.getType();
             this.filePath = msg.getFilePath();
             this.fileName = msg.getFileName();
@@ -110,6 +113,7 @@ public class ChatDTOs {
             this.mimeType = msg.getMimeType();
         }
     }
+
     @Data
     public static class TypingDto {
         private Long roomId;
@@ -123,7 +127,6 @@ public class ChatDTOs {
         private String status;
     }
 
-    // === DTO MỚI CHO THU HỒI TIN NHẮN ===
     @Data
     public static class RecallMessageDto {
         private Long messageId;

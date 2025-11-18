@@ -63,14 +63,18 @@ public class ChatController {
 
         // Gửi tin nhắn đến tất cả mọi người trong phòng
         messagingTemplate.convertAndSend("/topic/room/" + room.getId(), messageDto);
+
+        System.out.println("✅ Đã gửi tin nhắn mới qua WebSocket - ID: " + savedMessage.getId());
     }
 
     /**
-     * Xử lý thu hồi tin nhắn
+     * Xử lý thu hồi tin nhắn - QUAN TRỌNG: PHẢI BROADCAST ĐẾN TẤT CẢ NGƯỜI DÙNG
      */
     @MessageMapping("/chat.recallMessage")
     @Transactional
     public void recallMessage(@Payload ChatDTOs.RecallMessageDto dto, Principal principal) {
+
+        System.out.println("🔔 Server nhận lệnh thu hồi tin nhắn ID: " + dto.getMessageId());
 
         String usernameOrEmail = principal.getName();
         User currentUser = userRepository.findByUsernameOrEmail(usernameOrEmail, usernameOrEmail)
@@ -81,17 +85,27 @@ public class ChatController {
 
         // Kiểm tra quyền thu hồi (chỉ người gửi mới được thu hồi)
         if (!message.getSender().getId().equals(currentUser.getId())) {
+            System.out.println("❌ Người dùng không có quyền thu hồi tin nhắn này");
             throw new RuntimeException("Bạn không có quyền thu hồi tin nhắn này");
         }
 
         // Đánh dấu tin nhắn đã thu hồi
         message.setRecalled(true);
         message.setContent("Tin nhắn đã được thu hồi");
-        messageRepository.save(message);
+        Message updatedMessage = messageRepository.save(message);
 
-        // Gửi thông báo thu hồi đến tất cả mọi người
-        ChatDTOs.MessageDto messageDto = new ChatDTOs.MessageDto(message);
-        messagingTemplate.convertAndSend("/topic/room/" + dto.getRoomId(), messageDto);
+        System.out.println("💾 Đã lưu tin nhắn thu hồi vào database");
+
+        // === QUAN TRỌNG: GỬI TIN NHẮN ĐÃ THU HỒI ĐẾN TẤT CẢ NGƯỜI TRONG PHÒNG ===
+        ChatDTOs.MessageDto messageDto = new ChatDTOs.MessageDto(updatedMessage);
+
+        String topic = "/topic/room/" + dto.getRoomId();
+        messagingTemplate.convertAndSend(topic, messageDto);
+
+        System.out.println("📤 Đã broadcast tin nhắn thu hồi đến: " + topic);
+        System.out.println("   - Message ID: " + messageDto.getId());
+        System.out.println("   - isRecalled: " + messageDto.isRecalled());
+        System.out.println("   - Content: " + messageDto.getContent());
     }
 
     /**

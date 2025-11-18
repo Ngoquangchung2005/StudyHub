@@ -1,7 +1,7 @@
 /* --- TỔNG THỂ GIAO DIỆN CHAT --- */
 .chat-app-container {
     display: flex;
-    height: 75vh;
+    height: 85vh;
     border: 1px solid #ddd;
     border-radius: 0.25rem;
     overflow: hidden;
@@ -84,105 +84,134 @@
 }
 
 /* =========================================
-   PHẦN SỬA LỖI NÚT 3 CHẤM (ÁP DỤNG TOÀN BỘ)
+   TIN NHẮN (LAYOUT COMPACT)
    ========================================= */
 .msg-container {
     display: flex;
-    margin-bottom: 10px;
+    flex-direction: column;
+    margin-bottom: 4px;
     position: relative;
-    align-items: center; /* Căn giữa dọc để nút luôn thẳng hàng với tin nhắn */
+    max-width: 100%;
+}
+
+.msg-container.new-sender { margin-top: 8px; }
+
+.msg-content {
+    display: flex;
+    align-items: center; /* Căn giữa chiều dọc để nút 3 chấm ngang hàng bong bóng */
+    max-width: 100%;
 }
 
 .msg-bubble {
-    padding: 10px 15px;
+    padding: 8px 12px;
     border-radius: 18px;
-    max-width: 70%;
+    max-width: 75%;
     word-wrap: break-word;
+    font-size: 0.95rem;
+    line-height: 1.4;
+    position: relative;
 }
 
-.msg-container.sent { justify-content: flex-end; }
-.msg-container.sent .msg-bubble { background-color: #007bff; color: white; }
+/* --- Tin nhắn gửi đi (bên phải) --- */
+.msg-container.sent { align-items: flex-end; }
+.msg-container.sent .msg-content { flex-direction: row; justify-content: flex-end; }
+.msg-container.sent .msg-bubble {
+    background-color: #0084ff;
+    color: white;
+    border-bottom-right-radius: 4px;
+    order: 2; /* Bong bóng nằm sau */
+}
 
-.msg-container.received { justify-content: flex-start; }
-.msg-container.received .msg-bubble { background-color: #e9e9eb; color: black; }
+/* --- Tin nhắn nhận được (bên trái) --- */
+.msg-container.received { align-items: flex-start; }
+.msg-container.received .msg-content { flex-direction: row; }
+.msg-container.received .msg-bubble {
+    background-color: #f0f0f0;
+    color: #050505;
+    border-bottom-left-radius: 4px;
+    order: 1; /* Bong bóng nằm trước */
+}
 
+/* =========================================
+   XỬ LÝ THỜI GIAN
+   ========================================= */
 .msg-time {
-    font-size: 0.75rem;
-    color: #6c757d;
-    margin-top: 4px;
-    width: 100%; /* Để thời gian xuống dòng */
-    flex-basis: 100%;
-    display: none; /* Ẩn thời gian mặc định cho gọn, hoặc bỏ dòng này nếu muốn hiện */
+    font-size: 0.65rem;
+    color: #aaa;
+    margin: 2px;
+    line-height: 1;
+    opacity: 0.8;
 }
+.msg-container.sent .msg-time { text-align: right; }
+.msg-container.received .msg-time { text-align: left; }
+
 /* ============================================
-   CSS CHO POPUP MENU THU HỒI
+   NÚT 3 CHẤM & POPUP MENU (ĐÃ SỬA)
    ============================================ */
-
-/* Container chứa nút 3 chấm và menu */
 .msg-actions {
-    position: relative; /* Để menu con định vị theo nó */
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.2s;
+    margin: 0 8px;
+    position: relative; /* Quan trọng để định vị popup con */
+    display: flex;
+    align-items: center;
 }
 
-/* Nút 3 chấm */
+/* Hiện nút 3 chấm khi hover vào dòng tin nhắn */
+.msg-container:hover .msg-actions,
+.msg-actions.active { /* Class active dùng để giữ nút hiện khi popup mở */
+    visibility: visible;
+    opacity: 1;
+}
+
+.msg-container.sent .msg-actions { order: 1; } /* Nằm trước bong bóng bên phải */
+.msg-container.received .msg-actions { order: 2; } /* Nằm sau bong bóng bên trái */
+
 .msg-actions .btn-option {
-    border: none;
-    background: #f0f2f5;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
-    width: 28px;
-    height: 28px;
+    background-color: #f5f5f5;
+    border: none;
+    color: #65676b;
+    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
-    color: #65676b;
-    transition: background 0.2s;
+    font-weight: bold;
+    line-height: 0;
+    padding-bottom: 8px; /* Căn chỉnh dấu 3 chấm */
 }
 
-.msg-actions .btn-option:hover {
-    background: #e4e6eb;
-}
+.msg-actions .btn-option:hover { background-color: #e4e6eb; }
 
-/* Menu Popup (Mặc định ẩn) */
+/* --- POPUP MENU THU HỒI --- */
 .action-popup {
-    display: none; /* Ẩn */
+    display: none; /* Mặc định ẩn */
     position: absolute;
-    bottom: 100%; /* Hiện bên trên nút */
+    bottom: 100%; /* Hiện lên trên nút 3 chấm */
     left: 50%;
     transform: translateX(-50%);
-    background: white;
-    border-radius: 8px;
+    background-color: white;
+    border: 1px solid #ddd;
     box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-    padding: 5px;
-    min-width: 100px;
+    border-radius: 6px;
     z-index: 1000;
-    margin-bottom: 5px;
-    animation: fadeIn 0.2s ease;
+    min-width: 100px;
+    padding: 4px 0;
 }
 
-/* Mũi tên nhỏ trỏ xuống (trang trí) */
-.action-popup::after {
-    content: "";
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    margin-left: -5px;
-    border-width: 5px;
-    border-style: solid;
-    border-color: white transparent transparent transparent;
-}
-
-/* Class để hiện menu */
 .action-popup.show {
-    display: block;
+    display: block; /* Hiện khi có class show */
 }
 
-/* Item trong menu (Nút Thu hồi) */
 .action-item {
-    padding: 8px 12px;
+    padding: 6px 12px;
     font-size: 0.85rem;
-    color: #dc3545; /* Màu đỏ cho cảnh báo */
+    color: #dc3545; /* Màu đỏ cho nút thu hồi */
     cursor: pointer;
-    border-radius: 4px;
+    white-space: nowrap;
     text-align: center;
     font-weight: 500;
 }
@@ -191,15 +220,15 @@
     background-color: #f8f9fa;
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translate(-50%, 10px); }
-    to { opacity: 1; transform: translate(-50%, 0); }
-}
-/* Trong file chat.css */
+/* ============================================
+   TIN NHẮN THU HỒI
+   ============================================ */
 .msg-bubble.recalled {
-    background-color: transparent !important; /* Quan trọng để xóa màu nền xanh/xám */
-    color: #6c757d !important;
-    border: 1px solid #e9e9eb;
+    background-color: transparent !important;
+    color: #8a8d91 !important;
+    border: 1px solid #e0e2e6;
     font-style: italic;
+    padding: 6px 12px;
+    font-size: 0.85rem;
     box-shadow: none;
 }

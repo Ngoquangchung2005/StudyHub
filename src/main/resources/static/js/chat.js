@@ -2,7 +2,7 @@
 
 // --- Biến toàn cục ---
 const messageForm = document.querySelector('#messageForm');
-const messageInput = document.querySelector('#message');// Sửa selector để chọn đúng nút có type="submit"
+const messageInput = document.querySelector('#message');
 const messageSendBtn = messageForm.querySelector('button[type="submit"]');
 const messageArea = document.querySelector('#chat-messages-window');
 const chatRoomList = document.querySelector('#chat-room-list');
@@ -13,7 +13,6 @@ const typingIndicator = document.querySelector('#typing-indicator-area');
 const newChatBtn = document.querySelector('#new-chat-btn');
 const newUserChatList = document.querySelector('#new-chat-user-list');
 
-// === THÊM CÁC ELEMENT MỚI ===
 const fileInput = document.querySelector('#file-input');
 const fileBtn = document.querySelector('#file-btn');
 const imageBtn = document.querySelector('#image-btn');
@@ -29,7 +28,6 @@ let typingTimeout = null;
 let presenceStatus = new Map();
 let typingUsers = new Map();
 
-// === BIẾN MỚI CHO UPLOAD FILE ===
 let selectedFile = null;
 let uploadedFilePath = null;
 
@@ -43,8 +41,6 @@ function connect() {
 }
 
 async function onConnected() {
-    console.log('Đã kết nối WebSocket!');
-
     stompClient.subscribe('/topic/presence', onPresenceMessageReceived);
     stompClient.subscribe(`/user/${currentUsername}/queue/notify`, onNotificationReceived);
 
@@ -63,7 +59,6 @@ async function onConnected() {
     messageInput.addEventListener('input', onTypingInput);
     newChatBtn.addEventListener('click', loadUsersForNewChat);
 
-    // === GÁN SỰ KIỆN CHO NÚT FILE/IMAGE ===
     fileBtn.addEventListener('click', () => {
         fileInput.setAttribute('accept', '*/*');
         fileInput.click();
@@ -89,7 +84,6 @@ async function checkUrlForRedirect() {
     const userIdToChat = urlParams.get('withUser');
 
     if (userIdToChat) {
-        console.log("Phát hiện redirect, mở chat với user ID:", userIdToChat);
         try {
             const response = await fetch(`/api/chat/room/with/${userIdToChat}`);
             if (!response.ok) throw new Error('Không thể tạo phòng chat từ redirect');
@@ -111,7 +105,6 @@ function handleFileSelect(event) {
     const file = event.target.files[0];
     if (!file) return;
 
-    // Kiểm tra kích thước (max 50MB)
     if (file.size > 50 * 1024 * 1024) {
         alert('File quá lớn! Tối đa 50MB.');
         return;
@@ -119,7 +112,6 @@ function handleFileSelect(event) {
 
     selectedFile = file;
 
-    // Hiển thị preview
     const fileName = file.name;
     const fileSize = (file.size / 1024 / 1024).toFixed(2) + ' MB';
     const fileIcon = getFileIcon(file.type);
@@ -130,7 +122,6 @@ function handleFileSelect(event) {
 
     filePreview.style.display = 'flex';
 
-    // Upload ngay lập tức
     uploadFile(file);
 }
 
@@ -148,7 +139,6 @@ async function uploadFile(file) {
     const formData = new FormData();
     formData.append('file', file);
 
-    // === LẤY TOKEN CSRF TỪ META TAGS (Đã thêm ở Bước 2) ===
     const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
     const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
 
@@ -156,18 +146,15 @@ async function uploadFile(file) {
         const response = await fetch('/api/chat/upload', {
             method: 'POST',
             headers: {
-                // === THÊM HEADER CSRF VÀO REQUEST ===
                 [csrfHeader]: csrfToken
             },
             body: formData
         });
 
-        if (!response.ok) throw new Error('Upload thất bại (' + response.status + ')');
+        if (!response.ok) throw new Error('Upload thất bại');
 
         const data = await response.json();
         uploadedFilePath = data.filePath;
-
-        console.log('Upload thành công:', data);
 
     } catch (error) {
         console.error('Lỗi upload:', error);
@@ -191,7 +178,6 @@ function onMessageSubmit(event) {
 
     const messageContent = messageInput.value.trim();
 
-    // Kiểm tra: Phải có nội dung HOẶC file
     if (!messageContent && !uploadedFilePath) {
         return;
     }
@@ -213,29 +199,16 @@ function onMessageSubmit(event) {
         cancelFileUpload();
         sendTypingEvent(false);
     }
-}function recallMessage(messageId) {
+}
+
+// ===========================================
+// === THU HỒI TIN NHẮN
+// ===========================================
+function recallMessage(messageId) {
     if (!confirm('Bạn có chắc muốn thu hồi tin nhắn này?')) return;
 
-    // --- 1. CẬP NHẬT GIAO DIỆN NGAY LẬP TỨC (OPTIMISTIC UI) ---
-    // Tìm bong bóng chat tương ứng trên màn hình
-    const msgContainer = document.querySelector(`.msg-container[data-message-id="${messageId}"]`);
+    updateMessageToRecalled(messageId);
 
-    if (msgContainer) {
-        const bubble = msgContainer.querySelector('.msg-bubble');
-
-        // Đổi nội dung và giao diện sang trạng thái đã thu hồi
-        bubble.innerHTML = '<em>Tin nhắn đã được thu hồi</em>';
-        bubble.className = 'msg-bubble recalled'; // Thêm class recalled, xóa các class màu sắc cũ
-        bubble.removeAttribute('style'); // Xóa style inline (nếu có)
-
-        // Xóa nút 3 chấm (...) để không bấm thu hồi lại lần nữa
-        const actions = msgContainer.querySelector('.msg-actions');
-        if (actions) {
-            actions.remove();
-        }
-    }
-
-    // --- 2. GỬI LỆNH LÊN SERVER (SOCKET) ĐỂ BÁO CHO NGƯỜI KHÁC ---
     if (stompClient && currentRoomId) {
         const recallDto = {
             messageId: messageId,
@@ -244,8 +217,25 @@ function onMessageSubmit(event) {
         stompClient.send("/app/chat.recallMessage", {}, JSON.stringify(recallDto));
     }
 }
+
+function updateMessageToRecalled(messageId) {
+    const msgContainer = document.querySelector(`.msg-container[data-message-id="${messageId}"]`);
+
+    if (msgContainer) {
+        const bubble = msgContainer.querySelector('.msg-bubble');
+        bubble.innerHTML = '<em>Tin nhắn đã được thu hồi</em>';
+        bubble.className = 'msg-bubble recalled';
+        bubble.removeAttribute('style');
+
+        const actions = msgContainer.querySelector('.msg-actions');
+        if (actions) {
+            actions.remove();
+        }
+    }
+}
+
 // ===========================================
-// === HIỂN THỊ TIN NHẮN (VỚI POPUP MENU) ===
+// === HIỂN THỊ TIN NHẮN
 // ===========================================
 function displayMessage(messageDto) {
     const messageContainer = document.createElement('div');
@@ -255,14 +245,12 @@ function displayMessage(messageDto) {
     const type = String(messageDto.senderId) === String(currentUserId) ? 'sent' : 'received';
     messageContainer.classList.add(type);
 
-    // Time formatting
     let formattedTime = '';
     try {
         const time = new Date(messageDto.timestamp);
         formattedTime = time.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
     } catch (e) {}
 
-    // Content
     let bubbleContent = '';
     if (messageDto.isRecalled) {
         messageContainer.innerHTML = `
@@ -292,7 +280,6 @@ function displayMessage(messageDto) {
         bubbleContent += `<p class="mt-2 mb-0">${messageDto.content}</p>`;
     }
 
-    // === MENU POPUP ===
     let actionHtml = '';
     if (type === 'sent') {
         actionHtml = `
@@ -306,25 +293,24 @@ function displayMessage(messageDto) {
     }
 
     messageContainer.innerHTML = `
-        ${actionHtml}
-        <div class="msg-bubble">${bubbleContent}</div>
+        <div class="msg-content">
+            ${actionHtml}
+            <div class="msg-bubble">${bubbleContent}</div>
+        </div>
         <div class="msg-time">${formattedTime}</div>
     `;
 
-    // === GÁN SỰ KIỆN CLICK ===
     if (type === 'sent') {
         const btnOption = messageContainer.querySelector('.btn-option');
         const popup = messageContainer.querySelector('.action-popup');
         const btnRecall = messageContainer.querySelector('.btn-confirm-recall');
 
-        // 1. Mở/Đóng Popup
         btnOption.addEventListener('click', (e) => {
             e.stopPropagation();
             document.querySelectorAll('.action-popup.show').forEach(el => { if(el !== popup) el.classList.remove('show'); });
             popup.classList.toggle('show');
         });
 
-        // 2. Bấm "Thu hồi" -> Gửi lệnh ngay
         btnRecall.addEventListener('click', (e) => {
             e.stopPropagation();
             recallMessage(messageDto.id);
@@ -334,15 +320,33 @@ function displayMessage(messageDto) {
 
     messageArea.appendChild(messageContainer);
 }
-// Đóng popup khi click ra ngoài
+
 document.addEventListener('click', () => {
     document.querySelectorAll('.action-popup.show').forEach(el => el.classList.remove('show'));
 });
 
+// ===========================================
+// === NHẬN TIN NHẮN TỪ WEBSOCKET
+// ===========================================
+function onMessageReceived(payload) {
+    const messageDto = JSON.parse(payload.body);
 
+    if (currentRoomId && messageDto.roomId == currentRoomId) {
+        const existingElement = document.querySelector(`.msg-container[data-message-id="${messageDto.id}"]`);
+
+        if (existingElement) {
+            if (messageDto.isRecalled) {
+                updateMessageToRecalled(messageDto.id);
+            }
+        } else {
+            displayMessage(messageDto);
+            scrollToBottom();
+        }
+    }
+}
 
 // ===========================================
-// === CÁC HÀM CŨ (GIỮ NGUYÊN)
+// === QUẢN LÝ PHÒNG CHAT
 // ===========================================
 async function loadChatRooms() {
     try {
@@ -494,6 +498,9 @@ async function selectRoom(roomId, roomName) {
     }
 }
 
+// ===========================================
+// === XỬ LÝ TYPING INDICATOR
+// ===========================================
 function onTypingInput() {
     sendTypingEvent(true);
     clearTimeout(typingTimeout);
@@ -543,58 +550,14 @@ function updateTypingIndicator() {
         typingIndicator.textContent = "Nhiều người đang gõ...";
     }
 }
-function onMessageReceived(payload) {
-    const messageDto = JSON.parse(payload.body);
-    console.log("🔔 Nhận tin nhắn socket:", messageDto); // Kiểm tra xem tin nhắn có về không
 
-    // Chỉ xử lý nếu tin nhắn thuộc phòng hiện tại
-    if (currentRoomId && messageDto.roomId == currentRoomId) {
-
-        // 1. Tìm tin nhắn cũ trong giao diện (dựa vào ID)
-        // Selector này rất quan trọng, nó tìm thẻ div có data-message-id tương ứng
-        const existingElement = document.querySelector(`.msg-container[data-message-id="${messageDto.id}"]`);
-
-        if (existingElement) {
-            // === TRƯỜNG HỢP 1: CẬP NHẬT (VÍ DỤ: THU HỒI) ===
-            console.log("♻️ Tìm thấy tin nhắn cũ, đang cập nhật...");
-
-            if (messageDto.isRecalled) {
-                const bubble = existingElement.querySelector('.msg-bubble');
-
-                // Đổi nội dung thành "Tin nhắn đã thu hồi"
-                bubble.innerHTML = '<em>Tin nhắn đã được thu hồi</em>';
-
-                // Đổi giao diện (class CSS)
-                bubble.className = 'msg-bubble recalled';
-                bubble.removeAttribute('style'); // Xóa màu nền cũ
-
-                // Xóa nút 3 chấm (menu thao tác) nếu có
-                const actions = existingElement.querySelector('.msg-actions');
-                if (actions) actions.remove();
-            }
-        } else {
-            // === TRƯỜNG HỢP 2: TIN NHẮN MỚI (CHƯA CÓ TRÊN MÀN HÌNH) ===
-            console.log("➕ Tin nhắn mới, đang thêm vào danh sách...");
-            displayMessage(messageDto);
-            scrollToBottom();
-        }
-    }
-}
+// ===========================================
+// === XỬ LÝ PRESENCE
+// ===========================================
 function onPresenceMessageReceived(payload) {
     const presenceDto = JSON.parse(payload.body);
     presenceStatus.set(presenceDto.username, presenceDto.status);
     updateAllPresenceIndicators(presenceDto.username, presenceDto.status);
-}
-
-function onNotificationReceived(payload) {
-    console.log("Nhận được thông báo:", payload.body);
-    if (payload.body === "NEW_ROOM") {
-        loadChatRooms();
-    }
-}
-
-function scrollToBottom() {
-    messageArea.scrollTop = messageArea.scrollHeight;
 }
 
 function updateAllPresenceIndicators(username, status) {
@@ -612,6 +575,22 @@ function updateAllPresenceIndicators(username, status) {
     });
 }
 
+function onNotificationReceived(payload) {
+    if (payload.body === "NEW_ROOM") {
+        loadChatRooms();
+    }
+}
+
+// ===========================================
+// === UTILITIES
+// ===========================================
+function scrollToBottom() {
+    messageArea.scrollTop = messageArea.scrollHeight;
+}
+
+// ===========================================
+// === KHỞI ĐỘNG
+// ===========================================
 if (document.querySelector('.chat-app-container')) {
     connect();
 }
