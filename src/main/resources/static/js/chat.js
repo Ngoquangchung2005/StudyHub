@@ -213,16 +213,36 @@ function onMessageSubmit(event) {
         cancelFileUpload();
         sendTypingEvent(false);
     }
-}// ===========================================
-// === THU HỒI TIN NHẮN (ĐÃ SỬA: BỎ CONFIRM) ===
-// ===========================================
-function recallMessage(messageId) {
-    // KHÔNG DÙNG CONFIRM NỮA
-    const recallDto = {
-        messageId: messageId,
-        roomId: currentRoomId
-    };
-    stompClient.send("/app/chat.recallMessage", {}, JSON.stringify(recallDto));
+}function recallMessage(messageId) {
+    if (!confirm('Bạn có chắc muốn thu hồi tin nhắn này?')) return;
+
+    // --- 1. CẬP NHẬT GIAO DIỆN NGAY LẬP TỨC (OPTIMISTIC UI) ---
+    // Tìm bong bóng chat tương ứng trên màn hình
+    const msgContainer = document.querySelector(`.msg-container[data-message-id="${messageId}"]`);
+
+    if (msgContainer) {
+        const bubble = msgContainer.querySelector('.msg-bubble');
+
+        // Đổi nội dung và giao diện sang trạng thái đã thu hồi
+        bubble.innerHTML = '<em>Tin nhắn đã được thu hồi</em>';
+        bubble.className = 'msg-bubble recalled'; // Thêm class recalled, xóa các class màu sắc cũ
+        bubble.removeAttribute('style'); // Xóa style inline (nếu có)
+
+        // Xóa nút 3 chấm (...) để không bấm thu hồi lại lần nữa
+        const actions = msgContainer.querySelector('.msg-actions');
+        if (actions) {
+            actions.remove();
+        }
+    }
+
+    // --- 2. GỬI LỆNH LÊN SERVER (SOCKET) ĐỂ BÁO CHO NGƯỜI KHÁC ---
+    if (stompClient && currentRoomId) {
+        const recallDto = {
+            messageId: messageId,
+            roomId: currentRoomId
+        };
+        stompClient.send("/app/chat.recallMessage", {}, JSON.stringify(recallDto));
+    }
 }
 // ===========================================
 // === HIỂN THỊ TIN NHẮN (VỚI POPUP MENU) ===
@@ -523,37 +543,43 @@ function updateTypingIndicator() {
         typingIndicator.textContent = "Nhiều người đang gõ...";
     }
 }
-// ===========================================
-// === XỬ LÝ TIN NHẮN REALTIME (KHÔNG RELOAD) ===
-// ===========================================
 function onMessageReceived(payload) {
     const messageDto = JSON.parse(payload.body);
+    console.log("🔔 Nhận tin nhắn socket:", messageDto); // Kiểm tra xem tin nhắn có về không
 
-    if (messageDto.roomId == currentRoomId) {
-        // 1. Tìm tin nhắn cũ trên màn hình
+    // Chỉ xử lý nếu tin nhắn thuộc phòng hiện tại
+    if (currentRoomId && messageDto.roomId == currentRoomId) {
+
+        // 1. Tìm tin nhắn cũ trong giao diện (dựa vào ID)
+        // Selector này rất quan trọng, nó tìm thẻ div có data-message-id tương ứng
         const existingElement = document.querySelector(`.msg-container[data-message-id="${messageDto.id}"]`);
 
         if (existingElement) {
-            // === UPDATE (KHI THU HỒI) ===
+            // === TRƯỜNG HỢP 1: CẬP NHẬT (VÍ DỤ: THU HỒI) ===
+            console.log("♻️ Tìm thấy tin nhắn cũ, đang cập nhật...");
+
             if (messageDto.isRecalled) {
                 const bubble = existingElement.querySelector('.msg-bubble');
 
-                // Cập nhật giao diện ngay lập tức
+                // Đổi nội dung thành "Tin nhắn đã thu hồi"
                 bubble.innerHTML = '<em>Tin nhắn đã được thu hồi</em>';
-                bubble.classList.add('recalled');
 
-                // Xóa menu đi
+                // Đổi giao diện (class CSS)
+                bubble.className = 'msg-bubble recalled';
+                bubble.removeAttribute('style'); // Xóa màu nền cũ
+
+                // Xóa nút 3 chấm (menu thao tác) nếu có
                 const actions = existingElement.querySelector('.msg-actions');
                 if (actions) actions.remove();
             }
         } else {
-            // === TIN NHẮN MỚI ===
+            // === TRƯỜNG HỢP 2: TIN NHẮN MỚI (CHƯA CÓ TRÊN MÀN HÌNH) ===
+            console.log("➕ Tin nhắn mới, đang thêm vào danh sách...");
             displayMessage(messageDto);
             scrollToBottom();
         }
     }
 }
-
 function onPresenceMessageReceived(payload) {
     const presenceDto = JSON.parse(payload.body);
     presenceStatus.set(presenceDto.username, presenceDto.status);
