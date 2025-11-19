@@ -301,3 +301,36 @@
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-thumb { background: #bcc0c4; border-radius: 3px; }
 ::-webkit-scrollbar-track { background: transparent; }
+/* --- GIỮ NGUYÊN CSS CŨ CỦA BẠN --- */
+/* ... (Copy toàn bộ nội dung cũ ở đây) ... */
+
+/* --- THÊM MỚI CHO TẠO NHÓM --- */
+
+/* Item chọn user khi tạo nhóm */
+.user-select-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.2s;
+    margin-bottom: 5px;
+}
+
+.user-select-item:hover {
+    background-color: #f5f5f5;
+}
+
+.user-select-item input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin-right: 12px;
+    accent-color: #667eea; /* Màu checkbox khi checked */
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+/* Nút nhóm */
+#new-group-btn:hover {
+    background-color: #dbeaff !important;
+}
