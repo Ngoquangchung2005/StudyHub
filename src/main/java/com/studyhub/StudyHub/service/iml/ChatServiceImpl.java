@@ -1,20 +1,22 @@
 package com.studyhub.StudyHub.service.iml;
 
-
-
+import com.studyhub.StudyHub.dto.ChatDTOs;
 import com.studyhub.StudyHub.dto.ChatDTOs.ChatRoomDto;
 import com.studyhub.StudyHub.dto.ChatDTOs.MessageDto;
 import com.studyhub.StudyHub.entity.ChatRoom;
+import com.studyhub.StudyHub.entity.Message;
 import com.studyhub.StudyHub.entity.User;
 import com.studyhub.StudyHub.repository.ChatRoomRepository;
 import com.studyhub.StudyHub.repository.MessageRepository;
+import com.studyhub.StudyHub.repository.UserRepository;
 import com.studyhub.StudyHub.service.ChatService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.studyhub.StudyHub.repository.UserRepository;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -25,8 +27,12 @@ public class ChatServiceImpl implements ChatService {
 
     @Autowired private ChatRoomRepository chatRoomRepository;
     @Autowired private MessageRepository messageRepository;
-    // === THÊM DÒNG NÀY ===
     @Autowired private UserRepository userRepository;
+
+    // Inject SimpMessagingTemplate để gửi socket
+    @Autowired private SimpMessagingTemplate messagingTemplate;
+
+    // ... (Giữ nguyên các hàm getChatRooms, getOrCreateOneToOneRoom, getMessageHistory...)
 
     @Override
     @Transactional(readOnly = true)
@@ -40,10 +46,8 @@ public class ChatServiceImpl implements ChatService {
     @Override
     @Transactional
     public ChatRoomDto getOrCreateOneToOneRoom(User user1, User user2) {
-        // Thử tìm phòng 1-1 đã có
         ChatRoom room = chatRoomRepository.findOneToOneRoom(user1, user2)
                 .orElseGet(() -> {
-                    // Nếu không có, tạo phòng mới
                     ChatRoom newRoom = new ChatRoom();
                     newRoom.setType(ChatRoom.RoomType.ONE_TO_ONE);
                     newRoom.setMembers(Set.of(user1, user2));
@@ -55,13 +59,13 @@ public class ChatServiceImpl implements ChatService {
     @Override
     @Transactional(readOnly = true)
     public List<MessageDto> getMessageHistory(Long roomId) {
-        // Dùng query đã tối ưu (JOIN FETCH sender)
         return messageRepository.findByRoomIdWithSender(roomId, Sort.by(Sort.Direction.ASC, "timestamp"))
                 .stream()
                 .map(MessageDto::new)
                 .collect(Collectors.toList());
     }
-    // === THÊM HÀM IMPLEMENT MỚI ===
+
+    // === SỬA HÀM NÀY ===
     @Override
     @Transactional
     public ChatRoomDto createGroupRoom(String groupName, List<Long> memberIds, User creator) {
@@ -78,38 +82,59 @@ public class ChatServiceImpl implements ChatService {
 
         // 2. Luôn thêm người tạo vào nhóm
         members.add(creator);
-
         room.setMembers(members);
 
+        // 3. Lưu nhóm vào Database
         ChatRoom savedRoom = chatRoomRepository.save(room);
+
+        // 4. === QUAN TRỌNG: Gửi thông báo Realtime cho các thành viên ===
+        // Lặp qua tất cả thành viên để báo "Có phòng mới"
+        for (User member : members) {
+            // Không cần gửi cho người tạo (vì Frontend của người tạo đã tự xử lý sau khi API trả về)
+            // Nhưng gửi cũng không sao, để chắc chắn thì ta gửi cho những người KHÁC người tạo
+            if (!member.getId().equals(creator.getId())) {
+                // Gửi tín hiệu chuỗi "NEW_ROOM" vào queue riêng của user đó
+                // Client JS sẽ nhận được ở hàm onNotificationReceived
+                messagingTemplate.convertAndSendToUser(
+                        member.getUsername(),
+                        "/queue/notify",
+                        "NEW_ROOM"
+                );
+            }
+        }
+
         return new ChatRoomDto(savedRoom, creator);
     }
-    // === THÊM HÀM IMPLEMENT NÀY ===
+
     @Override
     @Transactional
     public void leaveGroup(Long roomId, User user) {
+        // ... (Giữ nguyên logic rời nhóm đã viết ở câu trả lời trước) ...
         ChatRoom room = chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy phòng chat"));
 
-        // Chỉ cho phép rời nếu là chat NHÓM
         if (room.getType() != ChatRoom.RoomType.GROUP) {
-            throw new RuntimeException("Không thể rời khỏi cuộc trò chuyện 1-1. Hãy xóa bạn bè nếu muốn.");
+            throw new RuntimeException("Không thể rời khỏi cuộc trò chuyện 1-1.");
         }
 
-        // Xóa user khỏi danh sách thành viên
-        // Lưu ý: Set.remove() dựa vào equals() và hashCode() của User.
-        // Để chắc chắn, ta dùng removeIf dựa trên ID
-        room.getMembers().removeIf(member -> member.getId().equals(user.getId()));
+        boolean removed = room.getMembers().removeIf(member -> member.getId().equals(user.getId()));
+        if (!removed) throw new RuntimeException("Bạn không phải là thành viên nhóm này.");
 
-        // (Tùy chọn) Nếu nhóm không còn ai thì xóa luôn nhóm
         if (room.getMembers().isEmpty()) {
             chatRoomRepository.delete(room);
         } else {
             chatRoomRepository.save(room);
 
-            // (Tùy chọn nâng cao) Gửi tin nhắn hệ thống thông báo user đã rời nhóm
-            // Bạn có thể thêm logic gửi tin nhắn vào đây nếu muốn
+            Message systemMsg = new Message();
+            systemMsg.setContent(user.getName() + " đã rời khỏi nhóm.");
+            systemMsg.setRoom(room);
+            systemMsg.setSender(user);
+            systemMsg.setType(Message.MessageType.TEXT);
+            systemMsg.setTimestamp(LocalDateTime.now());
+            Message savedMsg = messageRepository.save(systemMsg);
+
+            ChatDTOs.MessageDto msgDto = new ChatDTOs.MessageDto(savedMsg);
+            messagingTemplate.convertAndSend("/topic/room/" + roomId, msgDto);
         }
     }
-
 }

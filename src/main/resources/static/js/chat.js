@@ -51,12 +51,18 @@ async function onConnected() {
     stompClient.subscribe('/topic/presence', onPresenceMessageReceived);
     stompClient.subscribe(`/user/${currentUsername}/queue/notify`, onNotificationReceived);
 
-    // === THÊM: ĐĂNG KÝ SỰ KIỆN CHO NÚT THU HỒI TRONG POPUP ===
+    // === ĐĂNG KÝ SỰ KIỆN CHO NÚT THU HỒI TRONG POPUP ===
     const confirmRecallBtn = document.getElementById('btn-confirm-recall-action');
     if (confirmRecallBtn) {
         confirmRecallBtn.addEventListener('click', executeRecall);
     }
-    // ========================================================
+
+    // === ĐĂNG KÝ SỰ KIỆN CHO NÚT XÁC NHẬN RỜI NHÓM TRONG MODAL ===
+    // Đây là nút "Rời nhóm ngay" nằm trong popup
+    const confirmLeaveBtn = document.getElementById('btn-confirm-leave-group');
+    if (confirmLeaveBtn) {
+        confirmLeaveBtn.addEventListener('click', handleConfirmLeaveGroup);
+    }
 
     try {
         const response = await fetch('/api/chat/online-users');
@@ -86,7 +92,6 @@ async function onConnected() {
         confirmGroupBtn.addEventListener('click', handleCreateGroup);
     }
     if (groupSearchInput) {
-        // Tìm kiếm user trong modal nhóm
         groupSearchInput.addEventListener('input', function(e) {
             filterGroupUserList(e.target.value);
         });
@@ -145,6 +150,8 @@ async function loadChatRooms() {
             roomElement.classList.add('user-list-item');
             roomElement.setAttribute('data-room-id', room.id);
             roomElement.setAttribute('data-room-name', roomName);
+            // Lưu loại phòng
+            roomElement.setAttribute('data-room-type', room.type);
             if(avatarUrl) roomElement.setAttribute('data-avatar-url', avatarUrl);
 
             const avatarHtml = getAvatarHtml(avatarUrl, roomName, 'user-avatar');
@@ -174,11 +181,12 @@ function onRoomSelected(event) {
     const roomId = target.getAttribute('data-room-id');
     const roomName = target.getAttribute('data-room-name');
     const avatarUrl = target.getAttribute('data-avatar-url');
+    const roomType = target.getAttribute('data-room-type');
 
-    selectRoom(roomId, roomName, avatarUrl);
+    selectRoom(roomId, roomName, avatarUrl, roomType);
 }
 
-async function selectRoom(roomId, roomName, avatarUrl) {
+async function selectRoom(roomId, roomName, avatarUrl, roomType) {
     if (currentRoomId === roomId) return;
     currentRoomId = roomId;
 
@@ -199,11 +207,29 @@ async function selectRoom(roomId, roomName, avatarUrl) {
 
     if (chatMainHeader) {
         const avatarHtml = getAvatarHtml(avatarUrl, roomName, 'user-avatar');
+
+        // === LOGIC HIỂN THỊ NÚT RỜI NHÓM ===
+        // Nếu là GROUP thì thêm nút Rời nhóm
+        // data-bs-toggle="modal" và data-bs-target="#leaveGroupModal" sẽ tự động mở Popup khi click
+        let actionButtonHtml = '';
+        if (roomType === 'GROUP') {
+            actionButtonHtml = `
+                <button class="btn btn-outline-danger btn-sm ms-auto"
+                        data-bs-toggle="modal"
+                        data-bs-target="#leaveGroupModal"
+                        title="Rời nhóm"
+                        style="border-radius: 20px; font-weight: 600;">
+                    🚪 Rời nhóm
+                </button>
+            `;
+        }
+
         chatMainHeader.innerHTML = `
             ${avatarHtml}
             <div class="ms-2">
                 <h5 class="mb-0 fw-bold">${roomName}</h5>
             </div>
+            ${actionButtonHtml}
         `;
     }
 
@@ -240,7 +266,7 @@ async function checkUrlForRedirect() {
             if (!response.ok) throw new Error('Error fetching room');
             const roomDto = await response.json();
             await loadChatRooms();
-            selectRoom(roomDto.id, roomDto.oneToOnePartnerName, roomDto.oneToOnePartnerAvatarUrl);
+            selectRoom(roomDto.id, roomDto.oneToOnePartnerName, roomDto.oneToOnePartnerAvatarUrl, 'ONE_TO_ONE');
             history.replaceState(null, '', window.location.pathname);
         } catch (error) {
             console.error(error);
@@ -302,14 +328,14 @@ async function onStartNewChat(event) {
         if (modal) modal.hide();
 
         await loadChatRooms();
-        selectRoom(roomDto.id, roomDto.oneToOnePartnerName, roomDto.oneToOnePartnerAvatarUrl);
+        selectRoom(roomDto.id, roomDto.oneToOnePartnerName, roomDto.oneToOnePartnerAvatarUrl, 'ONE_TO_ONE');
     } catch (error) {
         console.error(error);
     }
 }
 
 // ===========================================
-// === HIỂN THỊ TIN NHẮN (CẬP NHẬT AVATAR) ===
+// === HIỂN THỊ TIN NHẮN ===
 // ===========================================
 function displayMessage(messageDto) {
     const messageRow = document.createElement('div');
@@ -339,16 +365,26 @@ function displayMessage(messageDto) {
                 </div>
             `;
         } else {
-            innerContent = messageDto.content;
+            // Xử lý tin nhắn hệ thống (VD: "User X đã rời nhóm")
+            if (messageDto.content.includes("đã rời khỏi nhóm")) {
+                innerContent = `<em class="text-muted">${messageDto.content}</em>`;
+            } else {
+                innerContent = messageDto.content;
+            }
         }
 
-        if (messageDto.content && messageDto.type !== 'TEXT') {
+        if (messageDto.content && messageDto.type !== 'TEXT' && !messageDto.content.includes("đã rời khỏi nhóm")) {
             innerContent += `<div class="mt-1 small">${messageDto.content}</div>`;
         }
 
         let formattedTime = '';
         try { formattedTime = new Date(messageDto.timestamp).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'}); } catch(e){}
-        contentHtml = `<div class="msg-content" title="${formattedTime}">${innerContent}</div>`;
+
+        if (messageDto.content.includes("đã rời khỏi nhóm")) {
+            contentHtml = `<div class="msg-content" style="background: #e4e6eb; color: #555; font-style: italic;" title="${formattedTime}">${innerContent}</div>`;
+        } else {
+            contentHtml = `<div class="msg-content" title="${formattedTime}">${innerContent}</div>`;
+        }
     }
 
     let avatarHtml = '';
@@ -385,7 +421,7 @@ function displayMessage(messageDto) {
         if (btnRecall) {
             btnRecall.addEventListener('click', (e) => {
                 e.stopPropagation();
-                recallMessage(messageDto.id); // GỌI HÀM MỞ POPUP
+                recallMessage(messageDto.id);
                 popup.classList.remove('show');
             });
         }
@@ -477,25 +513,18 @@ function onMessageSubmit(event) {
 }
 
 // ===========================================
-// === THU HỒI TIN NHẮN (ĐÃ SỬA ĐỔI) ===
+// === THU HỒI TIN NHẮN ===
 // ===========================================
-
-// 1. Hàm này được gọi khi bấm "Thu hồi" ở menu 3 chấm
-// Thay vì confirm(), nó mở Modal xác nhận
 function recallMessage(messageId) {
     messageIdToRecall = messageId;
-
-    // Mở Modal
     const modalElement = document.getElementById('recallConfirmationModal');
     const modal = new bootstrap.Modal(modalElement);
     modal.show();
 }
 
-// 2. Hàm này được gọi khi bấm "Thu hồi ngay" TRONG Modal
 function executeRecall() {
     if (!messageIdToRecall) return;
 
-    // Cập nhật giao diện ngay lập tức (cho user hiện tại)
     const msgRow = document.querySelector(`.msg-row[data-message-id="${messageIdToRecall}"]`);
     if (msgRow) {
         const contentDiv = msgRow.querySelector('.msg-content');
@@ -509,17 +538,14 @@ function executeRecall() {
         if(actions) actions.remove();
     }
 
-    // Gửi lệnh lên server
     if (stompClient && currentRoomId) {
         stompClient.send("/app/chat.recallMessage", {}, JSON.stringify({ messageId: messageIdToRecall, roomId: currentRoomId }));
     }
 
-    // Đóng Modal
     const modalElement = document.getElementById('recallConfirmationModal');
     const modal = bootstrap.Modal.getInstance(modalElement);
     modal.hide();
 
-    // Reset biến
     messageIdToRecall = null;
 }
 
@@ -739,7 +765,7 @@ async function handleCreateGroup() {
         }
 
         await loadChatRooms();
-        selectRoom(newRoom.id, newRoom.name, null);
+        selectRoom(newRoom.id, newRoom.name, null, 'GROUP');
 
     } catch (error) {
         console.error(error);
@@ -747,5 +773,66 @@ async function handleCreateGroup() {
     } finally {
         confirmBtn.disabled = false;
         confirmBtn.textContent = originalText;
+    }
+}
+
+// ===========================================
+// === XỬ LÝ RỜI NHÓM (ĐÃ CẬP NHẬT VỚI POPUP) ===
+// ===========================================
+async function handleConfirmLeaveGroup() {
+    if (!currentRoomId) return;
+
+    const btn = document.getElementById('btn-confirm-leave-group');
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "Đang xử lý...";
+
+    try {
+        const csrfMeta = document.querySelector('meta[name="_csrf"]');
+        const csrfHeaderMeta = document.querySelector('meta[name="_csrf_header"]');
+        const headers = {};
+        if (csrfHeaderMeta && csrfMeta) {
+            headers[csrfHeaderMeta.getAttribute('content')] = csrfMeta.getAttribute('content');
+        }
+
+        // Gọi API Rời nhóm
+        const response = await fetch(`/api/chat/room/${currentRoomId}/leave`, {
+            method: 'POST',
+            headers: headers
+        });
+
+        if (response.ok) {
+            // 1. Đóng popup Modal
+            // Lấy instance của Modal đã có sẵn trong HTML (id="leaveGroupModal")
+            const modalEl = document.getElementById('leaveGroupModal');
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            if (modal) modal.hide();
+
+            // 2. Xóa room khỏi danh sách bên trái (Sidebar)
+            const roomItem = document.querySelector(`.user-list-item[data-room-id="${currentRoomId}"]`);
+            if (roomItem) roomItem.remove();
+
+            // 3. Reset giao diện chính (về màn hình chào mừng)
+            chatMainWindow.style.display = 'none';
+            chatWelcomeScreen.style.display = 'flex';
+
+            // 4. Hủy đăng ký socket của phòng cũ
+            if (stompClient) {
+                stompClient.unsubscribe(`/topic/room/${currentRoomId}`);
+            }
+            currentRoomId = null;
+
+            // Thông báo nhỏ (tùy chọn)
+            // alert("Đã rời nhóm thành công."); // Có thể bỏ dòng này nếu không cần alert
+        } else {
+            const text = await response.text();
+            alert("Lỗi: " + text);
+        }
+    } catch (error) {
+        console.error(error);
+        alert("Có lỗi xảy ra khi rời nhóm.");
+    } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
     }
 }
