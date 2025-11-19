@@ -79,6 +79,7 @@ public class ChatDTOs {
         private String content;
         private String timestamp;
         private Long senderId;
+        private String senderAvatarUrl; // <--- 1. THÊM TRƯỜNG NÀY
         private String senderName;
         private Long roomId;
 
@@ -104,6 +105,7 @@ public class ChatDTOs {
 
             this.senderId = msg.getSender().getId();
             this.senderName = msg.getSender().getName();
+            this.senderAvatarUrl = msg.getSender().getAvatarUrl(); // <--- 2. THÊM DÒNG NÀY ĐỂ LẤY AVATAR
             this.roomId = msg.getRoom().getId();
             this.isRecalled = msg.isRecalled();  // ← Getter vẫn dùng isRecalled()
             this.type = msg.getType();
