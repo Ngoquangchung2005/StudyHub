@@ -106,6 +106,24 @@
         </div>
     </div>
 
+    <div class="modal fade" id="recallConfirmationModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 15px; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold text-danger">⚠️ Xác nhận thu hồi</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center py-4">
+                    <p class="mb-0 fs-5">Bạn có chắc chắn muốn thu hồi tin nhắn này không?</p>
+                    <small class="text-muted">Hành động này không thể hoàn tác.</small>
+                </div>
+                <div class="modal-footer border-0 justify-content-center pb-4">
+                    <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal" style="border-radius: 20px; font-weight: 600;">Hủy</button>
+                    <button type="button" class="btn btn-danger px-4" id="btn-confirm-recall-action" style="border-radius: 20px; font-weight: 600;">Thu hồi ngay</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 </body>
 </html>

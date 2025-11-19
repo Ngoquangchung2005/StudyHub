@@ -20,6 +20,9 @@ const imageBtn = document.querySelector('#image-btn');
 const filePreview = document.querySelector('#file-preview');
 const cancelFileBtn = document.querySelector('#cancel-file-btn');
 
+// === THÊM: BIẾN LƯU MESSAGE ID CẦN THU HỒI ===
+let messageIdToRecall = null;
+
 const currentUserId = document.querySelector('#current-user-id').value;
 const currentUsername = document.querySelector('#current-username').value;
 let stompClient = null;
@@ -48,6 +51,13 @@ async function onConnected() {
     stompClient.subscribe('/topic/presence', onPresenceMessageReceived);
     stompClient.subscribe(`/user/${currentUsername}/queue/notify`, onNotificationReceived);
 
+    // === THÊM: ĐĂNG KÝ SỰ KIỆN CHO NÚT THU HỒI TRONG POPUP ===
+    const confirmRecallBtn = document.getElementById('btn-confirm-recall-action');
+    if (confirmRecallBtn) {
+        confirmRecallBtn.addEventListener('click', executeRecall);
+    }
+    // ========================================================
+
     try {
         const response = await fetch('/api/chat/online-users');
         const onlineUsernames = await response.json();
@@ -63,7 +73,8 @@ async function onConnected() {
     if (messageForm) messageForm.addEventListener('submit', onMessageSubmit, true);
     if (messageInput) messageInput.addEventListener('input', onTypingInput);
     if (newChatBtn) newChatBtn.addEventListener('click', loadUsersForNewChat);
-    // === THÊM: Sự kiện cho nút "Tạo nhóm" và "Xác nhận tạo nhóm" ===
+
+    // === Sự kiện cho nút "Tạo nhóm" và "Xác nhận tạo nhóm" ===
     const newGroupBtn = document.querySelector('#new-group-btn');
     const confirmGroupBtn = document.querySelector('#confirm-create-group-btn');
     const groupSearchInput = document.querySelector('#search-user-group');
@@ -122,7 +133,6 @@ async function loadChatRooms() {
         chatRoomList.innerHTML = '';
         rooms.forEach(room => {
             const roomName = room.type === 'ONE_TO_ONE' ? room.oneToOnePartnerName : room.name;
-            // Lấy link avatar từ DTO (Java đã gửi xuống trường này)
             const avatarUrl = room.type === 'ONE_TO_ONE' ? room.oneToOnePartnerAvatarUrl : null;
 
             const partner = room.members.find(m => m.id != currentUserId);
@@ -135,10 +145,8 @@ async function loadChatRooms() {
             roomElement.classList.add('user-list-item');
             roomElement.setAttribute('data-room-id', room.id);
             roomElement.setAttribute('data-room-name', roomName);
-            // Lưu avatarUrl vào data attribute để dùng khi click
             if(avatarUrl) roomElement.setAttribute('data-avatar-url', avatarUrl);
 
-            // Render Avatar (Ảnh hoặc Chữ)
             const avatarHtml = getAvatarHtml(avatarUrl, roomName, 'user-avatar');
 
             roomElement.innerHTML = `
@@ -162,11 +170,10 @@ async function loadChatRooms() {
 
 function onRoomSelected(event) {
     event.preventDefault();
-    // Tìm thẻ a.user-list-item gần nhất (đề phòng click vào icon con)
     const target = event.currentTarget;
     const roomId = target.getAttribute('data-room-id');
     const roomName = target.getAttribute('data-room-name');
-    const avatarUrl = target.getAttribute('data-avatar-url'); // Lấy URL avatar
+    const avatarUrl = target.getAttribute('data-avatar-url');
 
     selectRoom(roomId, roomName, avatarUrl);
 }
@@ -183,7 +190,6 @@ async function selectRoom(roomId, roomName, avatarUrl) {
     if (messageInput) messageInput.disabled = false;
     if (messageSendBtn) messageSendBtn.disabled = false;
 
-    // Cập nhật trạng thái active ở sidebar
     document.querySelectorAll('#chat-room-list .user-list-item').forEach(item => {
         item.classList.remove('active');
         if (item.getAttribute('data-room-id') === roomId) {
@@ -191,7 +197,6 @@ async function selectRoom(roomId, roomName, avatarUrl) {
         }
     });
 
-    // === CẬP NHẬT HEADER VỚI AVATAR ĐÚNG ===
     if (chatMainHeader) {
         const avatarHtml = getAvatarHtml(avatarUrl, roomName, 'user-avatar');
         chatMainHeader.innerHTML = `
@@ -235,7 +240,6 @@ async function checkUrlForRedirect() {
             if (!response.ok) throw new Error('Error fetching room');
             const roomDto = await response.json();
             await loadChatRooms();
-            // Truyền thêm avatarUrl vào selectRoom
             selectRoom(roomDto.id, roomDto.oneToOnePartnerName, roomDto.oneToOnePartnerAvatarUrl);
             history.replaceState(null, '', window.location.pathname);
         } catch (error) {
@@ -259,8 +263,6 @@ async function loadUsersForNewChat() {
         users.forEach(user => {
             const status = presenceStatus.get(user.username) === 'ONLINE' ? 'online' : '';
             const statusText = status ? 'Online' : 'Offline';
-
-            // Render Avatar trong Modal
             const avatarHtml = getAvatarHtml(user.avatarUrl, user.name, 'user-avatar');
 
             const userElement = document.createElement('a');
@@ -300,7 +302,6 @@ async function onStartNewChat(event) {
         if (modal) modal.hide();
 
         await loadChatRooms();
-        // Truyền avatarUrl khi bắt đầu chat mới
         selectRoom(roomDto.id, roomDto.oneToOnePartnerName, roomDto.oneToOnePartnerAvatarUrl);
     } catch (error) {
         console.error(error);
@@ -350,10 +351,8 @@ function displayMessage(messageDto) {
         contentHtml = `<div class="msg-content" title="${formattedTime}">${innerContent}</div>`;
     }
 
-    // Avatar tin nhắn (bên cạnh bong bóng chat)
     let avatarHtml = '';
     if (!isSent) {
-        // Sử dụng hàm getAvatarHtml để hiển thị nhất quán
         avatarHtml = getAvatarHtml(messageDto.senderAvatarUrl, messageDto.senderName, 'msg-avatar-small');
     }
 
@@ -386,7 +385,7 @@ function displayMessage(messageDto) {
         if (btnRecall) {
             btnRecall.addEventListener('click', (e) => {
                 e.stopPropagation();
-                recallMessage(messageDto.id);
+                recallMessage(messageDto.id); // GỌI HÀM MỞ POPUP
                 popup.classList.remove('show');
             });
         }
@@ -477,9 +476,27 @@ function onMessageSubmit(event) {
     }
 }
 
+// ===========================================
+// === THU HỒI TIN NHẮN (ĐÃ SỬA ĐỔI) ===
+// ===========================================
+
+// 1. Hàm này được gọi khi bấm "Thu hồi" ở menu 3 chấm
+// Thay vì confirm(), nó mở Modal xác nhận
 function recallMessage(messageId) {
-    if (!confirm('Bạn có chắc muốn thu hồi?')) return;
-    const msgRow = document.querySelector(`.msg-row[data-message-id="${messageId}"]`);
+    messageIdToRecall = messageId;
+
+    // Mở Modal
+    const modalElement = document.getElementById('recallConfirmationModal');
+    const modal = new bootstrap.Modal(modalElement);
+    modal.show();
+}
+
+// 2. Hàm này được gọi khi bấm "Thu hồi ngay" TRONG Modal
+function executeRecall() {
+    if (!messageIdToRecall) return;
+
+    // Cập nhật giao diện ngay lập tức (cho user hiện tại)
+    const msgRow = document.querySelector(`.msg-row[data-message-id="${messageIdToRecall}"]`);
     if (msgRow) {
         const contentDiv = msgRow.querySelector('.msg-content');
         if (contentDiv) {
@@ -491,9 +508,19 @@ function recallMessage(messageId) {
         const actions = msgRow.querySelector('.msg-actions');
         if(actions) actions.remove();
     }
+
+    // Gửi lệnh lên server
     if (stompClient && currentRoomId) {
-        stompClient.send("/app/chat.recallMessage", {}, JSON.stringify({ messageId: messageId, roomId: currentRoomId }));
+        stompClient.send("/app/chat.recallMessage", {}, JSON.stringify({ messageId: messageIdToRecall, roomId: currentRoomId }));
     }
+
+    // Đóng Modal
+    const modalElement = document.getElementById('recallConfirmationModal');
+    const modal = bootstrap.Modal.getInstance(modalElement);
+    modal.hide();
+
+    // Reset biến
+    messageIdToRecall = null;
 }
 
 function onMessageReceived(payload) {
@@ -574,16 +601,15 @@ function updateAllPresenceIndicators(username, status) {
 }
 
 if (document.querySelector('.messenger-container')) connect();
+
 // === LOGIC TẠO NHÓM MỚI ===
 
-// Set chứa các ID user được chọn
 let selectedUserIdsForGroup = new Set();
 
 async function loadUsersForGroupCreation() {
     const groupUserListEl = document.querySelector('#group-user-list');
     if (!groupUserListEl) return;
 
-    // Reset input tên nhóm và search
     document.querySelector('#group-name-input').value = '';
     document.querySelector('#search-user-group').value = '';
     selectedUserIdsForGroup.clear();
@@ -591,7 +617,6 @@ async function loadUsersForGroupCreation() {
     groupUserListEl.innerHTML = '<p class="text-center text-muted">Đang tải...</p>';
 
     try {
-        // Tận dụng API lấy user có sẵn
         const response = await fetch('/api/chat/users');
         if (!response.ok) throw new Error('Lỗi tải danh sách user');
         const users = await response.json();
@@ -607,11 +632,9 @@ async function loadUsersForGroupCreation() {
             const item = document.createElement('div');
             item.className = 'user-select-item d-flex align-items-center p-2 border-bottom';
             item.style.cursor = 'pointer';
-            // Lưu data để search
             item.setAttribute('data-search-name', user.name.toLowerCase());
 
-            // Avatar logic
-            const avatarHtml = getAvatarHtml(user.avatarUrl, user.name, 'user-avatar-small'); // CSS class user-avatar-small cần thêm hoặc dùng tạm user-avatar
+            const avatarHtml = getAvatarHtml(user.avatarUrl, user.name, 'user-avatar-small');
 
             item.innerHTML = `
                 <div class="form-check m-0 d-flex align-items-center w-100">
@@ -623,9 +646,7 @@ async function loadUsersForGroupCreation() {
                 </div>
             `;
 
-            // Xử lý click vào cả dòng để chọn checkbox
             item.addEventListener('click', (e) => {
-                // Ngăn chặn click 2 lần nếu click trực tiếp vào input
                 if (e.target.tagName === 'INPUT') {
                     toggleUserSelection(user.id, e.target.checked);
                     return;
@@ -653,7 +674,6 @@ function toggleUserSelection(userId, isChecked) {
     }
 }
 
-// Hàm lọc danh sách user trong modal tạo nhóm
 function filterGroupUserList(keyword) {
     const items = document.querySelectorAll('#group-user-list .user-select-item');
     const k = keyword.toLowerCase();
@@ -712,16 +732,14 @@ async function handleCreateGroup() {
 
         const newRoom = await response.json();
 
-        // 1. Đóng modal
         const modalEl = document.querySelector('#createGroupModal');
-        const modal = bootstrap.Modal.getInstance(modalEl);
-        modal.hide();
+        if (modalEl) {
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            if (modal) modal.hide();
+        }
 
-        // 2. Reload danh sách chat
         await loadChatRooms();
-
-        // 3. Chọn luôn phòng vừa tạo
-        selectRoom(newRoom.id, newRoom.name, null); // Chat nhóm chưa có avatar riêng nên để null hoặc xử lý sau
+        selectRoom(newRoom.id, newRoom.name, null);
 
     } catch (error) {
         console.error(error);
