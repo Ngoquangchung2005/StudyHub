@@ -334,3 +334,13 @@
 #new-group-btn:hover {
     background-color: #dbeaff !important;
 }
+/* Thêm vào chat.css nếu cần chỉnh avatar trong modal */
+.user-avatar-small {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: #667eea;
+    color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: bold; font-size: 14px;
+    flex-shrink: 0;
+}

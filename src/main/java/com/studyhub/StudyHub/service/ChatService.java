@@ -17,4 +17,6 @@ public interface ChatService {
 
     // Lấy lịch sử tin nhắn của 1 phòng
     List<MessageDto> getMessageHistory(Long roomId);
+    // === THÊM DÒNG NÀY ===
+    ChatRoomDto createGroupRoom(String groupName, java.util.List<Long> memberIds, User creator);
 }

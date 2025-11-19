@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PostMapping; // <-- Thêm import
+import org.springframework.web.bind.annotation.RequestBody; // <-- Thêm import
 
 import java.security.Principal;
 import java.util.List;
@@ -74,5 +76,26 @@ public class ChatRoomController {
     @GetMapping("/online-users")
     public ResponseEntity<Set<String>> getOnlineUsers() {
         return ResponseEntity.ok(presenceService.getOnlineUsers());
+    }
+    // === THÊM API MỚI ===
+    @PostMapping("/room/group")
+    public ResponseEntity<ChatDTOs.ChatRoomDto> createGroupRoom(
+            @RequestBody ChatDTOs.CreateGroupRequest request,
+            Principal principal) {
+
+        User currentUser = getCurrentUser(principal);
+
+        // Validate cơ bản
+        if (request.getGroupName() == null || request.getGroupName().trim().isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        ChatDTOs.ChatRoomDto newRoom = chatService.createGroupRoom(
+                request.getGroupName(),
+                request.getMemberIds(),
+                currentUser
+        );
+
+        return ResponseEntity.ok(newRoom);
     }
 }

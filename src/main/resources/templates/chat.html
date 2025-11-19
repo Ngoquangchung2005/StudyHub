@@ -24,12 +24,9 @@
                     <input type="text" class="search-input" placeholder="Tìm kiếm trên StudyHub">
                 </div>
 
-                <div class="mt-3 d-flex gap-2">
-                    <button class="btn-new-chat" id="new-chat-btn" data-bs-toggle="modal" data-bs-target="#newUserChatModal" style="flex: 1;">
-                        + Chat 1-1
-                    </button>
-                    <button class="btn-new-chat" id="new-group-btn" data-bs-toggle="modal" data-bs-target="#createGroupModal" style="flex: 1; background-color: #e7f0ff; color: #764ba2;">
-                        👥 Tạo nhóm
+                <div class="mt-3 text-center">
+                    <button class="btn-new-chat" id="new-chat-btn" data-bs-toggle="modal" data-bs-target="#newUserChatModal">
+                        + Cuộc trò chuyện mới
                     </button>
                 </div>
             </div>
@@ -104,38 +101,6 @@
                     </div>
                     <div id="new-chat-user-list" class="user-list-modal">
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal fade" id="createGroupModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content" style="border-radius: 15px;">
-                <div class="modal-header border-0">
-                    <h5 class="modal-title fw-bold">Tạo nhóm chat mới</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="form-group mb-3">
-                        <label class="fw-bold mb-1">Tên nhóm</label>
-                        <input type="text" id="group-name-input" class="form-control" placeholder="Đặt tên cho nhóm...">
-                    </div>
-
-                    <label class="fw-bold mb-2">Chọn thành viên:</label>
-                    <div class="search-bar-wrapper mb-2">
-                        <span class="search-icon">🔍</span>
-                        <input type="text" id="search-user-group" class="search-input" placeholder="Tìm người...">
-                    </div>
-
-                    <div id="group-user-list" class="user-list-modal" style="max-height: 300px; overflow-y: auto;">
-                    </div>
-                </div>
-                <div class="modal-footer border-0">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                    <button type="button" class="btn btn-primary" id="confirm-create-group-btn" style="background: linear-gradient(135deg, #667eea, #764ba2); border: none;">
-                        Tạo nhóm
-                    </button>
                 </div>
             </div>
         </div>

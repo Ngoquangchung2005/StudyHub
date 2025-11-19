@@ -5,7 +5,7 @@ import com.studyhub.StudyHub.entity.Message;
 import com.studyhub.StudyHub.entity.User;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
-import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -79,12 +79,11 @@ public class ChatDTOs {
         private String content;
         private String timestamp;
         private Long senderId;
-        private String senderAvatarUrl; // <--- 1. THÊM TRƯỜNG NÀY
+        private String senderAvatarUrl;
         private String senderName;
         private Long roomId;
 
-        // ====== QUAN TRỌNG: Thêm annotation để JSON serialize đúng tên field ======
-        @JsonProperty("isRecalled")  // ← Bắt buộc JSON dùng tên "isRecalled"
+        @JsonProperty("isRecalled")
         private boolean isRecalled;
 
         private Message.MessageType type;
@@ -105,9 +104,9 @@ public class ChatDTOs {
 
             this.senderId = msg.getSender().getId();
             this.senderName = msg.getSender().getName();
-            this.senderAvatarUrl = msg.getSender().getAvatarUrl(); // <--- 2. THÊM DÒNG NÀY ĐỂ LẤY AVATAR
+            this.senderAvatarUrl = msg.getSender().getAvatarUrl();
             this.roomId = msg.getRoom().getId();
-            this.isRecalled = msg.isRecalled();  // ← Getter vẫn dùng isRecalled()
+            this.isRecalled = msg.isRecalled();
             this.type = msg.getType();
             this.filePath = msg.getFilePath();
             this.fileName = msg.getFileName();
@@ -129,9 +128,17 @@ public class ChatDTOs {
         private String status;
     }
 
+    // === ĐÂY LÀ CLASS BỊ THIẾU ===
     @Data
     public static class RecallMessageDto {
         private Long messageId;
         private Long roomId;
+    }
+
+    // === CLASS CHO CHỨC NĂNG TẠO NHÓM (MỚI THÊM) ===
+    @Data
+    public static class CreateGroupRequest {
+        private String groupName;
+        private List<Long> memberIds;
     }
 }

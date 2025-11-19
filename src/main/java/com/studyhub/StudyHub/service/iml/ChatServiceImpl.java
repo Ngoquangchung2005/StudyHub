@@ -13,7 +13,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.studyhub.StudyHub.repository.UserRepository;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -23,6 +25,8 @@ public class ChatServiceImpl implements ChatService {
 
     @Autowired private ChatRoomRepository chatRoomRepository;
     @Autowired private MessageRepository messageRepository;
+    // === THÊM DÒNG NÀY ===
+    @Autowired private UserRepository userRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -56,5 +60,28 @@ public class ChatServiceImpl implements ChatService {
                 .stream()
                 .map(MessageDto::new)
                 .collect(Collectors.toList());
+    }
+    // === THÊM HÀM IMPLEMENT MỚI ===
+    @Override
+    @Transactional
+    public ChatRoomDto createGroupRoom(String groupName, List<Long> memberIds, User creator) {
+        ChatRoom room = new ChatRoom();
+        room.setName(groupName);
+        room.setType(ChatRoom.RoomType.GROUP);
+
+        // 1. Tìm các thành viên từ list ID
+        Set<User> members = new HashSet<>();
+        if (memberIds != null && !memberIds.isEmpty()) {
+            List<User> users = userRepository.findAllById(memberIds);
+            members.addAll(users);
+        }
+
+        // 2. Luôn thêm người tạo vào nhóm
+        members.add(creator);
+
+        room.setMembers(members);
+
+        ChatRoom savedRoom = chatRoomRepository.save(room);
+        return new ChatRoomDto(savedRoom, creator);
     }
 }
