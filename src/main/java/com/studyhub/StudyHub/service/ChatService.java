@@ -19,4 +19,6 @@ public interface ChatService {
     List<MessageDto> getMessageHistory(Long roomId);
     // === THÊM DÒNG NÀY ===
     ChatRoomDto createGroupRoom(String groupName, java.util.List<Long> memberIds, User creator);
+    // === THÊM HÀM NÀY ===
+    void leaveGroup(Long roomId, User user);
 }

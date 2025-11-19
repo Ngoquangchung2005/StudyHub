@@ -98,4 +98,16 @@ public class ChatRoomController {
 
         return ResponseEntity.ok(newRoom);
     }
+    // === THÊM API MỚI ===
+    @PostMapping("/room/{roomId}/leave")
+    public ResponseEntity<String> leaveGroup(@PathVariable Long roomId, Principal principal) {
+        User currentUser = getCurrentUser(principal);
+        try {
+            chatService.leaveGroup(roomId, currentUser);
+            return ResponseEntity.ok("Đã rời nhóm thành công");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
 }

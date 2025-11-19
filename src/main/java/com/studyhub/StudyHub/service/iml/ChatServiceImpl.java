@@ -84,4 +84,32 @@ public class ChatServiceImpl implements ChatService {
         ChatRoom savedRoom = chatRoomRepository.save(room);
         return new ChatRoomDto(savedRoom, creator);
     }
+    // === THÊM HÀM IMPLEMENT NÀY ===
+    @Override
+    @Transactional
+    public void leaveGroup(Long roomId, User user) {
+        ChatRoom room = chatRoomRepository.findById(roomId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy phòng chat"));
+
+        // Chỉ cho phép rời nếu là chat NHÓM
+        if (room.getType() != ChatRoom.RoomType.GROUP) {
+            throw new RuntimeException("Không thể rời khỏi cuộc trò chuyện 1-1. Hãy xóa bạn bè nếu muốn.");
+        }
+
+        // Xóa user khỏi danh sách thành viên
+        // Lưu ý: Set.remove() dựa vào equals() và hashCode() của User.
+        // Để chắc chắn, ta dùng removeIf dựa trên ID
+        room.getMembers().removeIf(member -> member.getId().equals(user.getId()));
+
+        // (Tùy chọn) Nếu nhóm không còn ai thì xóa luôn nhóm
+        if (room.getMembers().isEmpty()) {
+            chatRoomRepository.delete(room);
+        } else {
+            chatRoomRepository.save(room);
+
+            // (Tùy chọn nâng cao) Gửi tin nhắn hệ thống thông báo user đã rời nhóm
+            // Bạn có thể thêm logic gửi tin nhắn vào đây nếu muốn
+        }
+    }
+
 }

@@ -102,8 +102,7 @@
                         <span class="search-icon">🔍</span>
                         <input type="text" class="search-input" placeholder="Tìm người...">
                     </div>
-                    <div id="new-chat-user-list" class="user-list-modal">
-                    </div>
+                    <div id="new-chat-user-list" class="user-list-modal"></div>
                 </div>
             </div>
         </div>
@@ -151,6 +150,25 @@
                 <div class="modal-footer border-0 justify-content-center pb-4">
                     <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal" style="border-radius: 20px; font-weight: 600;">Hủy</button>
                     <button type="button" class="btn btn-danger px-4" id="btn-confirm-recall-action" style="border-radius: 20px; font-weight: 600;">Thu hồi ngay</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="leaveGroupModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 15px; border: none;">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold text-danger">🚪 Rời nhóm chat</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center py-4">
+                    <p class="mb-0 fs-5">Bạn có chắc chắn muốn rời khỏi nhóm này?</p>
+                    <small class="text-muted">Bạn sẽ không còn nhận được tin nhắn từ nhóm này nữa.</small>
+                </div>
+                <div class="modal-footer border-0 justify-content-center pb-4">
+                    <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal" style="border-radius: 20px; font-weight: 600;">Hủy</button>
+                    <button type="button" class="btn btn-danger px-4" id="btn-confirm-leave-group" style="border-radius: 20px; font-weight: 600;">Rời nhóm ngay</button>
                 </div>
             </div>
         </div>
