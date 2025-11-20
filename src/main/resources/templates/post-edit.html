@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout.html}">
+<head>
+    <title>Chỉnh sửa bài đăng</title>
+    <link th:href="@{/css/upload.css}" rel="stylesheet" />
+</head>
+<body>
+
+<div layout:fragment="content">
+
+    <div class="upload-container">
+
+        <div class="upload-header">
+            <h1>✏️ Chỉnh sửa bài đăng</h1>
+            <p>Cập nhật thông tin tài liệu và bài viết của bạn</p>
+        </div>
+
+        <form th:action="@{/posts/edit/{id}(id=${postId})}"
+              th:object="${postDto}"
+              method="POST"
+              enctype="multipart/form-data"
+              id="uploadForm">
+
+            <div class="form-group" th:if="${existingDocuments != null && !existingDocuments.isEmpty()}">
+                <label>📂 Tài liệu hiện có:</label>
+                <ul class="list-group">
+                    <li class="list-group-item d-flex justify-content-between align-items-center"
+                        th:each="doc : ${existingDocuments}">
+                        <span>
+                            📄 <span th:text="${doc.fileName}">file.pdf</span>
+                            <span class="text-muted ms-2" th:text="'(' + ${doc.views} + ' lượt xem)'"></span>
+                        </span>
+                        <span class="badge bg-primary rounded-pill">Đã lưu</span>
+                    </li>
+                </ul>
+                <small class="text-muted mt-1 d-block">
+                    * Nếu bạn tải lên file mới bên dưới, nó sẽ được thêm vào bài đăng này.
+                </small>
+            </div>
+
+            <div class="file-upload-zone" id="dropZone">
+                <div class="file-icon-big">📁</div>
+                <h4>Tải thêm file (nếu muốn)</h4>
+                <p>hoặc <strong>bấm để chọn</strong></p>
+                <input type="file"
+                       id="fileInput"
+                       th:field="*{files}"
+                       accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
+                       style="display: none;"
+                       multiple>
+            </div>
+
+            <div class="file-selected" id="fileSelected">
+                <div class="file-preview-icon" id="fileIcon">📄</div>
+                <div class="file-info">
+                    <h5 id="fileName">file.pdf</h5>
+                    <small id="fileSize">0 MB</small>
+                </div>
+                <button type="button" class="btn btn-danger" onclick="clearFile()" style="margin-left: auto;">
+                    ❌ Hủy file mới
+                </button>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>📝 Tiêu đề tài liệu</label>
+                    <input type="text" class="form-control" th:field="*{title}" placeholder="VD: Giáo trình Java">
+                </div>
+                <div class="form-group">
+                    <label>🏷️ Tags</label>
+                    <input type="text" class="form-control" th:field="*{tags}" placeholder="VD: java, spring">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>📄 Mô tả chi tiết / Nội dung bài đăng</label>
+                <textarea class="form-control" th:field="*{description}"></textarea>
+                <input type="hidden" th:field="*{content}" id="hiddenContent">
+            </div>
+
+            <div class="form-group">
+                <label>📂 Chọn danh mục</label>
+                <div class="category-grid">
+                    <div class="category-item" th:each="cat : ${categories}">
+                        <input type="radio"
+                               th:id="${'cat_' + cat.id}"
+                               name="categoryId"
+                               th:value="${cat.id}"
+                               th:checked="${postDto.categoryId == cat.id}">
+                        <label th:for="${'cat_' + cat.id}" class="category-label">
+                            <span class="category-icon" th:text="${cat.icon}">📚</span>
+                            <span class="category-name" th:text="${cat.name}">Category</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>🔒 Quyền riêng tư</label>
+                <label class="privacy-option">
+                    <input type="radio" name="isPublic" value="true" th:checked="${postDto.isPublic == true}">
+                    <div class="privacy-label"><strong>🌐 Công khai</strong><br><small>Mọi người đều có thể xem</small></div>
+                </label>
+                <label class="privacy-option">
+                    <input type="radio" name="isPublic" value="false" th:checked="${postDto.isPublic == false}">
+                    <div class="privacy-label"><strong>🔒 Riêng tư</strong><br><small>Chỉ mình tôi xem</small></div>
+                </label>
+            </div>
+
+            <div class="d-flex gap-3">
+                <a th:href="@{/}" class="btn btn-secondary flex-grow-1 py-3" style="border-radius: 15px;">Hủy</a>
+                <button type="submit" class="btn-submit flex-grow-1" id="submitBtn">💾 Lưu thay đổi</button>
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+<script layout:fragment="scripts">
+    // (Copy nguyên đoạn script từ upload.html sang đây để xử lý kéo thả file)
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const fileSelected = document.getElementById('fileSelected');
+    const fileName = document.getElementById('fileName');
+    const fileSize = document.getElementById('fileSize');
+    const fileIcon = document.getElementById('fileIcon');
+    const descInput = document.querySelector('textarea[name="description"]');
+    const contentInput = document.getElementById('hiddenContent');
+
+    // Sync description to content on submit
+    document.getElementById('uploadForm').addEventListener('submit', function() {
+        if(descInput) contentInput.value = descInput.value;
+    });
+
+    dropZone.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', handleFiles);
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('dragover'); });
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault(); dropZone.classList.remove('dragover');
+        if (e.dataTransfer.files.length > 0) { fileInput.files = e.dataTransfer.files; handleFiles(); }
+    });
+
+    function handleFiles() {
+        const files = fileInput.files;
+        if (files.length > 0) {
+            const file = files[0];
+            fileName.textContent = file.name;
+            fileSize.textContent = (file.size / 1024 / 1024).toFixed(2) + ' MB';
+            fileSelected.classList.add('show');
+            dropZone.style.display = 'none';
+        }
+    }
+
+    function clearFile() {
+        fileInput.value = '';
+        fileSelected.classList.remove('show');
+        dropZone.style.display = 'block';
+    }
+</script>
+
+</body>
+</html>

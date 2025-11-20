@@ -4,7 +4,9 @@ import com.studyhub.StudyHub.dto.CommentDto;
 import com.studyhub.StudyHub.dto.PostDto;
 import com.studyhub.StudyHub.entity.Document;
 import com.studyhub.StudyHub.entity.Post;
+import com.studyhub.StudyHub.entity.User;
 import com.studyhub.StudyHub.repository.CategoryRepository; // THÊM DÒNG NÀY
+import com.studyhub.StudyHub.repository.UserRepository;
 import com.studyhub.StudyHub.service.PostService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -23,6 +25,8 @@ public class PostController {
     // === THÊM DÒNG NÀY ===
     @Autowired
     private CategoryRepository categoryRepository;
+    @Autowired
+    private UserRepository userRepository;
 
     // === THÊM METHOD MỚI: HIỂN thị TRANG UPLOAD TÀI LIỆU ===
     @GetMapping("/upload")
@@ -71,18 +75,24 @@ public class PostController {
         return "redirect:/";
     }
 
-    // === 1. HIỂN THỊ TRANG SỬA BÀI (GIỐNG UPLOAD) ===
+    // === SỬA HÀM showEditPage ===
     @GetMapping("/posts/edit/{id}")
     public String showEditPage(@PathVariable Long id, Model model, Principal principal, RedirectAttributes redirectAttributes) {
         try {
             Post post = postService.getPostById(id);
 
-            // Kiểm tra quyền (để chắc chắn không ai gõ URL để vào sửa bài người khác)
-            String currentUsername = principal.getName();
-            if (!post.getUser().getUsername().equals(currentUsername)) {
+            // === SỬA LOGIC KIỂM TRA QUYỀN ===
+            // Lấy thông tin người dùng hiện tại từ database dựa trên principal (Email hoặc Username)
+            String usernameOrEmail = principal.getName();
+            User currentUser = userRepository.findByUsernameOrEmail(usernameOrEmail, usernameOrEmail)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy user đang đăng nhập"));
+
+            // So sánh ID của tác giả bài viết với ID người đang login
+            if (!post.getUser().getId().equals(currentUser.getId())) {
                 redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền sửa bài này");
                 return "redirect:/";
             }
+            // ================================
 
             // Đổ dữ liệu cũ vào DTO
             PostDto postDto = new PostDto();
@@ -101,14 +111,13 @@ public class PostController {
             }
 
             model.addAttribute("postDto", postDto);
-            model.addAttribute("postId", id); // Gửi ID để form action dùng
+            model.addAttribute("postId", id);
             model.addAttribute("categories", categoryRepository.findAll());
             model.addAttribute("pageTitle", "Chỉnh sửa bài đăng");
 
-            // Gửi danh sách tài liệu hiện có để hiển thị
             model.addAttribute("existingDocuments", post.getDocuments());
 
-            return "post-edit"; // Trả về file template mới (sẽ tạo ở bước 3)
+            return "post-edit"; // Bạn cần đảm bảo đã có file post-edit.html (tương tự upload.html)
 
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
