@@ -1,6 +1,5 @@
 package com.studyhub.StudyHub.entity;
 
-
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -23,24 +22,25 @@ public class Post {
     @Column(columnDefinition = "TEXT")
     private String content;
 
+    // === THÊM DÒNG NÀY ===
+    @Column(nullable = false)
+    private boolean isPublic = true; // Mặc định là công khai
+    // =====================
+
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;
 
-    // Tác giả bài đăng
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    // Danh sách file đính kèm
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Document> documents = new HashSet<>();
 
-    // Danh sách bình luận
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Comment> comments = new HashSet<>();
 
-    // Danh sách lượt thích
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Reaction> reactions = new HashSet<>();
 }

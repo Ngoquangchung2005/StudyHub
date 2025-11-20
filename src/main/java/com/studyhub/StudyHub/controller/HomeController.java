@@ -14,6 +14,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+// ... import cũ
+import org.springframework.web.bind.annotation.RequestParam; // <-- Thêm import
 
 import java.security.Principal;
 import java.util.ArrayList; // <-- THÊM
@@ -30,40 +32,40 @@ public class HomeController {
     @Autowired private PresenceService presenceService; // <-- THÊM
 
     @GetMapping("/")
-    public String home(Model model, Principal principal) {
+    public String home(Model model,
+                       Principal principal,
+                       @RequestParam(name = "keyword", required = false) String keyword) { // <-- Thêm tham số keyword
 
-        // === THÊM MỚI: Chuẩn bị danh sách liên hệ và online ===
+        // 1. Xử lý User login (Giữ nguyên logic cũ)
         List<ChatDTOs.ChatRoomDto> contacts = new ArrayList<>();
         Set<String> onlineUsers = new HashSet<>();
-        // === KẾT THÚC THÊM MỚI ===
 
-        // Lấy thông tin user hiện tại (để biết ai đang like)
         if (principal != null) {
             User currentUser = userRepository.findByUsernameOrEmail(principal.getName(), principal.getName()).get();
             model.addAttribute("currentUserId", currentUser.getId());
-
-            // === THÊM MỚI: Lấy dữ liệu nếu đã login ===
             contacts = chatService.getChatRooms(currentUser);
             onlineUsers = presenceService.getOnlineUsers();
-            // === KẾT THÚC THÊM MỚI ===
-
         } else {
             model.addAttribute("currentUserId", 0L);
         }
 
-        model.addAttribute("pageTitle", "Trang Chủ");
+        // 2. Xử lý danh sách bài đăng (CÓ SỬA ĐỔI)
+        List<Post> posts;
+        if (keyword != null && !keyword.isEmpty()) {
+            posts = postService.searchPosts(keyword);
+            model.addAttribute("keyword", keyword); // Để hiển thị lại keyword trên thanh tìm kiếm
+            model.addAttribute("pageTitle", "Tìm kiếm: " + keyword);
+        } else {
+            posts = postService.getAllPostsSortedByDate();
+            model.addAttribute("pageTitle", "Trang Chủ");
+        }
 
-        // Gửi 1 CommentDto rỗng để form bình luận hoạt động
-        model.addAttribute("commentDto", new CommentDto());
-
-        // Lấy tất cả bài đăng
-        List<Post> posts = postService.getAllPostsSortedByDate();
         model.addAttribute("posts", posts);
 
-        // === THÊM MỚI: Gửi danh sách liên hệ ra view ===
+        // 3. Các model attribute khác (Giữ nguyên)
+        model.addAttribute("commentDto", new CommentDto());
         model.addAttribute("contacts", contacts);
         model.addAttribute("onlineUsers", onlineUsers);
-        // === KẾT THÚC THÊM MỚI ===
 
         return "index";
     }

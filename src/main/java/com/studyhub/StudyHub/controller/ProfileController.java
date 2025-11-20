@@ -35,33 +35,37 @@ public class ProfileController {
         return userRepository.findByUsernameOrEmail(usernameOrEmail, usernameOrEmail)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy user"));
     }
-
     @GetMapping("/profile/{username}")
     public String showProfilePage(@PathVariable("username") String username, Model model, Principal principal) {
-        // 1. Tìm user đang xem
+        // 1. Tìm user của trang profile (profileUser)
         User profileUser = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy user: " + username));
 
-        // 2. Lấy danh sách bài đăng của user đó
-        List<Post> posts = postService.getPostsByUser(profileUser);
-
-        // 3. Gửi thông tin sang view
-        model.addAttribute("profileUser", profileUser); // Thông tin user (avatar, bio...)
-        model.addAttribute("posts", posts); // Danh sách bài đăng
-        model.addAttribute("pageTitle", profileUser.getName());
-
-        // 4. Gửi DTO rỗng cho form bình luận (giống hệt index.html)
-        model.addAttribute("commentDto", new CommentDto());
-
-        // 5. Gửi ID user đang đăng nhập (để check Like)
+        // 2. Xác định người xem có phải là chính chủ không?
+        boolean isOwner = false;
         if (principal != null) {
             User currentUser = getCurrentUser(principal);
             model.addAttribute("currentUserId", currentUser.getId());
+
+            // So sánh ID
+            if (currentUser.getId().equals(profileUser.getId())) {
+                isOwner = true;
+            }
         } else {
             model.addAttribute("currentUserId", 0L);
         }
 
-        return "profile-view"; // Trả về file profile-view.html
+        // 3. Lấy danh sách bài đăng (Truyền thêm biến isOwner)
+        // Nếu isOwner = true -> Lấy hết. Nếu false -> Chỉ lấy public.
+        List<Post> posts = postService.getPostsByUser(profileUser, isOwner);
+
+        // 4. Gửi thông tin sang view
+        model.addAttribute("profileUser", profileUser);
+        model.addAttribute("posts", posts);
+        model.addAttribute("pageTitle", profileUser.getName());
+        model.addAttribute("commentDto", new CommentDto());
+
+        return "profile-view";
     }
 
     /**

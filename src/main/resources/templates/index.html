@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="en"
+<html lang="vi"
       xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
       layout:decorate="~{layout.html}">
 <head>
-    <title>Trang chủ</title>
+    <title th:text="${pageTitle}">Trang chủ</title>
 </head>
 <body>
 
@@ -16,11 +16,17 @@
         <div class="col-lg-3 d-none d-lg-block">
             <div class="card sidebar-left">
                 <div class="card-body">
-                    <h5 class="card-title">Menu Trái</h5>
+                    <h5 class="card-title">Menu</h5>
                     <ul class="list-group list-group-flush">
-                        <li class="list-group-item">(Trang cá nhân)</li>
-                        <li class="list-group-item">(Bạn bè)</li>
-                        <li class="list-group-item">(Nhóm)</li>
+                        <li class="list-group-item">
+                            <a th:href="@{/profile/edit}" class="text-decoration-none text-dark">⚙️ Cài đặt tài khoản</a>
+                        </li>
+                        <li class="list-group-item">
+                            <a th:href="@{/documents}" class="text-decoration-none text-dark">📂 Kho tài liệu</a>
+                        </li>
+                        <li class="list-group-item">
+                            <a th:href="@{/chat}" class="text-decoration-none text-dark">💬 Tin nhắn</a>
+                        </li>
                     </ul>
                 </div>
             </div>
@@ -28,51 +34,106 @@
 
         <div class="col-lg-6 col-md-8">
 
+            <div class="card mb-4 shadow-sm" style="border-radius: 15px; border: none;">
+                <div class="card-body p-3">
+                    <form th:action="@{/}" method="GET" class="d-flex align-items-center">
+                        <div class="input-group">
+                            <span class="input-group-text bg-white border-end-0" style="border-radius: 20px 0 0 20px; border: 1px solid #e0e0e0;">
+                                🔍
+                            </span>
+                            <input type="text" name="keyword"
+                                   class="form-control border-start-0"
+                                   placeholder="Tìm kiếm tài liệu, bài viết, tags..."
+                                   th:value="${keyword}"
+                                   style="border-radius: 0 20px 20px 0; border: 1px solid #e0e0e0; box-shadow: none;">
+                            <button type="submit" class="btn btn-primary ms-2 fw-bold"
+                                    style="border-radius: 20px; background: linear-gradient(135deg, #667eea, #764ba2); border: none; padding: 8px 20px;">
+                                Tìm
+                            </button>
+                        </div>
+                        <a th:if="${keyword != null && !keyword.isEmpty()}"
+                           th:href="@{/}"
+                           class="btn btn-light ms-2"
+                           style="border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;"
+                           title="Xóa tìm kiếm">
+                            ✖
+                        </a>
+                    </form>
+                </div>
+            </div>
+
             <div th:if="${successMessage}" class="alert alert-success" role="alert">
                 <span th:text="${successMessage}"></span>
             </div>
+            <div th:if="${errorMessage}" class="alert alert-danger" role="alert">
+                <span th:text="${errorMessage}"></span>
+            </div>
 
-            <h2 class="h4 mb-3">Bài đăng gần đây</h2>
+            <h2 class="h4 mb-3" th:if="${keyword == null}">Bài đăng gần đây</h2>
+            <h2 class="h4 mb-3" th:if="${keyword != null}">Kết quả tìm kiếm cho: "<span th:text="${keyword}"></span>"</h2>
 
             <div th:if="${posts == null || posts.isEmpty()}" class="alert alert-info">
-                Chưa có bài đăng nào.
+                <span th:if="${keyword == null}">Chưa có bài đăng nào.</span>
+                <span th:if="${keyword != null}">Không tìm thấy kết quả nào phù hợp.</span>
             </div>
 
             <div class="card mb-3" th:each="post : ${posts}">
                 <div class="card-body">
 
-                    <div class="d-flex align-items-center mb-2">
-
-                        <a th:href="@{/profile/{username}(username=${post.user.username})}">
-                            <div class="post-author-avatar">
-                                <img th:if="${post.user.avatarUrl != null}"
-                                     th:src="@{/view-file/{fileName}(fileName=${post.user.avatarUrl})}"
-                                     alt="Avatar">
-                                <span th:if="${post.user.avatarUrl == null}"
-                                      th:text="${#strings.substring(post.user.name, 0, 1)}">
-                                A
-                            </span>
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div class="d-flex align-items-center">
+                            <a th:href="@{/profile/{username}(username=${post.user.username})}">
+                                <div class="post-author-avatar">
+                                    <img th:if="${post.user.avatarUrl != null}"
+                                         th:src="@{/view-file/{fileName}(fileName=${post.user.avatarUrl})}"
+                                         alt="Avatar">
+                                    <span th:if="${post.user.avatarUrl == null}"
+                                          th:text="${#strings.substring(post.user.name, 0, 1)}">
+                                        A
+                                    </span>
+                                </div>
+                            </a>
+                            <div class="ms-2">
+                                <a class="fw-bold text-decoration-none text-dark"
+                                   th:href="@{/profile/{username}(username=${post.user.username})}"
+                                   th:text="${post.user.name}">Tên Tác Giả</a>
+                                <div class="text-muted small">
+                                    <span th:text="${#temporals.format(post.createdAt, 'HH:mm ''ngày'' dd/MM/yyyy')}">
+                                        Ngày đăng
+                                    </span>
+                                    <span th:if="${post.isPublic}" title="Công khai">🌐</span>
+                                    <span th:if="${!post.isPublic}" title="Riêng tư">🔒</span>
+                                </div>
                             </div>
-                        </a> <div class="ms-2">
-                        <a class="fw-bold" style="text-decoration: none; color: inherit;"
-                           th:href="@{/profile/{username}(username=${post.user.username})}"
-                           th:text="${post.user.name}">Tên Tác Giả</a>
-                        <div class="text-muted small">
-                                <span th:text="${#temporals.format(post.createdAt, 'HH:mm ''ngày'' dd/MM/yyyy')}">
-                                    Ngày đăng
-                                </span>
+                        </div>
+
+                        <div class="dropdown" th:if="${currentUserId == post.user.id}">
+                            <button class="btn btn-link text-dark p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="text-decoration: none; font-size: 20px;">
+                                ⋮
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end border-0 shadow">
+                                <li>
+                                    <a class="dropdown-item py-2" th:href="@{/posts/edit/{id}(id=${post.id})}">
+                                        ✏️ Chỉnh sửa bài viết
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form th:action="@{/posts/delete/{id}(id=${post.id})}" method="POST"
+                                          onsubmit="return confirm('Bạn có chắc chắn muốn xóa bài viết này không? Hành động này không thể hoàn tác.');">
+                                        <button type="submit" class="dropdown-item py-2 text-danger">
+                                            🗑️ Xóa bài viết
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
                         </div>
                     </div>
-                    </div> <p class="card-text" th:if="${post.content != null && !post.content.isEmpty()}"
-                              th:text="${post.content}">Nội dung bài đăng...</p>
+
+                    <p class="card-text" th:if="${post.content != null && !post.content.isEmpty()}"
+                       th:text="${post.content}">Nội dung bài đăng...</p>
 
                     <div th:if="${post.documents != null && !post.documents.isEmpty()}" class="mt-3">
-
-                        <h6 class="card-subtitle mb-2 text-muted"
-                            th:if="${post.content != null && !post.content.isEmpty() && !post.content.equals(post.documents.iterator().next().description)}">
-                            Tài liệu đính kèm:
-                        </h6>
-
                         <div class="list-group">
                             <div th:each="doc : ${post.documents}"
                                  class="list-group-item list-group-item-action flex-column align-items-start mb-2 border rounded p-3">
@@ -80,8 +141,7 @@
                                 <div class="d-flex w-100 justify-content-between align-items-center">
                                     <h5 class="mb-1 fw-bold" style="font-size: 1.1rem;">
                                         📄
-                                        <span
-                                                th:text="${doc.title != null && !doc.title.isEmpty() ? doc.title : doc.fileName}">
+                                        <span th:text="${doc.title != null && !doc.title.isEmpty() ? doc.title : doc.fileName}">
                                             Tiêu đề tài liệu
                                         </span>
                                     </h5>
@@ -101,10 +161,8 @@
                                     <span th:if="${doc.category != null}"
                                           class="badge bg-secondary me-2"
                                           th:text="${doc.category.name}">Category</span>
-
-                                    <span
-                                            th:text="${doc.fileName} + ' (' + (${doc.fileSize < 1024*1024 ? #numbers.formatDecimal(doc.fileSize / 1024.0, 1, 'COMMA', 1, 'POINT') + ' KB' : #numbers.formatDecimal(doc.fileSize / 1024.0 / 1024.0, 1, 'COMMA', 1, 'POINT') + ' MB'}) + ')'">
-                                        ten_file.pdf (1.2 MB)
+                                    <span th:text="${doc.fileName} + ' (' + (${doc.fileSize < 1024*1024 ? #numbers.formatDecimal(doc.fileSize / 1024.0, 1, 'COMMA', 1, 'POINT') + ' KB' : #numbers.formatDecimal(doc.fileSize / 1024.0 / 1024.0, 1, 'COMMA', 1, 'POINT') + ' MB'}) + ')'">
+                                        size
                                     </span>
                                 </small>
                             </div>
@@ -140,7 +198,6 @@
                                       th:text="${#strings.substring(comment.user.name, 0, 1)}">
                                 </span>
                             </div>
-
                             <div class="ms-2" style="background-color: #f0f2f5; border-radius: 15px; padding: 8px 12px; flex-grow: 1;">
                                 <strong>
                                     <a th:href="@{/profile/{username}(username=${comment.user.username})}"
@@ -150,8 +207,7 @@
                                     </a>
                                 </strong>
                                 <p th:text="${comment.content}" class="mb-0">Nội dung bình luận.</p>
-                                <small class="text-muted"
-                                       th:text="${#temporals.format(comment.createdAt, 'HH:mm dd/MM/yyyy')}"></small>
+                                <small class="text-muted" th:text="${#temporals.format(comment.createdAt, 'HH:mm dd/MM/yyyy')}"></small>
                             </div>
                         </div>
                     </div>
@@ -159,7 +215,6 @@
                     <div class="mt-3" sec:authorize="isAuthenticated()">
                         <form th:action="@{/posts/{postId}/comment(postId=${post.id})}"
                               th:object="${commentDto}" method="POST" class="d-flex">
-
                             <div class="post-author-avatar me-2" style="width: 32px; height: 32px; font-size: 0.9rem;">
                                 <img th:if="${currentUser != null && currentUser.avatarUrl != null}"
                                      th:src="@{/view-file/{fileName}(fileName=${currentUser.avatarUrl})}"
@@ -168,7 +223,6 @@
                                       th:text="${currentUser != null ? #strings.substring(currentUser.name, 0, 1) : '?'}">
                                 </span>
                             </div>
-
                             <input type="text" class="form-control" th:field="*{content}"
                                    placeholder="Viết bình luận..." style="border-radius: 20px;"/>
                             <button type="submit" class="btn btn-primary ms-2" style="border-radius: 20px;">Gửi</button>
@@ -177,50 +231,45 @@
 
                 </div>
             </div>
+        </div>
 
-        </div> <div class="col-lg-3 col-md-4">
-        <div class="card sidebar-right">
-            <div class="card-body">
-                <h5 class="card-title">Liên hệ</h5>
+        <div class="col-lg-3 col-md-4">
+            <div class="card sidebar-right">
+                <div class="card-body">
+                    <h5 class="card-title">Liên hệ</h5>
 
-                <div class="user-list-container" th:if="${contacts != null && !contacts.isEmpty()}">
-
-                    <div th:each="contact : ${contacts}"
-                         th:if="${contact.type == T(com.studyhub.StudyHub.entity.ChatRoom.RoomType).ONE_TO_ONE}">
-
-                        <a th:href="@{/chat(withUser=${contact.oneToOnePartnerId})}"
-                           class="user-list-item-link">
-
-                            <div th:with="isOnline = ${onlineUsers.contains(contact.oneToOnePartnerUsername)}"
-                                 class="user-list-item">
-
-                                <div class="user-avatar-container">
-                                    <img th:if="${contact.oneToOnePartnerAvatarUrl != null}"
-                                         th:src="@{/view-file/{fileName}(fileName=${contact.oneToOnePartnerAvatarUrl})}"
-                                         class="user-avatar-image">
-                                    <div th:if="${contact.oneToOnePartnerAvatarUrl == null}"
-                                         class="user-avatar-default">
-                                            <span
-                                                    th:text="${#strings.substring(contact.oneToOnePartnerName, 0, 1)}"></span>
+                    <div class="user-list-container" th:if="${contacts != null && !contacts.isEmpty()}">
+                        <div th:each="contact : ${contacts}"
+                             th:if="${contact.type == T(com.studyhub.StudyHub.entity.ChatRoom.RoomType).ONE_TO_ONE}">
+                            <a th:href="@{/chat(withUser=${contact.oneToOnePartnerId})}" class="user-list-item-link">
+                                <div th:with="isOnline = ${onlineUsers.contains(contact.oneToOnePartnerUsername)}"
+                                     class="user-list-item">
+                                    <div class="user-avatar-container">
+                                        <img th:if="${contact.oneToOnePartnerAvatarUrl != null}"
+                                             th:src="@{/view-file/{fileName}(fileName=${contact.oneToOnePartnerAvatarUrl})}"
+                                             class="user-avatar-image">
+                                        <div th:if="${contact.oneToOnePartnerAvatarUrl == null}"
+                                             class="user-avatar-default">
+                                            <span th:text="${#strings.substring(contact.oneToOnePartnerName, 0, 1)}"></span>
+                                        </div>
+                                        <span class="status-dot" th:classappend="${isOnline ? 'online' : ''}"></span>
                                     </div>
-                                    <span class="status-dot"
-                                          th:classappend="${isOnline ? 'online' : ''}"></span>
+                                    <div class="user-info">
+                                        <span class="user-name" th:text="${contact.oneToOnePartnerName}">Tên</span>
+                                    </div>
                                 </div>
-
-                                <div class="user-info">
-                                        <span class="user-name"
-                                              th:text="${contact.oneToOnePartnerName}">Tên Bạn Bè</span>
-                                </div>
-                            </div>
-                        </a>
+                            </a>
+                        </div>
                     </div>
+
+                    <p th:if="${contacts == null || contacts.isEmpty()}" class="text-muted small">
+                        Bạn chưa nhắn tin với ai.
+                    </p>
                 </div>
-
-                <p th:if="${contacts == null || contacts.isEmpty()}" class="text-muted small">
-                    Bạn chưa nhắn tin với ai.
-                </p>
-
             </div>
         </div>
-    </div> </div> </div> </body>
+
+    </div>
+</div>
+</body>
 </html>
