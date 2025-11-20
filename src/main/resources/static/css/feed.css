@@ -132,7 +132,19 @@ body {
     background-color: #e0e0e0;
     background-size: cover;
     background-position: center;
+    background-repeat: no-repeat;
     border-bottom: 1px solid #ddd;
+    position: relative;
+}
+
+.profile-cover-photo::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 100px;
+    background: linear-gradient(to top, rgba(0,0,0,0.3), transparent);
 }
 
 /* Thanh thông tin (Avatar, Tên, Nút) */

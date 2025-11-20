@@ -34,164 +34,205 @@
 
 <div layout:fragment="content">
 
-  <div class="auth-page" style="min-height: 0; padding-top: 20px; padding-bottom: 20px; background: transparent;">
-    <div class="auth-container" style="max-width: 900px;"> <div class="auth-card">
+    <div class="container mt-4 mb-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-8 col-md-10">
 
-      <div class="auth-header" style="padding-top: 30px; padding-bottom: 30px;">
-        <div class="auth-logo">⚙️</div>
-        <h2>Cài đặt tài khoản</h2>
-        <p>Cập nhật thông tin cá nhân và profile của bạn</p>
-      </div>
+                <div class="card shadow-lg border-0" style="border-radius: 20px; overflow: hidden;">
 
-      <div class="auth-body">
+                    <!-- Header -->
+                    <div class="card-header text-white text-center py-4"
+                         style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <div style="font-size: 3rem; margin-bottom: 10px;">⚙️</div>
+                        <h2 class="mb-1 fw-bold">Cài đặt tài khoản</h2>
+                        <p class="mb-0" style="opacity: 0.9;">Cập nhật thông tin cá nhân và profile của bạn</p>
+                    </div>
 
-        <div th:if="${successMessage}" class="alert-custom alert-success-custom">
-          ✅ <span th:text="${successMessage}"></span>
+                    <!-- Body -->
+                    <div class="card-body p-4 p-md-5">
+
+                        <!-- Success/Error Messages -->
+                        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+                            ✅ <span th:text="${successMessage}"></span>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                            ❌ <span th:text="${errorMessage}"></span>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+
+                        <!-- Form -->
+                        <form th:action="@{/profile/edit}"
+                              th:object="${profileDto}"
+                              method="POST"
+                              enctype="multipart/form-data">
+
+                            <!-- Ảnh bìa hiện tại -->
+                            <div class="mb-4 text-center">
+                                <label class="form-label fw-bold text-muted mb-2">📷 Ảnh bìa hiện tại</label>
+                                <div class="cover-photo-preview"
+                                     th:style="${currentCoverPhotoUrl != null} ?
+                     'background-image: url(' + @{/view-file/{fileName}(fileName=${currentCoverPhotoUrl})} + ')' :
+                     'background-color: #e9ecef;'">
+                                </div>
+                            </div>
+
+                            <!-- Upload ảnh bìa mới -->
+                            <div class="mb-4">
+                                <label for="coverPhotoFile" class="form-label fw-bold">
+                                    🖼️ Tải lên ảnh bìa mới
+                                </label>
+                                <input type="file"
+                                       class="form-control"
+                                       id="coverPhotoFile"
+                                       th:field="*{coverPhotoFile}"
+                                       accept="image/png, image/jpeg, image/gif"
+                                       style="border-radius: 10px;">
+                                <small class="form-text text-muted">Định dạng: PNG, JPG, GIF. Kích thước đề xuất: 1200x400px</small>
+                            </div>
+
+                            <hr class="my-4">
+
+                            <!-- Avatar hiện tại -->
+                            <div class="mb-4 text-center">
+                                <label class="form-label fw-bold text-muted mb-3">👤 Avatar hiện tại</label>
+                                <div>
+                                    <img th:if="${currentAvatarUrl != null}"
+                                         th:src="@{/view-file/{fileName}(fileName=${currentAvatarUrl})}"
+                                         alt="Avatar"
+                                         style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 4px solid #667eea; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+                                    <div th:if="${currentAvatarUrl == null}"
+                                         style="width: 120px; height: 120px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); color: white; display: inline-flex; align-items: center; justify-content: center; font-size: 60px; font-weight: bold; border: 4px solid #667eea; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+                                        👤
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Upload avatar mới -->
+                            <div class="mb-4">
+                                <label for="avatarFile" class="form-label fw-bold">
+                                    📸 Tải lên avatar mới
+                                </label>
+                                <input type="file"
+                                       class="form-control"
+                                       id="avatarFile"
+                                       th:field="*{avatarFile}"
+                                       accept="image/png, image/jpeg, image/gif"
+                                       style="border-radius: 10px;">
+                                <small class="form-text text-muted">Định dạng: PNG, JPG, GIF. Kích thước đề xuất: 400x400px</small>
+                            </div>
+
+                            <hr class="my-4">
+
+                            <!-- Thông tin cá nhân -->
+                            <h5 class="mb-3 fw-bold text-primary">📝 Thông tin cá nhân</h5>
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="name" class="form-label fw-bold">Họ và tên <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="name" th:field="*{name}" required style="border-radius: 10px;">
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="userType" class="form-label fw-bold">Vai trò</label>
+                                    <select class="form-select" id="userType" th:field="*{userType}" style="border-radius: 10px;">
+                                        <option value="">-- Chọn vai trò --</option>
+                                        <option th:each="type : ${userTypes}"
+                                                th:value="${type}"
+                                                th:text="${type.displayName}">
+                                        </option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="school" class="form-label fw-bold">Trường học</label>
+                                    <input type="text" class="form-control" id="school" th:field="*{school}"
+                                           placeholder="VD: Đại học Bách khoa Đà Nẵng" style="border-radius: 10px;">
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="major" class="form-label fw-bold">Chuyên ngành</label>
+                                    <input type="text" class="form-control" id="major" th:field="*{major}"
+                                           placeholder="VD: Công nghệ phần mềm" style="border-radius: 10px;">
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="location" class="form-label fw-bold">Sống ở</label>
+                                    <input type="text" class="form-control" id="location" th:field="*{location}"
+                                           placeholder="VD: Đà Nẵng" style="border-radius: 10px;">
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="hometown" class="form-label fw-bold">Đến từ</label>
+                                    <input type="text" class="form-control" id="hometown" th:field="*{hometown}"
+                                           placeholder="VD: Huế" style="border-radius: 10px;">
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="birthday" class="form-label fw-bold">Ngày sinh</label>
+                                    <input type="date" class="form-control" id="birthday" th:field="*{birthday}" style="border-radius: 10px;">
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="contactPhone" class="form-label fw-bold">Số điện thoại</label>
+                                    <input type="tel" class="form-control" id="contactPhone" th:field="*{contactPhone}"
+                                           placeholder="VD: 0905123456" style="border-radius: 10px;">
+                                </div>
+
+                                <div class="col-12">
+                                    <label for="bio" class="form-label fw-bold">Tiểu sử (Bio)</label>
+                                    <textarea class="form-control" id="bio" th:field="*{bio}" rows="4"
+                                              placeholder="Viết gì đó về bạn..." style="border-radius: 10px;"></textarea>
+                                </div>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <div class="mt-4 d-grid">
+                                <button type="submit" class="btn btn-lg fw-bold text-white"
+                                        style="background: linear-gradient(135deg, #667eea, #764ba2); border: none; border-radius: 15px; padding: 15px;">
+                                    💾 Lưu thay đổi
+                                </button>
+                            </div>
+
+                        </form>
+
+                    </div>
+                </div>
+
+            </div>
         </div>
-        <div th:if="${errorMessage}" class="alert-custom alert-danger-custom">
-          ❌ <span th:text="${errorMessage}"></span>
-        </div>
-
-        <form th:action="@{/profile/edit}"
-              th:object="${profileDto}"
-              method="POST"
-              enctype="multipart/form-data">
-
-          <div class="form-group text-center">
-            <label>Ảnh bìa hiện tại</label>
-            <div class="cover-photo-preview"
-                 th:style="${currentCoverPhotoUrl != null} ? 'background-image: url(' + @{/view-file/{fileName}(fileName=${currentCoverPhotoUrl})} + ')' : 'background-color: #e0e0e0;'">
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="coverPhotoFile">Tải lên ảnh bìa mới</label>
-            <input type="file"
-                   class="form-control-auth"
-                   id="coverPhotoFile"
-                   th:field="*{coverPhotoFile}"
-                   accept="image/png, image/jpeg, image/gif">
-          </div>
-
-          <div class="form-group text-center">
-            <label>Avatar hiện tại</label>
-            <div class="mt-2">
-              <img th:if="${currentAvatarUrl != null}"
-                   th:src="@{/view-file/{fileName}(fileName=${currentAvatarUrl})}"
-                   alt="Avatar"
-                   style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 4px solid #ddd;">
-              <div th:if="${currentAvatarUrl == null}"
-                   class="auth-logo"
-                   style="width: 120px; height: 120px; font-size: 60px; margin-bottom: 0;">
-                👤
-              </div>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="avatarFile">Tải lên avatar mới</label>
-            <input type="file"
-                   class="form-control-auth"
-                   id="avatarFile"
-                   th:field="*{avatarFile}"
-                   accept="image/png, image/jpeg, image/gif">
-          </div>
-
-          <hr class="my-4">
-
-          <div class="form-grid">
-            <div class="form-group">
-              <label for="name">Họ và tên <span>*</span></label>
-              <input type="text"
-                     class="form-control-auth"
-                     id="name"
-                     th:field="*{name}"
-                     required>
-            </div>
-
-            <div class="form-group">
-              <label for="userType">Vai trò</label>
-              <select class="form-control-auth" id="userType" th:field="*{userType}">
-                <option th:each="type : ${userTypes}"
-                        th:value="${type}"
-                        th:text="${type.displayName}">
-                </option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label for="school">Trường học</label>
-              <input type="text"
-                     class="form-control-auth"
-                     id="school"
-                     th:field="*{school}"
-                     placeholder="VD: Đại học Bách khoa Đà Nẵng">
-            </div>
-
-            <div class="form-group">
-              <label for="major">Chuyên ngành</label>
-              <input type="text"
-                     class="form-control-auth"
-                     id="major"
-                     th:field="*{major}"
-                     placeholder="VD: Công nghệ phần mềm">
-            </div>
-
-            <div class="form-group">
-              <label for="location">Sống ở</label>
-              <input type="text"
-                     class="form-control-auth"
-                     id="location"
-                     th:field="*{location}"
-                     placeholder="VD: Đà Nẵng">
-            </div>
-
-            <div class="form-group">
-              <label for="hometown">Đến từ</label>
-              <input type="text"
-                     class="form-control-auth"
-                     id="hometown"
-                     th:field="*{hometown}"
-                     placeholder="VD: Huế">
-            </div>
-
-            <div class="form-group">
-              <label for="birthday">Ngày sinh</label>
-              <input type="date"
-                     class="form-control-auth"
-                     id="birthday"
-                     th:field="*{birthday}">
-            </div>
-
-            <div class="form-group">
-              <label for="contactPhone">Số điện thoại</label>
-              <input type="tel"
-                     class="form-control-auth"
-                     id="contactPhone"
-                     th:field="*{contactPhone}"
-                     placeholder="VD: 0905123456">
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="bio">Tiểu sử (Bio)</label>
-            <textarea class="form-control-auth"
-                      id="bio"
-                      th:field="*{bio}"
-                      rows="4"
-                      placeholder="Viết gì đó về bạn..."></textarea>
-          </div>
-
-          <button type="submit" class="btn-auth">
-            💾 Lưu thay đổi
-          </button>
-
-        </form>
-      </div>
-
     </div>
-    </div>
-  </div>
+
+</div>
+
+<style>
+    .cover-photo-preview {
+        height: 200px;
+        width: 100%;
+        background-color: #e9ecef;
+        border-radius: 15px;
+        background-size: cover;
+        background-position: center;
+        border: 3px dashed #dee2e6;
+        position: relative;
+    }
+
+    .cover-photo-preview::after {
+        content: '🖼️ Ảnh bìa';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 1.2rem;
+        color: #6c757d;
+        font-weight: bold;
+        opacity: 0.5;
+    }
+
+    .cover-photo-preview[style*="background-image"]::after {
+        display: none;
+    }
+</style>
 
 </div>
 </body>

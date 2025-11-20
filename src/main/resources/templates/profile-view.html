@@ -13,9 +13,9 @@
 
     <div class="profile-header-container">
         <div class="profile-cover-photo"
-             th:style="${profileUser.coverPhotoUrl != null}
-             ? 'background-image: url(' + @{/view-file/{fileName}(fileName=${profileUser.coverPhotoUrl})} + ')'
-             : 'background-color: #e0e0e0;'">
+             th:style="${profileUser.coverPhotoUrl != null and !#strings.isEmpty(profileUser.coverPhotoUrl)}
+     ? 'background-image: url(\'' + @{/view-file/{fileName}(fileName=${profileUser.coverPhotoUrl})} + '\'); background-size: cover; background-position: center;'
+     : 'background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);'">
         </div>
 
         <div class="profile-info-bar">
