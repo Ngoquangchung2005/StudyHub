@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout.html}">
+<head>
+    <title>Kho tài liệu</title>
+</head>
+<body>
+
+<div layout:fragment="content">
+
+    <div class="search-bar-container">
+        <form th:action="@{/documents}" method="GET" class="search-input-group">
+            <span class="search-icon">🔍</span>
+            <input type="text" name="keyword" class="search-input"
+                   placeholder="Tìm kiếm tài liệu, giáo trình, bài tập..."
+                   th:value="${keyword}">
+            <input type="hidden" name="categoryId" th:if="${currentCategoryId}" th:value="${currentCategoryId}">
+            <button type="submit" class="search-btn">Tìm kiếm</button>
+        </form>
+    </div>
+
+    <div class="category-filter">
+        <h5>📂 Danh mục tài liệu</h5>
+        <div class="category-list">
+            <a th:href="@{/documents(keyword=${keyword})}"
+               class="category-badge"
+               th:classappend="${currentCategoryId == null} ? 'active' : ''">
+                <span>🌐</span> Tất cả
+            </a>
+
+            <a th:each="cat : ${categories}"
+               th:href="@{/documents(categoryId=${cat.id}, keyword=${keyword})}"
+               class="category-badge"
+               th:classappend="${currentCategoryId == cat.id} ? 'active' : ''">
+                <span th:text="${cat.icon}">📁</span>
+                <span th:text="${cat.name}">Category Name</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="documents-grid" th:if="${documents != null && !documents.isEmpty()}">
+        <div class="document-card" th:each="doc : ${documents}"
+             onclick="window.location.href=this.getAttribute('data-url')"
+             th:data-url="@{/download/{fileName}(fileName=${doc.storagePath})}">
+
+            <div class="document-thumbnail">
+                <div class="file-icon">
+                    <span th:if="${#strings.contains(doc.fileType, 'pdf')}">📕</span>
+                    <span th:if="${#strings.contains(doc.fileType, 'word') || #strings.contains(doc.fileType, 'officedocument')}">📝</span>
+                    <span th:if="${#strings.contains(doc.fileType, 'sheet') || #strings.contains(doc.fileType, 'excel')}">📊</span>
+                    <span th:if="${#strings.contains(doc.fileType, 'presentation')}">📽️</span>
+                    <span th:if="${!#strings.contains(doc.fileType, 'pdf') && !#strings.contains(doc.fileType, 'word') && !#strings.contains(doc.fileType, 'sheet') && !#strings.contains(doc.fileType, 'presentation')}">📁</span>
+                </div>
+                <div class="file-type-badge" th:text="${#strings.substringAfter(doc.fileName, '.').toUpperCase()}">PDF</div>
+            </div>
+
+            <div class="document-info">
+                <div class="document-title" th:text="${doc.title != null ? doc.title : doc.fileName}">Tiêu đề tài liệu</div>
+                <div class="document-description" th:text="${doc.description}">Mô tả ngắn gọn...</div>
+
+                <div class="document-tags" th:if="${doc.tags != null && !doc.tags.isEmpty()}">
+                    <span class="tag-badge" th:each="tag : ${#strings.arraySplit(doc.tags, ',')}" th:text="${'#' + tag.trim()}">#java</span>
+                </div>
+
+                <div class="document-meta">
+                    <div class="document-author">
+                        <div class="author-avatar">
+                            <span th:text="${#strings.substring(doc.user.name, 0, 1)}">A</span>
+                        </div>
+                        <span th:text="${doc.user.name}">User</span>
+                    </div>
+                    <div class="document-stats">
+                        <span class="stat-item" title="Lượt tải">⬇ <span th:text="${doc.downloads}">0</span></span>
+                        <span class="stat-item" title="Kích thước">💾
+                             <span th:text="${doc.fileSize < 1024*1024 ? #numbers.formatDecimal(doc.fileSize / 1024.0, 1, 'COMMA', 1, 'POINT') + ' KB' : #numbers.formatDecimal(doc.fileSize / 1024.0 / 1024.0, 1, 'COMMA', 1, 'POINT') + ' MB'}">Size</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="empty-state" th:if="${documents == null || documents.isEmpty()}">
+        <div class="empty-icon">📭</div>
+        <h4>Không tìm thấy tài liệu nào</h4>
+        <p>Thử tìm kiếm với từ khóa khác hoặc chọn danh mục khác.</p>
+        <a th:href="@{/upload}" class="btn btn-primary mt-3">Đăng tải tài liệu ngay</a>
+    </div>
+
+    <a th:href="@{/upload}" class="upload-btn-float" title="Đăng tải tài liệu mới">
+        +
+    </a>
+
+</div>
+
+</body>
+</html>
