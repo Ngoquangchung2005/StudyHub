@@ -27,19 +27,26 @@ public class DocumentLibraryController {
             @RequestParam(name = "categoryId", required = false) Long categoryId,
             Model model) {
 
-        // 1. Lấy danh sách Categories để hiển thị bộ lọc
+        // 1. Lấy danh sách Categories
         List<Category> categories = categoryRepository.findAll();
 
-        // 2. Tìm kiếm documents
+        // === THÊM ĐOẠN NÀY ===
+        // Làm sạch keyword trước khi xử lý
+        if (keyword != null && keyword.trim().isEmpty()) {
+            keyword = null;
+        }
+        // =====================
+
+        // 2. Tìm kiếm documents (Lúc này keyword đã được xử lý chuẩn)
         List<Document> documents = documentService.searchDocuments(keyword, categoryId);
 
         // 3. Đẩy dữ liệu ra View
         model.addAttribute("documents", documents);
         model.addAttribute("categories", categories);
-        model.addAttribute("keyword", keyword);
+        model.addAttribute("keyword", keyword); // Nếu null, Thymeleaf sẽ tạo link sạch (/documents) thay vì (/documents?keyword=)
         model.addAttribute("currentCategoryId", categoryId);
         model.addAttribute("pageTitle", "Kho tài liệu");
 
-        return "documents"; // Trả về file documents.html
+        return "documents";
     }
 }

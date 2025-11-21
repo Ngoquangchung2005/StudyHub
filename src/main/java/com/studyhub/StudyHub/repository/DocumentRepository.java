@@ -10,8 +10,11 @@ import java.util.List;
 
 public interface DocumentRepository extends JpaRepository<Document, Long> {
 
-    // Tìm kiếm tài liệu Public theo từ khóa và Category (nếu có)
+    // === SỬA QUERY NÀY ===
+    // Thêm "LEFT JOIN FETCH d.user" và "LEFT JOIN FETCH d.category"
     @Query("SELECT d FROM Document d " +
+            "LEFT JOIN FETCH d.user " +       // <-- Lấy luôn User
+            "LEFT JOIN FETCH d.category " +   // <-- Lấy luôn Category
             "WHERE d.isPublic = true " +
             "AND (:categoryId IS NULL OR d.category.id = :categoryId) " +
             "AND (:keyword IS NULL OR :keyword = '' OR " +
