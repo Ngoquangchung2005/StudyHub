@@ -1,6 +1,7 @@
 package com.studyhub.StudyHub.controller;
 
 
+import com.studyhub.StudyHub.repository.DocumentRepository;
 import com.studyhub.StudyHub.service.StorageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
@@ -15,6 +16,8 @@ public class FileController {
 
     @Autowired
     private StorageService storageService;
+    @Autowired
+    private DocumentRepository documentRepository; // Thêm để tìm document theo filename
 
     // Endpoint này dùng để TẢI XUỐNG (giữ nguyên)
     @GetMapping("/download/{fileName:.+}")
