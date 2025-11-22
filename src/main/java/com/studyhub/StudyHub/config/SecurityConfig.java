@@ -38,7 +38,7 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests(authorize -> authorize
                         // Cho phép tất cả mọi người truy cập trang chủ, login, register, file tĩnh
-                        .requestMatchers("/", "/login", "/register", "/js/**", "/css/**", "/ws/**").permitAll()
+                        .requestMatchers("/", "/login", "/register", "/forgot-password", "/reset-password", "/js/**", "/css/**", "/ws/**").permitAll()
                         // Cho phép API tải lịch sử chat (sẽ dùng ở Phần 3)
                         .requestMatchers("/messages/**").authenticated()
                         .requestMatchers("/api/chat/**").authenticated() // THÊM DÒNG NÀY

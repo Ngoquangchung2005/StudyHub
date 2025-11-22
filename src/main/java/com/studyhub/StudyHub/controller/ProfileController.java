@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import com.studyhub.StudyHub.dto.ChangePasswordDto; // Import DTO mới
+import org.springframework.security.crypto.password.PasswordEncoder; // Import này
 
 import java.io.IOException;
 import java.security.Principal;
@@ -28,6 +30,8 @@ public class ProfileController {
     @Autowired private UserRepository userRepository;
     @Autowired private StorageService storageService;
     @Autowired private PostService postService;
+    // === THÊM DÒNG NÀY ===
+    @Autowired private PasswordEncoder passwordEncoder;
 
     // Helper (lấy từ GlobalControllerAdvice cho chắc)
     private User getCurrentUser(Principal principal) {
@@ -158,5 +162,49 @@ public class ProfileController {
 
         redirectAttributes.addFlashAttribute("successMessage", "Cập nhật profile thành công!");
         return "redirect:/profile/" + user.getUsername();
+    }
+    /**
+     * Hiển thị trang Đổi mật khẩu
+     */
+    @GetMapping("/profile/change-password")
+    public String showChangePasswordForm(Model model) {
+        model.addAttribute("passwordDto", new ChangePasswordDto());
+        model.addAttribute("pageTitle", "Đổi mật khẩu");
+        return "change-password"; // Trả về file template mới
+    }
+
+    /**
+     * Xử lý logic Đổi mật khẩu
+     */
+    @PostMapping("/profile/change-password")
+    public String handleChangePassword(@ModelAttribute("passwordDto") ChangePasswordDto passwordDto,
+                                       Principal principal,
+                                       RedirectAttributes redirectAttributes) {
+        User user = getCurrentUser(principal);
+
+        // 1. Kiểm tra mật khẩu hiện tại có đúng không
+        if (!passwordEncoder.matches(passwordDto.getCurrentPassword(), user.getPassword())) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Mật khẩu hiện tại không đúng!");
+            return "redirect:/profile/change-password";
+        }
+
+        // 2. Kiểm tra mật khẩu mới và xác nhận có khớp không
+        if (!passwordDto.getNewPassword().equals(passwordDto.getConfirmPassword())) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Mật khẩu xác nhận không khớp!");
+            return "redirect:/profile/change-password";
+        }
+
+        // 3. (Tùy chọn) Kiểm tra độ dài mật khẩu mới
+        if (passwordDto.getNewPassword().length() < 6) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Mật khẩu mới phải có ít nhất 6 ký tự!");
+            return "redirect:/profile/change-password";
+        }
+
+        // 4. Mã hóa và lưu mật khẩu mới
+        user.setPassword(passwordEncoder.encode(passwordDto.getNewPassword()));
+        userRepository.save(user);
+
+        redirectAttributes.addFlashAttribute("successMessage", "Đổi mật khẩu thành công!");
+        return "redirect:/profile/edit"; // Quay lại trang cài đặt
     }
 }

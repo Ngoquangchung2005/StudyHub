@@ -42,18 +42,20 @@
 
     <div class="documents-grid" th:if="${documents != null && !documents.isEmpty()}">
         <div class="document-card" th:each="doc : ${documents}"
-             onclick="window.location.href=this.getAttribute('data-url')"
-             th:data-url="@{/download/{fileName}(fileName=${doc.storagePath})}">
+             style="cursor: pointer;"
+             th:onclick="'window.location.href=\'' + @{/download/{fileName}(fileName=${doc.storagePath})} + '\''">
 
             <div class="document-thumbnail">
                 <div class="file-icon">
-                    <span th:if="${#strings.contains(doc.fileType, 'pdf')}">📕</span>
-                    <span th:if="${#strings.contains(doc.fileType, 'word') || #strings.contains(doc.fileType, 'officedocument')}">📝</span>
-                    <span th:if="${#strings.contains(doc.fileType, 'sheet') || #strings.contains(doc.fileType, 'excel')}">📊</span>
-                    <span th:if="${#strings.contains(doc.fileType, 'presentation')}">📽️</span>
-                    <span th:if="${!#strings.contains(doc.fileType, 'pdf') && !#strings.contains(doc.fileType, 'word') && !#strings.contains(doc.fileType, 'sheet') && !#strings.contains(doc.fileType, 'presentation')}">📁</span>
+                    <span th:if="${doc.fileType != null && #strings.contains(doc.fileType, 'pdf')}">📕</span>
+                    <span th:if="${doc.fileType != null && (#strings.contains(doc.fileType, 'word') || #strings.contains(doc.fileType, 'officedocument'))}">📝</span>
+                    <span th:if="${doc.fileType != null && (#strings.contains(doc.fileType, 'sheet') || #strings.contains(doc.fileType, 'excel'))}">📊</span>
+                    <span th:if="${doc.fileType != null && #strings.contains(doc.fileType, 'presentation')}">📽️</span>
+                    <span th:if="${doc.fileType == null || (!#strings.contains(doc.fileType, 'pdf') && !#strings.contains(doc.fileType, 'word') && !#strings.contains(doc.fileType, 'sheet') && !#strings.contains(doc.fileType, 'presentation'))}">📁</span>
                 </div>
-                <div class="file-type-badge" th:text="${#strings.substringAfter(doc.fileName, '.').toUpperCase()}">PDF</div>
+                <div class="file-type-badge"
+                     th:if="${doc.fileName != null}"
+                     th:text="${#strings.substringAfter(doc.fileName, '.').toUpperCase()}">FILE</div>
             </div>
 
             <div class="document-info">
@@ -67,16 +69,17 @@
                 <div class="document-meta">
                     <div class="document-author">
                         <div class="author-avatar">
-                            <span th:text="${#strings.substring(doc.user.name, 0, 1)}">A</span>
+                            <span th:text="${doc.user != null ? #strings.substring(doc.user.name, 0, 1) : '?'}">A</span>
                         </div>
-                        <span th:text="${doc.user.name}">User</span>
+                        <span th:text="${doc.user != null ? doc.user.name : 'Unknown'}">User</span>
                     </div>
-                    <div class="document-stats">
-                        <span class="stat-item" title="Lượt tải">⬇ <span th:text="${doc.downloads}">0</span></span>
-                        <span class="stat-item" title="Kích thước">💾
-                             <span th:text="${doc.fileSize < 1024*1024 ? #numbers.formatDecimal(doc.fileSize / 1024.0, 1, 'COMMA', 1, 'POINT') + ' KB' : #numbers.formatDecimal(doc.fileSize / 1024.0 / 1024.0, 1, 'COMMA', 1, 'POINT') + ' MB'}">Size</span>
-                        </span>
-                    </div>
+
+                    <a th:href="@{/download/{fileName}(fileName=${doc.storagePath})}"
+                       class="btn btn-sm btn-primary"
+                       style="border-radius: 20px; z-index: 10; position: relative;"
+                       onclick="event.stopPropagation();">
+                        ⬇ Tải xuống <span th:text="${doc.downloads}">0</span>
+                    </a>
                 </div>
             </div>
         </div>

@@ -7,15 +7,18 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional; // <-- Thêm import này
 
 public interface DocumentRepository extends JpaRepository<Document, Long> {
 
-    // === SỬA QUERY NÀY ===
-    // Thêm "LEFT JOIN FETCH d.user" và "LEFT JOIN FETCH d.category"
+    // Hàm này dùng để kiểm tra file khi người dùng bấm Tải xuống
+    Optional<Document> findByStoragePath(String storagePath);
+
+    // Query này ĐÃ ĐÚNG theo yêu cầu của bạn (chỉ lấy isPublic = true)
     @Query("SELECT d FROM Document d " +
-            "LEFT JOIN FETCH d.user " +       // <-- Lấy luôn User
-            "LEFT JOIN FETCH d.category " +   // <-- Lấy luôn Category
-            "WHERE d.isPublic = true " +
+            "LEFT JOIN FETCH d.user " +
+            "LEFT JOIN FETCH d.category " +
+            "WHERE d.isPublic = true " + // <-- Đã lọc chỉ file công khai
             "AND (:categoryId IS NULL OR d.category.id = :categoryId) " +
             "AND (:keyword IS NULL OR :keyword = '' OR " +
             "LOWER(d.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
