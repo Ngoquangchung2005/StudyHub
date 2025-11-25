@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" layout:decorate="~{layout.html}"
+      xmlns:layout="http://www.w3.org/1999/xhtml">
+<head><title>Quản lý Bài viết</title></head>
+<body>
+<div layout:fragment="content">
+    <div class="d-flex justify-content-between mb-4 align-items-center">
+        <h2 class="text-white fw-bold">📝 Kiểm duyệt Bài viết & Tài liệu</h2>
+        <a th:href="@{/admin/users}" class="btn btn-light fw-bold text-dark shadow-sm">
+            🔙 Quay lại Admin
+        </a>
+    </div>
+    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <table class="table table-striped">
+                <thead>
+                <tr>
+                    <th>Ngày đăng</th>
+                    <th>Người đăng</th>
+                    <th>Nội dung / Tài liệu</th>
+                    <th>Trạng thái</th>
+                    <th>Hành động</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="post : ${posts}">
+                    <td th:text="${#temporals.format(post.createdAt, 'dd/MM/yyyy HH:mm')}">Date</td>
+                    <td>
+                        <strong th:text="${post.user.name}">User</strong><br>
+                        <small th:text="${post.user.username}"></small>
+                    </td>
+                    <td>
+                        <div th:if="${post.content != null && !post.content.isEmpty()}" th:text="${#strings.abbreviate(post.content, 50)}">Content</div>
+                        <div th:if="${!post.documents.isEmpty()}">
+                            <span class="badge bg-info text-dark">📄 Có đính kèm file</span>
+                            <small th:text="${post.documents.iterator().next().fileName}"></small>
+                        </div>
+                    </td>
+                    <td>
+                        <span th:if="${post.isPublic}" class="badge bg-success">Công khai</span>
+                        <span th:if="${!post.isPublic}" class="badge bg-secondary">Riêng tư</span>
+                    </td>
+                    <td>
+                        <a th:href="@{/download/{f}(f=${!post.documents.isEmpty() ? post.documents.iterator().next().storagePath : ''})}"
+                           th:if="${!post.documents.isEmpty()}"
+                           class="btn btn-sm btn-outline-primary" target="_blank">Xem File</a>
+
+                        <form th:action="@{/admin/posts/{id}/delete(id=${post.id})}" method="POST" class="d-inline"
+                              onsubmit="return confirm('Hành động này sẽ xóa vĩnh viễn bài viết/tài liệu này. Tiếp tục?');">
+                            <button class="btn btn-sm btn-danger">🗑️ Xóa Spam</button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</body>
+</html>

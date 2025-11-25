@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" layout:decorate="~{layout.html}"
+      xmlns:layout="http://www.w3.org/1999/xhtml">
+<head><title>Quản lý Danh mục</title></head>
+<body>
+<div layout:fragment="content">
+    <div class="d-flex justify-content-between mb-4 align-items-center">
+        <h2 class="text-white fw-bold">📂 Quản lý Danh mục</h2>
+        <a th:href="@{/admin/users}" class="btn btn-light fw-bold text-dark shadow-sm">
+            🔙 Quay lại Admin
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white fw-bold">Thêm Danh mục Mới</div>
+                <div class="card-body">
+                    <form th:action="@{/admin/categories/save}" th:object="${newCategory}" method="POST">
+                        <div class="mb-3">
+                            <label>Tên danh mục</label>
+                            <input type="text" th:field="*{name}" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label>Icon (Emoji)</label>
+                            <input type="text" th:field="*{icon}" class="form-control" placeholder="VD: 📚">
+                        </div>
+                        <div class="mb-3">
+                            <label>Mô tả</label>
+                            <input type="text" th:field="*{description}" class="form-control">
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Lưu</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+                    <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+                    <table class="table">
+                        <thead>
+                        <tr>
+                            <th>Icon</th>
+                            <th>Tên</th>
+                            <th>Mô tả</th>
+                            <th>Hành động</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="cat : ${categories}">
+                            <td th:text="${cat.icon}">📁</td>
+                            <td th:text="${cat.name}">Name</td>
+                            <td th:text="${cat.description}">Desc</td>
+                            <td>
+                                <form th:action="@{/admin/categories/{id}/delete(id=${cat.id})}" method="POST"
+                                      onsubmit="return confirm('Chắc chắn xóa danh mục này?');">
+                                    <button class="btn btn-sm btn-danger">🗑️</button>
+                                </form>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
