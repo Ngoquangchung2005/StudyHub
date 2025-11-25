@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{admin/admin-layout}"> <head>
+    <title>Tổng quan</title>
+</head>
+<body>
+
+<div layout:fragment="content">
+
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="stat-card">
+                <div class="stat-icon bg-icon-blue">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-info text-end">
+                    <h4 th:text="${totalUsers}">0</h4>
+                    <p>Người dùng</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="stat-card">
+                <div class="stat-icon bg-icon-green">
+                    <i class="fas fa-pencil-alt"></i>
+                </div>
+                <div class="stat-info text-end">
+                    <h4 th:text="${totalPosts}">0</h4>
+                    <p>Bài viết</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="stat-card">
+                <div class="stat-icon bg-icon-orange">
+                    <i class="fas fa-file-pdf"></i>
+                </div>
+                <div class="stat-info text-end">
+                    <h4 th:text="${totalDocs}">0</h4>
+                    <p>Tài liệu</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm p-4" style="background: linear-gradient(to right, #667eea, #764ba2); color: white; border-radius: 15px;">
+        <h3>👋 Xin chào Quản trị viên!</h3>
+        <p class="mb-0">Chào mừng bạn quay trở lại hệ thống quản trị StudyHub. Hãy kiểm tra các báo cáo vi phạm và quản lý nội dung để giữ cộng đồng trong sạch.</p>
+    </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,184 @@
+/* admin.css - Giao diện Dashboard hiện đại */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f4f6f9; /* Màu nền xám nhạt chuyên nghiệp */
+    overflow-x: hidden;
+}
+
+/* SIDEBAR */
+.admin-sidebar {
+    min-height: 100vh;
+    width: 260px;
+    background: #2c3e50; /* Màu tối sang trọng */
+    color: #fff;
+    position: fixed;
+    top: 0;
+    left: 0;
+    transition: all 0.3s;
+    z-index: 1000;
+    box-shadow: 4px 0 10px rgba(0,0,0,0.1);
+}
+
+.sidebar-header {
+    padding: 20px;
+    background: #1a252f;
+    text-align: center;
+    border-bottom: 1px solid #34495e;
+}
+
+.sidebar-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #ecf0f1;
+}
+
+.sidebar-menu {
+    padding: 15px 0;
+    list-style: none;
+    margin: 0;
+}
+
+.sidebar-menu li {
+    margin-bottom: 5px;
+}
+
+.sidebar-menu a {
+    display: flex;
+    align-items: center;
+    padding: 12px 25px;
+    color: #bdc3c7;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s;
+    border-left: 4px solid transparent;
+}
+
+.sidebar-menu a:hover, .sidebar-menu a.active {
+    background-color: #34495e;
+    color: #fff;
+    border-left-color: #3498db; /* Điểm nhấn màu xanh */
+}
+
+.sidebar-menu a i {
+    margin-right: 10px;
+    width: 20px;
+    text-align: center;
+}
+
+/* MAIN CONTENT */
+.admin-content {
+    margin-left: 260px;
+    padding: 0;
+    transition: all 0.3s;
+}
+
+/* TOP NAVBAR */
+.admin-navbar {
+    background: #fff;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 30px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.admin-page-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin: 0;
+}
+
+.admin-user-profile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.admin-user-profile img {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #eee;
+}
+
+/* DASHBOARD CARDS */
+.stat-card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 25px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: transform 0.2s;
+    border: none;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+}
+
+.stat-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+}
+
+.bg-icon-blue { background: #e3f2fd; color: #2196f3; }
+.bg-icon-green { background: #e8f5e9; color: #4caf50; }
+.bg-icon-orange { background: #fff3e0; color: #ff9800; }
+.bg-icon-red { background: #ffebee; color: #f44336; }
+
+.stat-info h4 {
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0;
+    color: #2c3e50;
+}
+
+.stat-info p {
+    margin: 0;
+    color: #7f8c8d;
+    font-size: 14px;
+}
+
+/* TABLE STYLING */
+.admin-table-container {
+    background: #fff;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+}
+
+.table thead th {
+    border-bottom: 2px solid #f0f2f5;
+    color: #7f8c8d;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+}
+
+.table td {
+    vertical-align: middle;
+    color: #2c3e50;
+    border-bottom: 1px solid #f0f2f5;
+}
+
+/* BUTTONS */
+.btn-action {
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+}
