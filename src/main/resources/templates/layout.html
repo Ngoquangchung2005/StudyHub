@@ -17,6 +17,11 @@
     <link th:href="@{/css/upload.css}" rel="stylesheet" />
 </head>
 <body>
+<body>
+<div sec:authorize="isAuthenticated()" style="display: none;">
+    <input type="hidden" id="current-user-id" th:value="${currentUser.id}" />
+    <input type="hidden" id="current-username" th:value="${currentUser.username}" />
+</div>
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
     <div class="container-fluid">
@@ -48,11 +53,7 @@
                         💬 Chat
                     </a>
                 </li>
-                <li class="nav-item" sec:authorize="hasRole('ADMIN')">
-                    <a class="nav-link text-warning fw-bold" th:href="@{/admin/users}">
-                        🛠️ Quản trị (Admin)
-                    </a>
-                </li>
+
             </ul>
 
             <ul class="navbar-nav ms-auto" sec:authorize="isAnonymous()">
@@ -86,12 +87,11 @@
 
                     </a>
 
-
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li>
                             <a class ="dropdown-item"
-                            th:href="@{/profile/{username}(username=${currentUser.username})}">
-                            👤 Trang cá nhân
+                               th:href="@{/profile/{username}(username=${currentUser.username})}">
+                                👤 Trang cá nhân
                             </a>
                         </li>
                         <li><a class="dropdown-item" href="#">📁 Tài liệu của tôi</a></li>
@@ -103,7 +103,7 @@
                         <li><hr class="dropdown-divider"></li>
                         <li>
                             <form th:action="@{/logout}" method="POST">
-                                <button type="submit" class="dropdown-item">
+                                <button type="submit" class="dropdown-item text-danger">
                                     🚪 Đăng xuất
                                 </button>
                             </form>

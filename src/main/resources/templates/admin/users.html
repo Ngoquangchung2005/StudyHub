@@ -1,63 +1,61 @@
 <!DOCTYPE html>
-<html lang="vi" xmlns:th="http://www.thymeleaf.org" layout:decorate="~{layout.html}"
-      xmlns:layout="http://www.w3.org/1999/xhtml">
-<head><title>Quản lý User</title></head>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{admin/admin-layout}"> <head><title>Quản lý User</title></head>
 <body>
 <div layout:fragment="content">
-    <div class="d-flex justify-content-between mb-4 align-items-center">
-        <h2 class="text-white fw-bold">👥 Quản lý Người dùng</h2> <div>
-        <a th:href="@{/admin/categories}" class="btn btn-light fw-bold text-primary shadow-sm me-2">
-            📂 Quản lý Danh mục
-        </a>
-        <a th:href="@{/admin/posts}" class="btn btn-light fw-bold text-primary shadow-sm">
-            📝 Quản lý Bài viết
-        </a>
-    </div>
-    </div>
 
-    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
-    <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+    <div class="admin-table-container">
 
-    <div class="card shadow-sm">
-        <div class="card-body">
-            <table class="table table-hover">
+        <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+        <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+        <div class="table-responsive">
+            <table class="table align-middle">
                 <thead>
                 <tr>
                     <th>ID</th>
-                    <th>Avatar</th>
-                    <th>Tên</th>
-                    <th>Email</th>
-                    <th>Role</th>
+                    <th>Thông tin</th>
+                    <th>Liên hệ</th>
+                    <th>Vai trò</th>
                     <th>Trạng thái</th>
                     <th>Hành động</th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr th:each="user : ${users}">
-                    <td th:text="${user.id}">1</td>
+                    <td th:text="${'#' + user.id}">1</td>
                     <td>
-                        <img th:if="${user.avatarUrl != null}" th:src="@{/view-file/{f}(f=${user.avatarUrl})}" width="30" height="30" class="rounded-circle">
-                        <span th:if="${user.avatarUrl == null}">👤</span>
+                        <div class="d-flex align-items-center">
+                            <img th:if="${user.avatarUrl != null}" th:src="@{/view-file/{f}(f=${user.avatarUrl})}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;" class="me-2">
+                            <div th:if="${user.avatarUrl == null}" style="width: 40px; height: 40px; border-radius: 50%; background: #eee; display: flex; align-items: center; justify-content: center;" class="me-2 fw-bold text-secondary">U</div>
+                            <div>
+                                <div class="fw-bold text-dark" th:text="${user.name}">Name</div>
+                                <div class="small text-muted" th:text="${'@' + user.username}">username</div>
+                            </div>
+                        </div>
                     </td>
-                    <td th:text="${user.username}">user</td>
                     <td th:text="${user.email}">email</td>
                     <td>
-                        <span th:each="role : ${user.roles}" th:text="${role.name} + ' '" class="badge bg-secondary"></span>
+                        <span th:each="role : ${user.roles}" th:text="${#strings.replace(role.name, 'ROLE_', '')}" class="badge bg-info text-dark me-1"></span>
                     </td>
                     <td>
-                        <span th:if="${user.enabled}" class="badge bg-success">Hoạt động</span>
-                        <span th:if="${!user.enabled}" class="badge bg-danger">Đã khóa</span>
+                        <span th:if="${user.enabled}" class="badge bg-success-subtle text-success px-3 py-2 rounded-pill">Hoạt động</span>
+                        <span th:if="${!user.enabled}" class="badge bg-danger-subtle text-danger px-3 py-2 rounded-pill">Đã khóa</span>
                     </td>
                     <td>
                         <div class="d-flex gap-2">
                             <form th:action="@{/admin/users/{id}/toggle-status(id=${user.id})}" method="POST">
-                                <button type="submit" class="btn btn-sm"
-                                        th:classappend="${user.enabled ? 'btn-warning' : 'btn-success'}"
-                                        th:text="${user.enabled ? '🔒 Khóa' : '🔓 Mở'}"></button>
+                                <button type="submit" class="btn btn-action"
+                                        th:classappend="${user.enabled ? 'btn-warning' : 'btn-success'}">
+                                    <i class="fas" th:classappend="${user.enabled ? 'fa-lock' : 'fa-unlock'}"></i>
+                                </button>
                             </form>
                             <form th:action="@{/admin/users/{id}/delete(id=${user.id})}" method="POST"
-                                  onsubmit="return confirm('Xóa user này sẽ mất hết dữ liệu liên quan. Chắc chắn?');">
-                                <button type="submit" class="btn btn-sm btn-danger">🗑️ Xóa</button>
+                                  onsubmit="return confirm('Hành động này không thể hoàn tác?');">
+                                <button type="submit" class="btn btn-action btn-danger">
+                                    <i class="fas fa-trash"></i>
+                                </button>
                             </form>
                         </div>
                     </td>

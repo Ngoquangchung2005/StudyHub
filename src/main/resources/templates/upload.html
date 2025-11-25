@@ -123,81 +123,121 @@
     </div>
 
 </div>
-
 <script layout:fragment="scripts">
-    // === FILE HANDLING ===
-    const dropZone = document.getElementById('dropZone');
-    const fileInput = document.getElementById('fileInput');
-    const fileSelected = document.getElementById('fileSelected');
-    const fileName = document.getElementById('fileName');
-    const fileSize = document.getElementById('fileSize');
-    const fileIcon = document.getElementById('fileIcon');
+    { // <--- BẮT ĐẦU BLOCK SCOPE (Giúp tránh trùng tên biến với chat.js)
 
-    // Click to select file
-    dropZone.addEventListener('click', () => fileInput.click());
+        // === 1. KHAI BÁO BIẾN ===
+        const uploadDropZone = document.getElementById('dropZone');
+        const uploadFileInput = document.getElementById('fileInput');
+        const uploadFileSelected = document.getElementById('fileSelected');
+        const uploadFileName = document.getElementById('fileName');
+        const uploadFileSize = document.getElementById('fileSize');
+        const uploadFileIcon = document.getElementById('fileIcon');
+        const descInput = document.querySelector('textarea[name="description"]');
+        const contentInput = document.getElementById('hiddenContent');
 
-    // File input change
-    fileInput.addEventListener('change', handleFiles);
+        // === 2. XỬ LÝ SỰ KIỆN CHỌN FILE ===
+        if (uploadDropZone) {
+            uploadDropZone.addEventListener('click', () => uploadFileInput.click());
 
-    // Drag & Drop
-    dropZone.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        dropZone.classList.add('dragover');
-    });
+            uploadDropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadDropZone.classList.add('dragover');
+            });
 
-    dropZone.addEventListener('dragleave', () => {
-        dropZone.classList.remove('dragover');
-    });
+            uploadDropZone.addEventListener('dragleave', () => {
+                uploadDropZone.classList.remove('dragover');
+            });
 
-    dropZone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        dropZone.classList.remove('dragover');
-
-        const files = e.dataTransfer.files;
-        if (files.length > 0) {
-            fileInput.files = files;
-            handleFiles();
+            uploadDropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadDropZone.classList.remove('dragover');
+                if (e.dataTransfer.files.length > 0) {
+                    uploadFileInput.files = e.dataTransfer.files;
+                    handleFiles();
+                }
+            });
         }
-    });
 
-    function handleFiles() {
-        const files = fileInput.files;
-        if (files.length > 0) {
-            const file = files[0];
+        if (uploadFileInput) {
+            uploadFileInput.addEventListener('change', handleFiles);
+        }
 
-            fileName.textContent = file.name;
-            fileSize.textContent = (file.size / 1024 / 1024).toFixed(2) + ' MB';
+        function handleFiles() {
+            const files = uploadFileInput.files;
+            if (files.length > 0) {
+                const file = files[0];
+                if (uploadFileName) uploadFileName.textContent = file.name;
+                if (uploadFileSize) uploadFileSize.textContent = (file.size / 1024 / 1024).toFixed(2) + ' MB';
 
-            // Set icon based on file type
-            if (file.type.includes('pdf')) fileIcon.textContent = '📄';
-            else if (file.type.includes('word')) fileIcon.textContent = '📝';
-            else if (file.type.includes('excel') || file.type.includes('spreadsheet')) fileIcon.textContent = '📊';
-            else if (file.type.includes('presentation')) fileIcon.textContent = '📽️';
-            else fileIcon.textContent = '📁';
+                // Icon đơn giản
+                if (uploadFileIcon) {
+                    if (file.type.includes('pdf')) uploadFileIcon.textContent = '📄';
+                    else if (file.type.includes('word')) uploadFileIcon.textContent = '📝';
+                    else uploadFileIcon.textContent = '📁';
+                }
 
-            fileSelected.classList.add('show');
-            dropZone.style.display = 'none';
+                if (uploadFileSelected) uploadFileSelected.classList.add('show');
+                if (uploadDropZone) uploadDropZone.style.display = 'none';
 
-            // Auto-fill title if empty
-            const titleInput = document.querySelector('input[name="title"]');
-            if (!titleInput.value) {
-                titleInput.value = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
+                // Tự động điền tiêu đề nếu trống
+                const titleInput = document.querySelector('input[name="title"]');
+                if (titleInput && !titleInput.value) {
+                    titleInput.value = file.name.replace(/\.[^/.]+$/, "");
+                }
             }
         }
-    }
 
-    function clearFile() {
-        fileInput.value = '';
-        fileSelected.classList.remove('show');
-        dropZone.style.display = 'block';
-    }
+        // Hàm global để nút Xóa gọi được (gán vào window)
+        window.clearFile = function() {
+            if (uploadFileInput) uploadFileInput.value = '';
+            if (uploadFileSelected) uploadFileSelected.classList.remove('show');
+            if (uploadDropZone) uploadDropZone.style.display = 'block';
+        };
 
-    // Form submit
-    document.getElementById('uploadForm').addEventListener('submit', function(e) {
-        const btn = document.getElementById('submitBtn');
-        btn.disabled = true;
-        btn.innerHTML = '⏳ Đang tải lên...';
-    });
+        // === 3. XỬ LÝ SUBMIT FORM ===
+        const uploadForm = document.getElementById('uploadForm');
+        if (uploadForm) {
+            uploadForm.addEventListener('submit', function(e) {
+                // 3.1. Validate Tiêu đề
+                const titleInput = document.querySelector('input[name="title"]');
+                if (titleInput && !titleInput.value.trim()) {
+                    e.preventDefault();
+                    alert("Vui lòng nhập tiêu đề tài liệu!");
+                    titleInput.focus();
+                    return;
+                }
+
+                // 3.2. Validate File
+                if (uploadFileInput && uploadFileInput.files.length === 0) {
+                    e.preventDefault();
+                    alert("Vui lòng chọn file để tải lên!");
+                    return;
+                }
+
+                // 3.3. Validate Danh mục
+                const categoryInput = document.querySelector('input[name="categoryId"]:checked');
+                if (!categoryInput) {
+                    e.preventDefault();
+                    alert("Vui lòng chọn danh mục!");
+                    return;
+                }
+
+                // 3.4. Sync Description
+                if(descInput && contentInput) {
+                    contentInput.value = descInput.value;
+                }
+
+                // 3.5. Disable nút submit
+                const btn = document.getElementById('submitBtn');
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = '⏳ Đang tải lên...';
+                }
+            });
+        }
+
+    } // <--- KẾT THÚC BLOCK SCOPE
 </script>
 
 </body>

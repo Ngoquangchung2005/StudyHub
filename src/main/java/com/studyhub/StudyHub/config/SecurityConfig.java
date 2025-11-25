@@ -1,6 +1,7 @@
 package com.studyhub.StudyHub.config;
 
 
+import com.studyhub.StudyHub.security.CustomAuthenticationSuccessHandler;
 import com.studyhub.StudyHub.security.CustomUserDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -23,6 +24,8 @@ public class SecurityConfig {
 
     @Autowired
     private CustomUserDetailsService customUserDetailsService;
+    @Autowired
+    private CustomAuthenticationSuccessHandler customAuthenticationSuccessHandler; // <-- Inject
 
     @Bean
     public static PasswordEncoder passwordEncoder() {
@@ -53,7 +56,7 @@ public class SecurityConfig {
                 .formLogin(form -> form
                         .loginPage("/login")
                         .loginProcessingUrl("/login")
-                        .defaultSuccessUrl("/", true) // Về trang chủ sau khi login
+                        .successHandler(customAuthenticationSuccessHandler) // <-- THÊM DÒNG NÀY
                         .failureHandler(customAuthenticationFailureHandler) // <-- THÊM DÒNG NÀY VÀO
                         .permitAll()
                 )
@@ -68,10 +71,14 @@ public class SecurityConfig {
                         .contentSecurityPolicy(csp -> csp
                                 .policyDirectives(
                                         "default-src 'self'; " +
-                                                "style-src 'self' https://cdn.jsdelivr.net; " +
-                                                "script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; " +
-                                                "img-src 'self' data:; " + // Cho phép ảnh
-                                                "connect-src 'self' ws: wss: http: https:;" // <-- DÒNG QUAN TRỌNG ĐỂ CHAT LAN
+                                                // Cho phép CSS từ cdnjs (để tải FontAwesome)
+                                                "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; " +
+                                                // Cho phép Script
+                                                "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; " +
+                                                // Quan trọng: Cho phép tải Font từ cdnjs
+                                                "font-src 'self' https://cdnjs.cloudflare.com; " +
+                                                "img-src 'self' data:; " +
+                                                "connect-src 'self' ws: wss: http: https:;"
                                 )
                         )
                 );
