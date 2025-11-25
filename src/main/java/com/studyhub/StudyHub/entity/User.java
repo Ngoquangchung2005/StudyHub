@@ -59,6 +59,8 @@ public class User {
     @Column(length = 20)
     private String contactPhone; // Số điện thoại
     // === KẾT THÚC TRƯỜNG MỚI ===
+    @Column(nullable = false)
+    private boolean enabled = true; // Mặc định là true (hoạt động)
 
 
     @ManyToMany(fetch = FetchType.EAGER)

@@ -48,6 +48,11 @@
                         💬 Chat
                     </a>
                 </li>
+                <li class="nav-item" sec:authorize="hasRole('ADMIN')">
+                    <a class="nav-link text-warning fw-bold" th:href="@{/admin/users}">
+                        🛠️ Quản trị (Admin)
+                    </a>
+                </li>
             </ul>
 
             <ul class="navbar-nav ms-auto" sec:authorize="isAnonymous()">

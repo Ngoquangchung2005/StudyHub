@@ -12,10 +12,14 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+// ... các import
+import com.studyhub.StudyHub.security.CustomAuthenticationFailureHandler; // <-- Import class vừa tạo
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+    @Autowired
+    private CustomAuthenticationFailureHandler customAuthenticationFailureHandler; // <-- Inject vào đây
 
     @Autowired
     private CustomUserDetailsService customUserDetailsService;
@@ -40,6 +44,7 @@ public class SecurityConfig {
                         // Cho phép tất cả mọi người truy cập trang chủ, login, register, file tĩnh
                         .requestMatchers("/", "/login", "/register", "/forgot-password", "/reset-password", "/js/**", "/css/**", "/ws/**").permitAll()
                         // Cho phép API tải lịch sử chat (sẽ dùng ở Phần 3)
+                        .requestMatchers("/admin/**").hasRole("ADMIN") // <-- THÊM DÒNG NÀY
                         .requestMatchers("/messages/**").authenticated()
                         .requestMatchers("/api/chat/**").authenticated() // THÊM DÒNG NÀY
                         // Tất cả các yêu cầu khác đều cần đăng nhập
@@ -49,7 +54,7 @@ public class SecurityConfig {
                         .loginPage("/login")
                         .loginProcessingUrl("/login")
                         .defaultSuccessUrl("/", true) // Về trang chủ sau khi login
-                        .failureUrl("/login?error=true")
+                        .failureHandler(customAuthenticationFailureHandler) // <-- THÊM DÒNG NÀY VÀO
                         .permitAll()
                 )
                 .logout(logout -> logout

@@ -23,10 +23,16 @@
       <!-- Body -->
       <div class="auth-body">
 
-        <!-- Error Message -->
-        <div th:if="${param.error}" class="alert-custom alert-danger-custom">
-          ❌ Sai tên đăng nhập hoặc mật khẩu. Vui lòng thử lại.
-        </div>
+          <div th:if="${param.error}">
+              <div th:if="${param.error[0] == 'banned'}" class="alert-custom alert-danger-custom">
+                  ⛔ <strong>Tài khoản bị khóa!</strong><br>
+                  Tài khoản của bạn đã vi phạm tiêu chuẩn cộng đồng.
+              </div>
+
+              <div th:if="${param.error[0] == 'true'}" class="alert-custom alert-danger-custom">
+                  ❌ Sai tên đăng nhập hoặc mật khẩu. Vui lòng thử lại.
+              </div>
+          </div>
 
         <!-- Success Message -->
         <div th:if="${successMessage}" class="alert-custom alert-success-custom">
