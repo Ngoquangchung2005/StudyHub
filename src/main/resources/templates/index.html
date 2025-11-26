@@ -6,6 +6,43 @@
       layout:decorate="~{layout.html}">
 <head>
     <title th:text="${pageTitle}">Trang chủ</title>
+    <style>
+        /* CSS cho nút Xem trước */
+        .btn-preview {
+            border-radius: 20px;
+            background-color: #f0f2f5;
+            color: #333;
+            border: 1px solid #ddd;
+            font-weight: 600;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 12px;
+            font-size: 0.9rem;
+        }
+        .btn-preview:hover {
+            background-color: #e4e6eb;
+            color: #000;
+        }
+
+        /* Modal preview full height */
+        .preview-iframe {
+            width: 100%;
+            height: 75vh;
+            border: none;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+        }
+
+        .preview-image {
+            max-width: 100%;
+            max-height: 75vh;
+            display: block;
+            margin: 0 auto;
+            border-radius: 8px;
+        }
+    </style>
 </head>
 <body>
 
@@ -145,10 +182,21 @@
                                             Tiêu đề tài liệu
                                         </span>
                                     </h5>
-                                    <a th:href="@{/download/{fileName}(fileName=${doc.storagePath})}"
-                                       class="btn btn-sm btn-primary ms-3 flex-shrink-0">
-                                        Tải xuống
-                                    </a>
+
+                                    <div class="d-flex gap-2">
+                                        <button type="button"
+                                                class="btn-preview"
+                                                th:onclick="previewFile([[${doc.storagePath}]], [[${doc.fileName}]], [[${doc.title}]])"
+                                                title="Xem trước">
+                                            👁️ Xem
+                                        </button>
+
+                                        <a th:href="@{/download/{fileName}(fileName=${doc.storagePath})}"
+                                           class="btn btn-sm btn-primary ms-1 flex-shrink-0"
+                                           style="border-radius: 20px; display: flex; align-items: center;">
+                                            ⬇ Tải xuống
+                                        </a>
+                                    </div>
                                 </div>
 
                                 <p class="mb-1"
@@ -270,6 +318,69 @@
         </div>
 
     </div>
+
+    <div class="modal fade" id="previewModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 15px; overflow: hidden;">
+                <div class="modal-header border-0 bg-light py-2">
+                    <h5 class="modal-title fw-bold text-primary" id="previewTitle">📄 Xem tài liệu</h5>
+                    <div class="ms-auto d-flex gap-2">
+                        <a href="#" id="previewDownloadBtn" class="btn btn-primary btn-sm rounded-pill">⬇ Tải xuống</a>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                </div>
+                <div class="modal-body p-0 bg-light text-center d-flex align-items-center justify-content-center" style="min-height: 400px;">
+                    <div id="previewContent" class="w-100 h-100">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function previewFile(storagePath, fileName, title) {
+            const modal = new bootstrap.Modal(document.getElementById('previewModal'));
+            const contentDiv = document.getElementById('previewContent');
+            const titleEl = document.getElementById('previewTitle');
+            const downloadBtn = document.getElementById('previewDownloadBtn');
+
+            // Set thông tin cơ bản
+            titleEl.textContent = title || fileName;
+            downloadBtn.href = '/download/' + storagePath;
+
+            // Xác định loại file
+            const ext = fileName.split('.').pop().toLowerCase();
+            const fileUrl = '/view-file/' + storagePath;
+
+            let html = '';
+
+            if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) {
+                html = `<img src="${fileUrl}" class="preview-image" alt="Preview">`;
+            } else if (ext === 'pdf') {
+                html = `<iframe src="${fileUrl}" class="preview-iframe"></iframe>`;
+            } else if (ext === 'txt') {
+                html = `<iframe src="${fileUrl}" class="preview-iframe" style="background: white;"></iframe>`;
+            } else if (['mp4', 'webm', 'ogg'].includes(ext)) {
+                html = `<video controls class="preview-image" style="background:black;"><source src="${fileUrl}" type="video/${ext}">Trình duyệt không hỗ trợ video này.</video>`;
+            } else {
+                html = `
+                    <div class="text-center p-5">
+                        <div style="font-size: 60px; margin-bottom: 20px;">📝</div>
+                        <h4>Không hỗ trợ xem trước định dạng này</h4>
+                        <p class="text-muted">Đây là file <b>.${ext.toUpperCase()}</b>. Vui lòng tải xuống để xem nội dung.</p>
+                        <a href="/download/${storagePath}" class="btn btn-lg btn-primary mt-2 rounded-pill">
+                            ⬇ Tải xuống máy
+                        </a>
+                    </div>
+                `;
+            }
+
+            contentDiv.innerHTML = html;
+            modal.show();
+        }
+    </script>
+
 </div>
+
 </body>
 </html>

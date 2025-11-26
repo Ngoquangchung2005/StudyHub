@@ -9,113 +9,255 @@
     <meta name="_csrf" th:content="${_csrf.token}"/>
     <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
     <title th:text="${pageTitle}">StudyHub</title>
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
     <link th:href="@{/css/chat.css}" rel="stylesheet" />
     <link th:href="@{/css/feed.css}" rel="stylesheet" />
     <link th:href="@{/css/documents.css}" rel="stylesheet" />
     <link th:href="@{/css/auth.css}" rel="stylesheet" />
     <link th:href="@{/css/upload.css}" rel="stylesheet" />
+
+    <style>
+        /* --- CSS CHO NAVBAR GIỐNG FACEBOOK --- */
+        .navbar-custom {
+            background-color: #ffffff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 0 10px;
+            height: 60px;
+        }
+
+        /* 1. Logo bên trái */
+        .brand-section {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            margin-right: auto;
+            min-width: 120px;
+        }
+
+        .brand-logo-icon {
+            font-size: 2rem;
+            margin-right: 8px;
+            color: #667eea; /* Màu tím logo */
+        }
+
+        .brand-text {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* 2. Phần Icon ở giữa */
+        .center-nav {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-grow: 1;
+            height: 100%;
+            gap: 8px;
+        }
+
+        .nav-icon-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100px;
+            height: 50px;
+            border-radius: 8px;
+            color: #65676b;
+            text-decoration: none;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .nav-icon-btn:hover {
+            background-color: #f0f2f5;
+            color: #667eea;
+        }
+
+        .nav-icon-btn.active {
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+            border-radius: 0;
+        }
+
+        .nav-icon-svg {
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
+        }
+
+        .icon-upload {
+            width: 28px;
+            height: 28px;
+        }
+
+        /* 3. Phần User bên phải */
+        .right-section {
+            margin-left: auto;
+            min-width: 120px;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-menu-btn {
+            display: flex;
+            align-items: center;
+            padding: 5px;
+            border-radius: 20px;
+            text-decoration: none;
+            color: #050505;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        .user-menu-btn:hover {
+            background-color: #f0f2f5;
+        }
+
+        /* CSS cho Notification Badge */
+        #noti-badge {
+            font-size: 0.65rem;
+            padding: 0.35em 0.5em;
+            border: 2px solid white;
+        }
+
+        @media (max-width: 768px) {
+            .nav-icon-btn { width: 50px; }
+            .brand-section { display: none; }
+        }
+    </style>
 </head>
 <body>
-<body>
-<div sec:authorize="isAuthenticated()" style="display: none;">
-    <input type="hidden" id="current-user-id" th:value="${currentUser.id}" />
-    <input type="hidden" id="current-username" th:value="${currentUser.username}" />
-</div>
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
-    <div class="container-fluid">
-        <a class="navbar-brand fw-bold" th:href="@{/}">
-            📚 StudyHub
+<input type="hidden" id="current-username-global" th:if="${currentUser != null}" th:value="${currentUser.username}" />
+
+<nav class="navbar navbar-expand-lg navbar-custom sticky-top">
+    <div class="container-fluid d-flex align-items-center justify-content-between p-0">
+
+        <a class="brand-section ms-3" th:href="@{/}">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="brand-logo-icon" viewBox="0 0 16 16">
+                <path d="M1 2.828c.885-.37 2.154-.769 3.388-.893 1.33-.134 2.458.063 3.112.752v9.746c-.935-.53-2.12-.603-3.213-.493-1.18.12-2.37.461-3.287.811V2.828zm7.5-.141c.654-.689 1.782-.886 3.112-.752 1.234.124 2.503.523 3.388.893v9.923c-.918-.35-2.107-.692-3.287-.81-1.094-.111-2.278-.039-3.213.492V2.687zM8 1.783C7.015.936 5.587.81 4.287.94c-1.514.153-3.042.672-3.994 1.105A.5.5 0 0 0 0 2.5v11a.5.5 0 0 0 .707.455c.882-.4 2.303-.881 3.68-1.02 1.409-.142 2.59.087 3.223.877a.5.5 0 0 0 .78 0c.633-.79 1.814-1.019 3.222-.877 1.378.139 2.8.62 3.681 1.02A.5.5 0 0 0 16 13.5v-11a.5.5 0 0 0-.293-.455c-.952-.433-2.48-.952-3.994-1.105C10.413.809 8.985.936 8 1.783z"/>
+            </svg>
+            <span class="brand-text">StudyHub</span>
         </a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav">
-                <li class="nav-item" sec:authorize="isAuthenticated()">
-                    <a class="nav-link" th:href="@{/upload}">
-                        ⬆️ Đăng tải
-                    </a>
-                </li>
-                <li class="nav-item" sec:authorize="isAuthenticated()">
-                    <a class="nav-link" th:href="@{/}">
-                        🏠 Bảng tin
-                    </a>
-                </li>
-                <li class="nav-item" sec:authorize="isAuthenticated()">
-                    <a class="nav-link" th:href="@{/documents}">
-                        📂 Tài liệu
-                    </a>
-                </li>
-                <li class="nav-item" sec:authorize="isAuthenticated()">
-                    <a class="nav-link" th:href="@{/chat}">
-                        💬 Chat
-                    </a>
-                </li>
 
+        <div class="center-nav">
+            <a class="nav-icon-btn" th:href="@{/}" title="Bảng tin" sec:authorize="isAuthenticated()">
+                <svg class="nav-icon-svg" viewBox="0 0 16 16">
+                    <path d="M6.5 14.5v-3.505c0-.245.25-.495.5-.495h2c.25 0 .5.25.5.5v3.5a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5v-7a.5.5 0 0 0-.146-.354L13 5.793V2.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.293L8.354 1.146a.5.5 0 0 0-.708 0l-6 6A.5.5 0 0 0 1.5 7.5v7a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5z"/>
+                </svg>
+            </a>
+
+            <a class="nav-icon-btn" th:href="@{/documents}" title="Tài liệu" sec:authorize="isAuthenticated()">
+                <svg class="nav-icon-svg" viewBox="0 0 16 16">
+                    <path d="M9.293 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.707A1 1 0 0 0 13.707 4L10 .293A1 1 0 0 0 9.293 0zM9.5 3.5v-2l3 3h-2a1 1 0 0 1-1-1zM4.5 9a.5.5 0 0 1 0-1h7a.5.5 0 0 1 0 1h-7zM4 10.5a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5zm.5 2.5a.5.5 0 0 1 0-1h4a.5.5 0 0 1 0 1h-4z"/>
+                </svg>
+            </a>
+
+            <a class="nav-icon-btn" th:href="@{/upload}" title="Đăng tải" sec:authorize="isAuthenticated()">
+                <svg class="nav-icon-svg icon-upload" viewBox="0 0 16 16">
+                    <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM8.5 4.5a.5.5 0 0 0-1 0v3h-3a.5.5 0 0 0 0 1h3v3a.5.5 0 0 0 1 0v-3h3a.5.5 0 0 0 0-1h-3v-3z"/>
+                </svg>
+            </a>
+
+            <a class="nav-icon-btn" th:href="@{/profile/{username}(username=${currentUser.username})}" title="Trang cá nhân" sec:authorize="isAuthenticated()">
+                <svg class="nav-icon-svg" viewBox="0 0 16 16">
+                    <path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H3Zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/>
+                </svg>
+            </a>
+
+            <a class="nav-icon-btn" th:href="@{/chat}" title="Tin nhắn" sec:authorize="isAuthenticated()">
+                <svg class="nav-icon-svg" viewBox="0 0 16 16">
+                    <path d="M16 8c0 3.866-3.582 7-8 7a9.06 9.06 0 0 1-2.347-.306c-.584.296-1.925.864-4.181 1.234-.2.032-.352-.176-.273-.362.354-.836.674-1.95.77-2.966C.744 11.37 0 9.76 0 8c0-3.866 3.582-7 8-7s8 3.134 8 7zM5 8a1 1 0 1 0-2 0 1 1 0 0 0 2 0zm4 0a1 1 0 1 0-2 0 1 1 0 0 0 2 0zm3 1a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/>
+                </svg>
+            </a>
+
+            <a class="nav-icon-btn text-danger" th:href="@{/admin/users}" title="Quản trị" sec:authorize="hasRole('ADMIN')">
+                <svg class="nav-icon-svg" viewBox="0 0 16 16">
+                    <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/>
+                </svg>
+            </a>
+        </div>
+
+        <div class="right-section me-3">
+            <ul class="navbar-nav d-flex flex-row" sec:authorize="isAnonymous()">
+                <li class="nav-item me-2">
+                    <a class="btn btn-outline-primary btn-sm" th:href="@{/login}">Đăng nhập</a>
+                </li>
+                <li class="nav-item">
+                    <a class="btn btn-primary btn-sm" th:href="@{/register}">Đăng ký</a>
+                </li>
             </ul>
 
-            <ul class="navbar-nav ms-auto" sec:authorize="isAnonymous()">
-                <li class="nav-item">
-                    <a class="nav-link" th:href="@{/login}">🔐 Đăng nhập</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link btn btn-light text-primary ms-2" th:href="@{/register}">
-                        ✨ Đăng ký
+            <div class="d-flex align-items-center" sec:authorize="isAuthenticated()">
+
+                <div class="dropdown me-2">
+                    <a class="nav-icon-btn position-relative" href="#" id="notiDropdown" role="button"
+                       data-bs-toggle="dropdown" aria-expanded="false" onclick="loadNotifications()"
+                       style="width: 40px; height: 40px; background: #f0f2f5; border-radius: 50%;">
+
+                        <svg class="nav-icon-svg" viewBox="0 0 16 16" style="width: 20px; height: 20px;">
+                            <path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2zm.995-14.901a1 1 0 1 0-1.99 0A5.002 5.002 0 0 0 3 6c0 1.098-.5 6-2 7h14c-1.5-1-2-5.902-2-7 0-2.42-1.72-4.44-4.005-4.901z"/>
+                        </svg>
+
+                        <span id="noti-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                              style="display: none;">0</span>
                     </a>
-                </li>
-            </ul>
 
-            <ul class="navbar-nav ms-auto" sec:authorize="isAuthenticated()">
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle d-flex align-items-center"
-                       href="#" id="navbarDropdown"
-                       role="button" data-bs-toggle="dropdown">
-
-                        <img th:if="${currentUser != null && currentUser.avatarUrl != null}"
-                             th:src="@{/view-file/{fileName}(fileName=${currentUser.avatarUrl})}"
-                             alt="Avatar"
-                             class="navbar-avatar">
-
-                        <div th:if="${currentUser == null || currentUser.avatarUrl == null}"
-                             class="navbar-avatar">
-                            <span th:text="${currentUser != null ? #strings.substring(currentUser.name, 0, 1) : '?'}">?</span>
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 p-0" aria-labelledby="notiDropdown"
+                        style="width: 350px; max-height: 85vh; overflow-y: auto; border-radius: 10px;">
+                        <li class="p-2 border-bottom fw-bold bg-white sticky-top">Thông báo</li>
+                        <div id="noti-list">
+                            <li class="text-center text-muted p-3">Đang tải...</li>
                         </div>
-
-                        <span class="ms-1" th:text="${currentUser != null ? currentUser.name : 'User'}">User</span>
-
+                    </ul>
+                </div>
+                <div class="dropdown">
+                    <a class="user-menu-btn" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <div style="width: 36px; height: 36px; border-radius: 50%; overflow: hidden; border: 1px solid #ddd; background: #eee; display: flex; align-items: center; justify-content: center; margin-right: 8px;">
+                            <img th:if="${currentUser != null && currentUser.avatarUrl != null}"
+                                 th:src="@{/view-file/{fileName}(fileName=${currentUser.avatarUrl})}"
+                                 style="width: 100%; height: 100%; object-fit: cover;">
+                            <span th:if="${currentUser == null || currentUser.avatarUrl == null}"
+                                  style="font-weight: bold; color: #667eea; font-size: 14px;"
+                                  th:text="${currentUser != null ? #strings.substring(currentUser.name, 0, 1) : '?'}">?</span>
+                        </div>
+                        <span th:text="${currentUser != null ? currentUser.name : 'User'}" class="d-none d-xl-block">User</span>
                     </a>
 
-                    <ul class="dropdown-menu dropdown-menu-end">
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="border-radius: 10px; margin-top: 10px;">
                         <li>
-                            <a class ="dropdown-item"
+                            <a class="dropdown-item py-2 d-flex align-items-center"
                                th:href="@{/profile/{username}(username=${currentUser.username})}">
-                                👤 Trang cá nhân
+                                <span class="me-2">👤</span> Trang cá nhân
                             </a>
                         </li>
-                        <li><a class="dropdown-item" href="#">📁 Tài liệu của tôi</a></li>
                         <li>
-                            <a class="dropdown-item" th:href="@{/profile/edit}">
-                                ⚙️ Cài đặt & Avatar
+                            <a class="dropdown-item py-2 d-flex align-items-center" th:href="@{/profile/edit}">
+                                <span class="me-2">⚙️</span> Cài đặt & Avatar
                             </a>
                         </li>
                         <li><hr class="dropdown-divider"></li>
                         <li>
-                            <form th:action="@{/logout}" method="POST">
-                                <button type="submit" class="dropdown-item text-danger">
-                                    🚪 Đăng xuất
+                            <form th:action="@{/logout}" method="POST" class="m-0">
+                                <button type="submit" class="dropdown-item py-2 text-danger d-flex align-items-center">
+                                    <span class="me-2">🚪</span> Đăng xuất
                                 </button>
                             </form>
                         </li>
                     </ul>
-                </li>
-            </ul>
+                </div>
+            </div>
         </div>
     </div>
 </nav>
 
-<main class="container">
+<main class="container mt-4">
     <div layout:fragment="content">
     </div>
 </main>
@@ -129,8 +271,153 @@
 
 <script th:src="@{/js/chat.js}"></script>
 
-<div layout:fragment="scripts">
-</div>
+<script layout:fragment="scripts">
+    let stompClientGlobal = null;
+
+    // Kết nối WebSocket toàn cục để lắng nghe thông báo
+    function connectGlobal() {
+        // Kiểm tra xem đã đăng nhập chưa (dựa vào thẻ hidden input)
+        const userElement = document.getElementById('current-username-global');
+        if (!userElement) return; // Chưa đăng nhập thì thoát
+
+        const socket = new SockJS('/ws');
+        stompClientGlobal = Stomp.over(socket);
+        stompClientGlobal.debug = null; // Tắt log console cho gọn
+
+        stompClientGlobal.connect({}, function (frame) {
+            console.log('Connected Global WS for Notifications');
+
+            // Đăng ký nhận thông báo cá nhân
+            // Endpoint này phải khớp với code Backend: /user/{username}/queue/notifications
+            stompClientGlobal.subscribe('/user/queue/notifications', function (payload) {
+                const noti = JSON.parse(payload.body);
+                showNotificationPopup(noti); // Hiển thị Toast popup
+                updateUnreadCount(1);        // Tăng số đếm
+            });
+
+            // Gọi API lấy số lượng tin chưa đọc ban đầu
+            fetchUnreadCount();
+
+        }, function (error) {
+            console.log('WS Error: ' + error);
+        });
+    }
+
+    // Hàm hiển thị Toast nhỏ ở góc màn hình
+    function showNotificationPopup(noti) {
+        const toastHtml = `
+            <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
+              <div class="toast show shadow" role="alert" aria-live="assertive" aria-atomic="true" style="border-radius: 10px;">
+                <div class="toast-header">
+                  <strong class="me-auto text-primary">🔔 Thông báo mới</strong>
+                  <small>Vừa xong</small>
+                  <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+                </div>
+                <div class="toast-body" style="background: #fff;">
+                  ${noti.content}
+                </div>
+              </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', toastHtml);
+
+        // Tự ẩn sau 4 giây
+        setTimeout(() => {
+            const toast = document.querySelector('.toast.show');
+            if(toast) toast.remove();
+        }, 4000);
+    }
+
+    // Hàm cập nhật số trên chấm đỏ
+    function updateUnreadCount(increment) {
+        const badge = document.getElementById('noti-badge');
+        if (!badge) return;
+
+        let current = parseInt(badge.innerText) || 0;
+
+        if (increment === 'reset') {
+            current = 0; // Reset về 0 khi người dùng đã xem
+        } else {
+            current += increment;
+        }
+
+        badge.innerText = current;
+        if (current > 0) {
+            badge.style.display = 'block';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+
+    // Gọi API lấy số lượng chưa đọc từ Server
+    async function fetchUnreadCount() {
+        try {
+            const res = await fetch('/api/notifications/unread-count');
+            if (res.ok) {
+                const count = await res.json();
+                const badge = document.getElementById('noti-badge');
+                if(badge) {
+                    badge.innerText = count;
+                    badge.style.display = (count > 0) ? 'block' : 'none';
+                }
+            }
+        } catch (e) {
+            console.error("Lỗi tải số lượng thông báo:", e);
+        }
+    }
+
+    // Gọi API lấy danh sách thông báo khi bấm vào Chuông
+    async function loadNotifications() {
+        const list = document.getElementById('noti-list');
+
+        // === 1. XÓA SỐ ĐẾM TRÊN GIAO DIỆN NGAY LẬP TỨC ===
+        updateUnreadCount('reset'); // <--- BỎ COMMENT DÒNG NÀY
+
+        // === 2. GỌI API ĐỂ LƯU TRẠNG THÁI "ĐÃ ĐỌC" VÀO DB (Để F5 không hiện lại) ===
+        fetch('/api/notifications/read-all', { method: 'POST' }); // <--- THÊM DÒNG NÀY
+
+        list.innerHTML = '<li class="text-center text-muted p-3">Đang tải...</li>';
+
+        try {
+            const res = await fetch('/api/notifications');
+            if(!res.ok) throw new Error("Failed");
+            const data = await res.json();
+
+            list.innerHTML = '';
+            if (data.length === 0) {
+                list.innerHTML = '<li class="text-center text-muted p-3">Không có thông báo mới</li>';
+                return;
+            }
+
+            data.forEach(n => {
+                // ... (Giữ nguyên code cũ phần hiển thị) ...
+                const time = new Date(n.createdAt).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
+                const unreadClass = !n.read ? 'bg-light fw-bold' : '';
+
+                const item = `
+                    <li>
+                        <a class="dropdown-item p-3 border-bottom ${unreadClass}" href="${n.link || '#'}" style="white-space: normal;">
+                            <div class="d-flex align-items-start">
+                                <div class="me-2" style="font-size: 1.2rem;">📣</div>
+                                <div>
+                                    <span class="d-block text-dark" style="font-size: 0.95rem;">${n.content}</span>
+                                    <small class="text-muted" style="font-size: 0.8rem;">${time}</small>
+                                </div>
+                            </div>
+                        </a>
+                    </li>
+                `;
+                list.insertAdjacentHTML('beforeend', item);
+            });
+
+        } catch (e) {
+            list.innerHTML = '<li class="text-center text-danger p-3">Lỗi tải thông báo</li>';
+        }
+    }
+
+    // Kích hoạt kết nối khi trang load xong
+    document.addEventListener('DOMContentLoaded', connectGlobal);
+</script>
 
 </body>
 </html>

@@ -5,6 +5,42 @@
       layout:decorate="~{layout.html}">
 <head>
     <title>Kho tài liệu</title>
+    <style>
+        /* CSS cho nút Xem trước */
+        .btn-preview {
+            border-radius: 20px;
+            background-color: #f0f2f5;
+            color: #333;
+            border: 1px solid #ddd;
+            font-weight: 600;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            padding: 5px 15px;
+        }
+        .btn-preview:hover {
+            background-color: #e4e6eb;
+            color: #000;
+        }
+
+        /* Modal preview full height */
+        .preview-iframe {
+            width: 100%;
+            height: 75vh; /* Chiều cao chiếm 75% màn hình */
+            border: none;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+        }
+
+        .preview-image {
+            max-width: 100%;
+            max-height: 75vh;
+            display: block;
+            margin: 0 auto;
+            border-radius: 8px;
+        }
+    </style>
 </head>
 <body>
 
@@ -41,17 +77,18 @@
     </div>
 
     <div class="documents-grid" th:if="${documents != null && !documents.isEmpty()}">
-        <div class="document-card" th:each="doc : ${documents}"
-             style="cursor: pointer;"
-             th:onclick="'window.location.href=\'' + @{/download/{fileName}(fileName=${doc.storagePath})} + '\''">
+        <div class="document-card" th:each="doc : ${documents}">
 
-            <div class="document-thumbnail">
+            <div class="document-thumbnail"
+                 th:onclick="previewFile([[${doc.storagePath}]], [[${doc.fileName}]], [[${doc.title}]])"
+                 style="cursor: pointer;">
                 <div class="file-icon">
                     <span th:if="${doc.fileType != null && #strings.contains(doc.fileType, 'pdf')}">📕</span>
                     <span th:if="${doc.fileType != null && (#strings.contains(doc.fileType, 'word') || #strings.contains(doc.fileType, 'officedocument'))}">📝</span>
                     <span th:if="${doc.fileType != null && (#strings.contains(doc.fileType, 'sheet') || #strings.contains(doc.fileType, 'excel'))}">📊</span>
                     <span th:if="${doc.fileType != null && #strings.contains(doc.fileType, 'presentation')}">📽️</span>
-                    <span th:if="${doc.fileType == null || (!#strings.contains(doc.fileType, 'pdf') && !#strings.contains(doc.fileType, 'word') && !#strings.contains(doc.fileType, 'sheet') && !#strings.contains(doc.fileType, 'presentation'))}">📁</span>
+                    <span th:if="${doc.fileType != null && #strings.contains(doc.fileType, 'image')}">🖼️</span>
+                    <span th:if="${doc.fileType == null || (!#strings.contains(doc.fileType, 'pdf') && !#strings.contains(doc.fileType, 'word') && !#strings.contains(doc.fileType, 'sheet') && !#strings.contains(doc.fileType, 'presentation') && !#strings.contains(doc.fileType, 'image'))}">📁</span>
                 </div>
                 <div class="file-type-badge"
                      th:if="${doc.fileName != null}"
@@ -66,7 +103,7 @@
                     <span class="tag-badge" th:each="tag : ${#strings.arraySplit(doc.tags, ',')}" th:text="${'#' + tag.trim()}">#java</span>
                 </div>
 
-                <div class="document-meta">
+                <div class="document-meta pt-2 mt-2 d-flex align-items-center justify-content-between border-top">
                     <div class="document-author">
                         <div class="author-avatar">
                             <span th:text="${doc.user != null ? #strings.substring(doc.user.name, 0, 1) : '?'}">A</span>
@@ -74,12 +111,21 @@
                         <span th:text="${doc.user != null ? doc.user.name : 'Unknown'}">User</span>
                     </div>
 
-                    <a th:href="@{/download/{fileName}(fileName=${doc.storagePath})}"
-                       class="btn btn-sm btn-primary"
-                       style="border-radius: 20px; z-index: 10; position: relative;"
-                       onclick="event.stopPropagation();">
-                        ⬇ Tải xuống <span th:text="${doc.downloads}">0</span>
-                    </a>
+                    <div class="d-flex gap-2">
+                        <button type="button"
+                                class="btn-preview border-0"
+                                th:onclick="previewFile([[${doc.storagePath}]], [[${doc.fileName}]], [[${doc.title}]])"
+                                title="Xem trước">
+                            👁️ Xem
+                        </button>
+
+                        <a th:href="@{/download/{fileName}(fileName=${doc.storagePath})}"
+                           class="btn btn-sm btn-primary"
+                           style="border-radius: 20px; display: inline-flex; align-items: center;"
+                           onclick="event.stopPropagation();">
+                            ⬇ Tải <span class="ms-1" th:text="${doc.downloads}">0</span>
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -95,6 +141,75 @@
     <a th:href="@{/upload}" class="upload-btn-float" title="Đăng tải tài liệu mới">
         +
     </a>
+
+    <div class="modal fade" id="previewModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered"> <div class="modal-content" style="border-radius: 15px; overflow: hidden;">
+            <div class="modal-header border-0 bg-light py-2">
+                <h5 class="modal-title fw-bold text-primary" id="previewTitle">📄 Xem tài liệu</h5>
+                <div class="ms-auto d-flex gap-2">
+                    <a href="#" id="previewDownloadBtn" class="btn btn-primary btn-sm rounded-pill">⬇ Tải xuống</a>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+            </div>
+            <div class="modal-body p-0 bg-light text-center d-flex align-items-center justify-content-center" style="min-height: 400px;">
+                <div id="previewContent" class="w-100 h-100">
+                </div>
+            </div>
+        </div>
+        </div>
+    </div>
+
+    <script>
+        function previewFile(storagePath, fileName, title) {
+            const modal = new bootstrap.Modal(document.getElementById('previewModal'));
+            const contentDiv = document.getElementById('previewContent');
+            const titleEl = document.getElementById('previewTitle');
+            const downloadBtn = document.getElementById('previewDownloadBtn');
+
+            // Set thông tin cơ bản
+            titleEl.textContent = title || fileName;
+            downloadBtn.href = '/download/' + storagePath;
+
+            // Xác định loại file qua đuôi mở rộng
+            const ext = fileName.split('.').pop().toLowerCase();
+            const fileUrl = '/view-file/' + storagePath;
+
+            let html = '';
+
+            if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) {
+                // Xử lý Ảnh
+                html = `<img src="${fileUrl}" class="preview-image" alt="Preview">`;
+
+            } else if (ext === 'pdf') {
+                // Xử lý PDF (Trình duyệt hỗ trợ tốt)
+                html = `<iframe src="${fileUrl}" class="preview-iframe"></iframe>`;
+
+            } else if (ext === 'txt') {
+                // Xử lý file text
+                html = `<iframe src="${fileUrl}" class="preview-iframe" style="background: white;"></iframe>`;
+
+            } else if (['mp4', 'webm', 'ogg'].includes(ext)) {
+                // Xử lý Video
+                html = `<video controls class="preview-image" style="background:black;"><source src="${fileUrl}" type="video/${ext}">Trình duyệt không hỗ trợ video này.</video>`;
+
+            } else {
+                // Các file không hỗ trợ xem trực tiếp (Word, Excel, PPT...)
+                html = `
+                    <div class="text-center p-5">
+                        <div style="font-size: 60px; margin-bottom: 20px;">📝</div>
+                        <h4>Không hỗ trợ xem trước định dạng này</h4>
+                        <p class="text-muted">Đây là file <b>.${ext.toUpperCase()}</b>. Vui lòng tải xuống để xem nội dung.</p>
+                        <a href="/download/${storagePath}" class="btn btn-lg btn-primary mt-2 rounded-pill">
+                            ⬇ Tải xuống máy
+                        </a>
+                    </div>
+                `;
+            }
+
+            contentDiv.innerHTML = html;
+            modal.show();
+        }
+    </script>
 
 </div>
 

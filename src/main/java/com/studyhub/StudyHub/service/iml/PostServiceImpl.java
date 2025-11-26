@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.security.access.AccessDeniedException; // Thêm import này
+import com.studyhub.StudyHub.service.NotificationService; // <-- THÊM
 
 import java.security.Principal;
 import java.util.HashSet;
@@ -27,6 +28,7 @@ public class PostServiceImpl implements PostService {
     @Autowired private StorageService storageService;
     @Autowired private CommentRepository commentRepository;
     @Autowired private ReactionRepository reactionRepository;
+    @Autowired private NotificationService notificationService;
 
     // === THÊM DÒNG NÀY ===
     @Autowired private CategoryRepository categoryRepository;
@@ -123,6 +125,11 @@ public class PostServiceImpl implements PostService {
         comment.setPost(post);
 
         commentRepository.save(comment);
+        // === THÊM ĐOẠN NÀY: GỬI THÔNG BÁO ===
+        // Gửi cho chủ bài viết
+        String notiContent = user.getName() + " đã bình luận về bài viết của bạn.";
+        String link = "/?keyword=" + post.getId(); // Hoặc link chi tiết bài viết nếu có
+        notificationService.sendNotification(user, post.getUser(), notiContent, link);
     }
 
     @Override
@@ -143,6 +150,9 @@ public class PostServiceImpl implements PostService {
             reaction.setUser(user);
             reaction.setPost(post);
             reactionRepository.save(reaction);
+            String notiContent = user.getName() + " đã thích bài viết của bạn.";
+            // Chú ý: post.getUser() là chủ bài viết
+            notificationService.sendNotification(user, post.getUser(), notiContent, "#post-" + postId);
         }
     }
     @Override
