@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.security.access.AccessDeniedException; // Thêm import này
 import com.studyhub.StudyHub.service.NotificationService; // <-- THÊM
+import org.springframework.messaging.simp.SimpMessagingTemplate; // <-- Import WebSocket
 
 import java.security.Principal;
 import java.util.HashSet;
@@ -32,6 +33,7 @@ public class PostServiceImpl implements PostService {
 
     // === THÊM DÒNG NÀY ===
     @Autowired private CategoryRepository categoryRepository;
+    @Autowired private SimpMessagingTemplate messagingTemplate; // <-- Inject thêm cái này
 
     private User getCurrentUser(Principal principal) {
         String username = principal.getName();
@@ -124,13 +126,24 @@ public class PostServiceImpl implements PostService {
         comment.setUser(user);
         comment.setPost(post);
 
-        commentRepository.save(comment);
+        // 1. Lưu vào DB
+        Comment savedComment = commentRepository.save(comment); // <-- Hứng lấy kết quả đã lưu
         // === THÊM ĐOẠN NÀY: GỬI THÔNG BÁO ===
         // Gửi cho chủ bài viết
         String notiContent = user.getName() + " đã bình luận về bài viết của bạn.";
         String link = "/?keyword=" + post.getId(); // Hoặc link chi tiết bài viết nếu có
         notificationService.sendNotification(user, post.getUser(), notiContent, link);
+        // 3. === REAL-TIME: Gửi Comment mới ra kênh chung ===
+        try {
+            CommentDto responseDto = new CommentDto(savedComment);
+            // Gửi đến topic chung cho các comment: /topic/comments
+            // (Client sẽ lọc xem comment này có thuộc bài viết đang hiển thị hay không)
+            messagingTemplate.convertAndSend("/topic/comments", responseDto);
+        } catch (Exception e) {
+            e.printStackTrace(); // Log lỗi nhưng không chặn luồng chính
+        }
     }
+
 
     @Override
     @Transactional
