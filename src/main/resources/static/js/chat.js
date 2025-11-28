@@ -3,6 +3,22 @@
 // --- Biến toàn cục ---
 const messageForm = document.querySelector('#messageForm');
 const messageInput = document.querySelector('#message');
+// === SỬA ĐOẠN NÀY ===
+// Kiểm tra xem element có tồn tại không trước khi lấy .value
+const userIdEl = document.querySelector('#current-user-id');
+const usernameEl = document.querySelector('#current-username');
+
+// Nếu không tìm thấy (đang ở trang Home), gán null để không bị lỗi crash trang
+const currentUserId = userIdEl ? userIdEl.value : null;
+const currentUsername = usernameEl ? usernameEl.value : null;
+
+// Nếu không có user ID (tức là không ở trang chat), ta không cần chạy tiếp các logic kết nối chat
+if (!currentUserId) {
+    console.log("Không phải trang chat, bỏ qua logic chat.js");
+    // Tuy nhiên, vì chat.js chứa nhiều hàm, ta chỉ cần đảm bảo
+    // connect() không được gọi tự động nếu không có ID,
+    // hoặc các hàm bên dưới check null.
+}
 const messageSendBtn = messageForm ? messageForm.querySelector('button[type="submit"]') : null;
 const messageArea = document.querySelector('#chat-messages-window');
 const chatRoomList = document.querySelector('#chat-room-list');
@@ -23,8 +39,7 @@ const cancelFileBtn = document.querySelector('#cancel-file-btn');
 // === THÊM: BIẾN LƯU MESSAGE ID CẦN THU HỒI ===
 let messageIdToRecall = null;
 
-const currentUserId = document.querySelector('#current-user-id').value;
-const currentUsername = document.querySelector('#current-username').value;
+
 let stompClient = null;
 let currentRoomId = null;
 let subscriptions = new Map();

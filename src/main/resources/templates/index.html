@@ -25,267 +25,139 @@
             background-color: #e4e6eb;
             color: #000;
         }
-
-        /* Modal preview full height */
-        .preview-iframe {
-            width: 100%;
-            height: 75vh;
-            border: none;
-            border-radius: 8px;
-            background-color: #f8f9fa;
-        }
-
-        .preview-image {
-            max-width: 100%;
-            max-height: 75vh;
-            display: block;
-            margin: 0 auto;
-            border-radius: 8px;
-        }
+        .preview-iframe { width: 100%; height: 75vh; border: none; border-radius: 8px; background-color: #f8f9fa; }
+        .preview-image { max-width: 100%; max-height: 75vh; display: block; margin: 0 auto; border-radius: 8px; }
     </style>
 </head>
 <body>
 
 <div layout:fragment="content">
-
     <div class="row justify-content-center">
-
         <div class="col-lg-3 d-none d-lg-block">
             <div class="card sidebar-left">
                 <div class="card-body">
                     <h5 class="card-title">Menu</h5>
                     <ul class="list-group list-group-flush">
-                        <li class="list-group-item">
-                            <a th:href="@{/profile/edit}" class="text-decoration-none text-dark">⚙️ Cài đặt tài khoản</a>
-                        </li>
-                        <li class="list-group-item">
-                            <a th:href="@{/documents}" class="text-decoration-none text-dark">📂 Kho tài liệu</a>
-                        </li>
-                        <li class="list-group-item">
-                            <a th:href="@{/chat}" class="text-decoration-none text-dark">💬 Tin nhắn</a>
-                        </li>
+                        <li class="list-group-item"><a th:href="@{/profile/edit}" class="text-decoration-none text-dark">⚙️ Cài đặt tài khoản</a></li>
+                        <li class="list-group-item"><a th:href="@{/documents}" class="text-decoration-none text-dark">📂 Kho tài liệu</a></li>
+                        <li class="list-group-item"><a th:href="@{/chat}" class="text-decoration-none text-dark">💬 Tin nhắn</a></li>
                     </ul>
                 </div>
             </div>
         </div>
 
         <div class="col-lg-6 col-md-8">
-
             <div class="card mb-4 shadow-sm" style="border-radius: 15px; border: none;">
                 <div class="card-body p-3">
                     <form th:action="@{/}" method="GET" class="d-flex align-items-center">
                         <div class="input-group">
-                            <span class="input-group-text bg-white border-end-0" style="border-radius: 20px 0 0 20px; border: 1px solid #e0e0e0;">
-                                🔍
-                            </span>
-                            <input type="text" name="keyword"
-                                   class="form-control border-start-0"
-                                   placeholder="Tìm kiếm tài liệu, bài viết, tags..."
-                                   th:value="${keyword}"
-                                   style="border-radius: 0 20px 20px 0; border: 1px solid #e0e0e0; box-shadow: none;">
-                            <button type="submit" class="btn btn-primary ms-2 fw-bold"
-                                    style="border-radius: 20px; background: linear-gradient(135deg, #667eea, #764ba2); border: none; padding: 8px 20px;">
-                                Tìm
-                            </button>
+                            <span class="input-group-text bg-white border-end-0" style="border-radius: 20px 0 0 20px; border: 1px solid #e0e0e0;">🔍</span>
+                            <input type="text" name="keyword" class="form-control border-start-0" placeholder="Tìm kiếm..." th:value="${keyword}" style="border-radius: 0 20px 20px 0; border: 1px solid #e0e0e0; box-shadow: none;">
+                            <button type="submit" class="btn btn-primary ms-2 fw-bold" style="border-radius: 20px; background: linear-gradient(135deg, #667eea, #764ba2); border: none; padding: 8px 20px;">Tìm</button>
                         </div>
-                        <a th:if="${keyword != null && !keyword.isEmpty()}"
-                           th:href="@{/}"
-                           class="btn btn-light ms-2"
-                           style="border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;"
-                           title="Xóa tìm kiếm">
-                            ✖
-                        </a>
+                        <a th:if="${keyword != null && !keyword.isEmpty()}" th:href="@{/}" class="btn btn-light ms-2" style="border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;" title="Xóa tìm kiếm">✖</a>
                     </form>
                 </div>
             </div>
 
-            <div th:if="${successMessage}" class="alert alert-success" role="alert">
-                <span th:text="${successMessage}"></span>
-            </div>
-            <div th:if="${errorMessage}" class="alert alert-danger" role="alert">
-                <span th:text="${errorMessage}"></span>
-            </div>
-
-            <h2 class="h4 mb-3" th:if="${keyword == null}">Bài đăng gần đây</h2>
-            <h2 class="h4 mb-3" th:if="${keyword != null}">Kết quả tìm kiếm cho: "<span th:text="${keyword}"></span>"</h2>
-
-            <div th:if="${posts == null || posts.isEmpty()}" class="alert alert-info">
-                <span th:if="${keyword == null}">Chưa có bài đăng nào.</span>
-                <span th:if="${keyword != null}">Không tìm thấy kết quả nào phù hợp.</span>
-            </div>
+            <div th:if="${successMessage}" class="alert alert-success" role="alert"><span th:text="${successMessage}"></span></div>
+            <div th:if="${errorMessage}" class="alert alert-danger" role="alert"><span th:text="${errorMessage}"></span></div>
 
             <div class="card mb-3" th:each="post : ${posts}">
                 <div class="card-body">
-
                     <div class="d-flex justify-content-between align-items-start mb-2">
                         <div class="d-flex align-items-center">
                             <a th:href="@{/profile/{username}(username=${post.user.username})}">
                                 <div class="post-author-avatar">
-                                    <img th:if="${post.user.avatarUrl != null}"
-                                         th:src="@{/view-file/{fileName}(fileName=${post.user.avatarUrl})}"
-                                         alt="Avatar">
-                                    <span th:if="${post.user.avatarUrl == null}"
-                                          th:text="${#strings.substring(post.user.name, 0, 1)}">
-                                        A
-                                    </span>
+                                    <img th:if="${post.user.avatarUrl != null}" th:src="@{/view-file/{fileName}(fileName=${post.user.avatarUrl})}" alt="Avatar">
+                                    <span th:if="${post.user.avatarUrl == null}" th:text="${#strings.substring(post.user.name, 0, 1)}">A</span>
                                 </div>
                             </a>
                             <div class="ms-2">
-                                <a class="fw-bold text-decoration-none text-dark"
-                                   th:href="@{/profile/{username}(username=${post.user.username})}"
-                                   th:text="${post.user.name}">Tên Tác Giả</a>
+                                <a class="fw-bold text-decoration-none text-dark" th:href="@{/profile/{username}(username=${post.user.username})}" th:text="${post.user.name}">Name</a>
                                 <div class="text-muted small">
-                                    <span th:text="${#temporals.format(post.createdAt, 'HH:mm ''ngày'' dd/MM/yyyy')}">
-                                        Ngày đăng
-                                    </span>
-                                    <span th:if="${post.isPublic}" title="Công khai">🌐</span>
-                                    <span th:if="${!post.isPublic}" title="Riêng tư">🔒</span>
+                                    <span th:text="${#temporals.format(post.createdAt, 'HH:mm ''ngày'' dd/MM/yyyy')}">Date</span>
+                                    <span th:if="${post.isPublic}" title="Công khai">🌐</span><span th:if="${!post.isPublic}" title="Riêng tư">🔒</span>
                                 </div>
                             </div>
                         </div>
-
                         <div class="dropdown" th:if="${currentUserId == post.user.id}">
-                            <button class="btn btn-link text-dark p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="text-decoration: none; font-size: 20px;">
-                                ⋮
-                            </button>
+                            <button class="btn btn-link text-dark p-0" type="button" data-bs-toggle="dropdown">⋮</button>
                             <ul class="dropdown-menu dropdown-menu-end border-0 shadow">
-                                <li>
-                                    <a class="dropdown-item py-2" th:href="@{/posts/edit/{id}(id=${post.id})}">
-                                        ✏️ Chỉnh sửa bài viết
-                                    </a>
-                                </li>
+                                <li><a class="dropdown-item py-2" th:href="@{/posts/edit/{id}(id=${post.id})}">✏️ Sửa</a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
-                                    <form th:action="@{/posts/delete/{id}(id=${post.id})}" method="POST"
-                                          onsubmit="return confirm('Bạn có chắc chắn muốn xóa bài viết này không? Hành động này không thể hoàn tác.');">
-                                        <button type="submit" class="dropdown-item py-2 text-danger">
-                                            🗑️ Xóa bài viết
-                                        </button>
+                                    <form th:action="@{/posts/delete/{id}(id=${post.id})}" method="POST" onsubmit="return confirm('Xóa bài viết này?');">
+                                        <button type="submit" class="dropdown-item py-2 text-danger">🗑️ Xóa</button>
                                     </form>
                                 </li>
                             </ul>
                         </div>
                     </div>
 
-                    <p class="card-text" th:if="${post.content != null && !post.content.isEmpty()}"
-                       th:text="${post.content}">Nội dung bài đăng...</p>
+                    <p class="card-text" th:if="${post.content}" th:text="${post.content}"></p>
 
-                    <div th:if="${post.documents != null && !post.documents.isEmpty()}" class="mt-3">
+                    <div th:if="${!post.documents.isEmpty()}" class="mt-3">
                         <div class="list-group">
-                            <div th:each="doc : ${post.documents}"
-                                 class="list-group-item list-group-item-action flex-column align-items-start mb-2 border rounded p-3">
-
+                            <div th:each="doc : ${post.documents}" class="list-group-item list-group-item-action flex-column align-items-start mb-2 border rounded p-3">
                                 <div class="d-flex w-100 justify-content-between align-items-center">
-                                    <h5 class="mb-1 fw-bold" style="font-size: 1.1rem;">
-                                        📄
-                                        <span th:text="${doc.title != null && !doc.title.isEmpty() ? doc.title : doc.fileName}">
-                                            Tiêu đề tài liệu
-                                        </span>
-                                    </h5>
-
+                                    <h5 class="mb-1 fw-bold" style="font-size: 1.1rem;">📄 <span th:text="${doc.title ?: doc.fileName}">Title</span></h5>
                                     <div class="d-flex gap-2">
-                                        <button type="button"
-                                                class="btn-preview"
-                                                th:onclick="previewFile([[${doc.storagePath}]], [[${doc.fileName}]], [[${doc.title}]])"
-                                                title="Xem trước">
-                                            👁️ Xem
-                                        </button>
-
-                                        <a th:href="@{/download/{fileName}(fileName=${doc.storagePath})}"
-                                           class="btn btn-sm btn-primary ms-1 flex-shrink-0"
-                                           style="border-radius: 20px; display: flex; align-items: center;">
-                                            ⬇ Tải xuống
-                                        </a>
+                                        <button type="button" class="btn-preview" th:onclick="previewFile([[${doc.storagePath}]], [[${doc.fileName}]], [[${doc.title}]])">👁️ Xem</button>
+                                        <a th:href="@{/download/{fileName}(fileName=${doc.storagePath})}" class="btn btn-sm btn-primary ms-1 flex-shrink-0" style="border-radius: 20px; display: flex; align-items: center;">⬇ Tải</a>
                                     </div>
                                 </div>
-
-                                <p class="mb-1"
-                                   th:if="${doc.description != null && !doc.description.isEmpty() && doc.description != post.content}"
-                                   th:text="${doc.description}">
-                                    Mô tả tài liệu...
-                                </p>
-
-                                <small class="text-muted d-block mt-2">
-                                    <span th:if="${doc.category != null}"
-                                          class="badge bg-secondary me-2"
-                                          th:text="${doc.category.name}">Category</span>
-                                    <span th:text="${doc.fileName} + ' (' + (${doc.fileSize < 1024*1024 ? #numbers.formatDecimal(doc.fileSize / 1024.0, 1, 'COMMA', 1, 'POINT') + ' KB' : #numbers.formatDecimal(doc.fileSize / 1024.0 / 1024.0, 1, 'COMMA', 1, 'POINT') + ' MB'}) + ')'">
-                                        size
-                                    </span>
-                                </small>
+                                <p class="mb-1" th:if="${doc.description != post.content}" th:text="${doc.description}"></p>
                             </div>
                         </div>
                     </div>
 
                     <hr>
-
                     <div class="d-flex gap-3">
                         <form th:action="@{/posts/{postId}/like(postId=${post.id})}" method="POST" class="d-inline">
-                            <button type="submit" class="btn btn-link text-decoration-none p-0"
-                                    th:with="liked = ${#lists.contains(post.reactions.![user.id], currentUserId)}"
-                                    th:classappend="${liked ? 'text-primary fw-bold' : 'text-dark'}">
-                                👍 Thích
-                                <span th:text="${post.reactions.size()}">0</span>
+                            <button type="submit" class="btn btn-link text-decoration-none p-0" th:with="liked = ${#lists.contains(post.reactions.![user.id], currentUserId)}" th:classappend="${liked ? 'text-primary fw-bold' : 'text-dark'}">
+                                👍 Thích <span th:text="${post.reactions.size()}">0</span>
                             </button>
                         </form>
-                        <a href="#" class="text-decoration-none text-dark">
-                            💬 Bình luận
-                            <span th:text="${post.comments.size()}">0</span>
-                        </a>
+                        <a href="#" class="text-decoration-none text-dark">💬 Bình luận <span th:text="${post.comments.size()}">0</span></a>
                     </div>
-
                     <hr>
 
-                    <div class="comments-section" th:id="'comments-area-' + ${post.id}">
-                        <div th:each="comment : ${post.comments}"
-                             th:id="'comment-' + ${comment.id}"
-                             class="mb-2 d-flex group-comment-item">
+                    <div class="comments-wrapper">
+                        <div th:id="'comments-list-' + ${post.id}">
+                            <div th:each="comment, iter : ${post.comments}"
+                                 th:id="'comment-' + ${comment.id}"
+                                 class="mb-2 d-flex group-comment-item"
+                                 th:classappend="${iter.index >= 3} ? 'd-none hidden-comment-' + ${post.id} : ''">
 
-                            <div class="post-author-avatar me-2" style="width: 32px; height: 32px; font-size: 0.9rem;">
-                                <img th:if="${comment.user.avatarUrl != null}"
-                                     th:src="@{/view-file/{fileName}(fileName=${comment.user.avatarUrl})}" alt="Avatar">
-                                <span th:if="${comment.user.avatarUrl == null}"
-                                      th:text="${#strings.substring(comment.user.name, 0, 1)}"></span>
-                            </div>
-
-                            <div class="ms-2 position-relative" style="background-color: #f0f2f5; border-radius: 15px; padding: 8px 12px; flex-grow: 1;">
-                                <strong>
-                                    <a th:href="@{/profile/{username}(username=${comment.user.username})}"
-                                       th:text="${comment.user.name}"
-                                       style="text-decoration: none; color: inherit;">Tên User</a>
-                                </strong>
-                                <p th:text="${comment.content}" class="mb-0">Nội dung.</p>
-                                <small class="text-muted" th:text="${#temporals.format(comment.createdAt, 'HH:mm dd/MM/yyyy')}"></small>
-
-                                <button th:if="${currentUser != null && (comment.user.id == currentUser.id || post.user.id == currentUser.id)}"
-                                        class="btn btn-sm text-danger position-absolute top-0 end-0 p-1 delete-comment-btn"
-                                        th:attr="data-id=${comment.id}"
-                                        style="font-size: 12px; margin-right: 5px;"
-                                        title="Xóa bình luận"
-                                        type="button">
-                                    ✖
-                                </button>
+                                <div class="post-author-avatar me-2" style="width: 32px; height: 32px; font-size: 0.9rem;">
+                                    <img th:if="${comment.user.avatarUrl != null}" th:src="@{/view-file/{fileName}(fileName=${comment.user.avatarUrl})}" alt="Avatar">
+                                    <span th:if="${comment.user.avatarUrl == null}" th:text="${#strings.substring(comment.user.name, 0, 1)}"></span>
+                                </div>
+                                <div class="ms-2 position-relative" style="background-color: #f0f2f5; border-radius: 15px; padding: 8px 12px; flex-grow: 1;">
+                                    <strong><a th:href="@{/profile/{username}(username=${comment.user.username})}" th:text="${comment.user.name}" style="text-decoration: none; color: inherit;">Name</a></strong>
+                                    <p th:text="${comment.content}" class="mb-0">Nội dung</p>
+                                    <small class="text-muted" th:text="${#temporals.format(comment.createdAt, 'HH:mm dd/MM/yyyy')}"></small>
+                                    <button th:if="${currentUser != null && (comment.user.id == currentUser.id || post.user.id == currentUser.id)}" class="btn btn-sm text-danger position-absolute top-0 end-0 p-1 delete-comment-btn" th:attr="data-id=${comment.id}" style="font-size: 12px; margin-right: 5px;">✖</button>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
+                        <div th:if="${post.comments.size() > 3}" class="text-center mt-2 view-more-container">
+                            <a href="javascript:void(0)" class="text-decoration-none small fw-bold text-secondary" th:id="'btn-more-' + ${post.id}" th:onclick="'toggleComments(' + ${post.id} + ', true)'">▼ Xem thêm các bình luận cũ hơn... (<span th:text="${post.comments.size() - 3}"></span>)</a>
+                            <a href="javascript:void(0)" class="text-decoration-none small fw-bold text-secondary" th:id="'btn-less-' + ${post.id}" style="display: none;" th:onclick="'toggleComments(' + ${post.id} + ', false)'">▲ Thu gọn bình luận</a>
+                        </div>
+                    </div>
                     <div class="mt-3" sec:authorize="isAuthenticated()">
-                        <form th:action="@{/posts/{postId}/comment(postId=${post.id})}"
-                              th:object="${commentDto}" method="POST" class="d-flex">
+                        <form th:action="@{/posts/{postId}/comment(postId=${post.id})}" th:object="${commentDto}" method="POST" class="d-flex">
                             <div class="post-author-avatar me-2" style="width: 32px; height: 32px; font-size: 0.9rem;">
-                                <img th:if="${currentUser != null && currentUser.avatarUrl != null}"
-                                     th:src="@{/view-file/{fileName}(fileName=${currentUser.avatarUrl})}"
-                                     alt="Avatar">
-                                <span th:if="${currentUser == null || currentUser.avatarUrl == null}"
-                                      th:text="${currentUser != null ? #strings.substring(currentUser.name, 0, 1) : '?'}">
-                                </span>
+                                <img th:if="${currentUser != null && currentUser.avatarUrl != null}" th:src="@{/view-file/{fileName}(fileName=${currentUser.avatarUrl})}" alt="Avatar">
+                                <span th:if="${currentUser == null || currentUser.avatarUrl == null}" th:text="${currentUser != null ? #strings.substring(currentUser.name, 0, 1) : '?'}"></span>
                             </div>
-                            <input type="text" class="form-control" th:field="*{content}"
-                                   placeholder="Viết bình luận..." style="border-radius: 20px;"/>
+                            <input type="text" class="form-control" th:field="*{content}" placeholder="Viết bình luận..." style="border-radius: 20px;"/>
                             <button type="submit" class="btn btn-primary ms-2" style="border-radius: 20px;">Gửi</button>
                         </form>
                     </div>
-
                 </div>
             </div>
         </div>
@@ -294,241 +166,161 @@
             <div class="card sidebar-right">
                 <div class="card-body">
                     <h5 class="card-title">Liên hệ</h5>
-
-                    <div class="user-list-container" th:if="${contacts != null && !contacts.isEmpty()}">
-                        <div th:each="contact : ${contacts}"
-                             th:if="${contact.type == T(com.studyhub.StudyHub.entity.ChatRoom.RoomType).ONE_TO_ONE}">
+                    <div class="user-list-container" th:if="${contacts != null}">
+                        <div th:each="contact : ${contacts}" th:if="${contact.type == T(com.studyhub.StudyHub.entity.ChatRoom.RoomType).ONE_TO_ONE}">
                             <a th:href="@{/chat(withUser=${contact.oneToOnePartnerId})}" class="user-list-item-link">
-                                <div th:with="isOnline = ${onlineUsers.contains(contact.oneToOnePartnerUsername)}"
-                                     class="user-list-item">
+                                <div class="user-list-item">
                                     <div class="user-avatar-container">
-                                        <img th:if="${contact.oneToOnePartnerAvatarUrl != null}"
-                                             th:src="@{/view-file/{fileName}(fileName=${contact.oneToOnePartnerAvatarUrl})}"
-                                             class="user-avatar-image">
-                                        <div th:if="${contact.oneToOnePartnerAvatarUrl == null}"
-                                             class="user-avatar-default">
-                                            <span th:text="${#strings.substring(contact.oneToOnePartnerName, 0, 1)}"></span>
-                                        </div>
-                                        <span class="status-dot" th:classappend="${isOnline ? 'online' : ''}"></span>
+                                        <img th:if="${contact.oneToOnePartnerAvatarUrl}" th:src="@{/view-file/{f}(f=${contact.oneToOnePartnerAvatarUrl})}" class="user-avatar-image">
+                                        <div th:unless="${contact.oneToOnePartnerAvatarUrl}" class="user-avatar-default"><span th:text="${#strings.substring(contact.oneToOnePartnerName, 0, 1)}"></span></div>
+                                        <span class="status-dot" th:classappend="${onlineUsers.contains(contact.oneToOnePartnerUsername) ? 'online' : ''}"></span>
                                     </div>
-                                    <div class="user-info">
-                                        <span class="user-name" th:text="${contact.oneToOnePartnerName}">Tên</span>
-                                    </div>
+                                    <div class="user-info"><span class="user-name" th:text="${contact.oneToOnePartnerName}">Name</span></div>
                                 </div>
                             </a>
                         </div>
                     </div>
-
-                    <p th:if="${contacts == null || contacts.isEmpty()}" class="text-muted small">
-                        Bạn chưa nhắn tin với ai.
-                    </p>
                 </div>
             </div>
         </div>
-
     </div>
+</div>
 
+<div layout:fragment="modals">
     <div class="modal fade" id="previewModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-centered">
             <div class="modal-content" style="border-radius: 15px; overflow: hidden;">
                 <div class="modal-header border-0 bg-light py-2">
                     <h5 class="modal-title fw-bold text-primary" id="previewTitle">📄 Xem tài liệu</h5>
-                    <div class="ms-auto d-flex gap-2">
-                        <a href="#" id="previewDownloadBtn" class="btn btn-primary btn-sm rounded-pill">⬇ Tải xuống</a>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-0 bg-light text-center d-flex align-items-center justify-content-center" style="min-height: 400px;">
-                    <div id="previewContent" class="w-100 h-100">
-                    </div>
+                    <div id="previewContent" class="w-100 h-100"></div>
                 </div>
             </div>
         </div>
     </div>
-
-    <script layout:fragment="scripts">
-        // --- 1. XỬ LÝ PREVIEW FILE (Giữ nguyên) ---
-        function previewFile(storagePath, fileName, title) {
-            const modal = new bootstrap.Modal(document.getElementById('previewModal'));
-            const contentDiv = document.getElementById('previewContent');
-            const titleEl = document.getElementById('previewTitle');
-            const downloadBtn = document.getElementById('previewDownloadBtn');
-
-            titleEl.textContent = title || fileName;
-            downloadBtn.href = '/download/' + storagePath;
-
-            const ext = fileName.split('.').pop().toLowerCase();
-            const fileUrl = '/view-file/' + storagePath;
-            let html = '';
-
-            if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) {
-                html = `<img src="${fileUrl}" class="preview-image" alt="Preview">`;
-            } else if (ext === 'pdf') {
-                html = `<iframe src="${fileUrl}" class="preview-iframe"></iframe>`;
-            } else if (ext === 'txt') {
-                html = `<iframe src="${fileUrl}" class="preview-iframe" style="background: white;"></iframe>`;
-            } else if (['mp4', 'webm', 'ogg'].includes(ext)) {
-                html = `<video controls class="preview-image" style="background:black;"><source src="${fileUrl}" type="video/${ext}">Trình duyệt không hỗ trợ video này.</video>`;
-            } else {
-                html = `<div class="text-center p-5"><h4>Không hỗ trợ xem trước định dạng này</h4><a href="/download/${storagePath}" class="btn btn-lg btn-primary mt-2 rounded-pill">⬇ Tải xuống máy</a></div>`;
-            }
-            contentDiv.innerHTML = html;
-            modal.show();
-        }
-
-        // --- 2. XỬ LÝ REALTIME (GỘP CHUNG THÊM & XÓA) ---
-        let stompClientFeed = null;
-
-        function connectFeed() {
-            const socket = new SockJS('/ws');
-            stompClientFeed = Stomp.over(socket);
-            stompClientFeed.debug = null; // Tắt log debug cho gọn
-
-            stompClientFeed.connect({}, function (frame) {
-                console.log('Connected Realtime Feed');
-
-                // Đăng ký lắng nghe kênh chung "/topic/comments"
-                stompClientFeed.subscribe('/topic/comments', function (payload) {
-                    const data = JSON.parse(payload.body);
-
-                    // KIỂM TRA LOẠI TIN NHẮN
-                    if (data.type === 'DELETE_COMMENT') {
-                        // ==> NẾU LÀ LỆNH XÓA
-                        handleDeleteCommentUI(data.commentId);
-                    } else {
-                        // ==> NẾU KHÔNG CÓ TYPE HOẶC LÀ COMMENT MỚI
-                        // (Giả sử server gửi object comment đầy đủ khi thêm mới)
-                        appendNewComment(data);
-                    }
-                });
-
-            }, function (error) {
-                console.log('WS Error: ' + error);
-            });
-        }
-
-        // Hàm 2.1: Xử lý giao diện khi có lệnh xóa
-        function handleDeleteCommentUI(commentId) {
-            const commentElement = document.getElementById('comment-' + commentId);
-            if (commentElement) {
-                commentElement.style.transition = "opacity 0.5s ease";
-                commentElement.style.opacity = "0"; // Làm mờ
-                setTimeout(() => commentElement.remove(), 500); // Xóa khỏi DOM sau 0.5s
-            }
-        }
-
-        // Hàm 2.2: Gửi lệnh xóa lên Server (khi bấm nút X)
-        function deleteComment(commentId) {
-            const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
-            const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
-
-            fetch('/api/comments/' + commentId + '/delete', {
-                method: 'POST',
-                headers: { [csrfHeader]: csrfToken }
-            }).then(response => {
-                if (!response.ok) alert("Lỗi khi xóa bình luận.");
-            }).catch(err => console.error(err));
-        }
-
-        // Hàm 2.3: Vẽ comment mới lên giao diện (Giữ nguyên logic cũ của bạn)
-        function appendNewComment(cmt) {
-            // Kiểm tra dữ liệu hợp lệ trước khi vẽ (tránh lỗi nếu nhận nhầm gói tin xóa)
-            if (!cmt.content || !cmt.postId) return;
-
-            const commentArea = document.getElementById('comments-section-' + cmt.postId) ||
-                // Fallback: Tìm trong danh sách cũ nếu chưa có ID cụ thể
-                document.querySelector(`#comment-${cmt.id}`)?.parentNode ||
-                // Fallback 2: Tìm theo cấu trúc HTML của bạn
-                document.querySelectorAll('.card-body')[0]?.querySelector('.comments-section');
-
-            // Sửa lại selector tìm vùng chứa comment cho chính xác với HTML của bạn
-            // Trong file bạn gửi, vùng chứa là <div class="comments-section"> bên trong mỗi post
-            // Để chính xác nhất, bạn nên thêm th:id="'comments-area-' + ${post.id}" vào thẻ <div class="comments-section"> trong HTML
-
-            // Tạm thời dùng logic tìm container đơn giản (có thể cần điều chỉnh ID trong HTML):
-            // Giả sử bạn đã thêm id="comments-area-{postId}" vào div chứa comment
-            const container = document.getElementById('comments-area-' + cmt.postId);
-
-            if (container) {
-                const initial = cmt.senderName.charAt(0).toUpperCase();
-                const avatarHtml = cmt.senderAvatar ?
-                    `<img src="/view-file/${cmt.senderAvatar}" alt="Avatar">` :
-                    `<span>${initial}</span>`;
-
-                // HTML comment mới (có thêm nút xóa)
-                // Lưu ý: Nút xóa ở đây chỉ hiển thị giả định, logic server sẽ chặn nếu không phải chủ
-                const deleteBtnHtml = `
-                <button class="btn btn-sm text-danger position-absolute top-0 end-0 p-1 delete-comment-btn"
-                        data-id="${cmt.id}" style="font-size: 12px; margin-right: 5px;" title="Xóa">✖</button>
-            `;
-
-                const html = `
-                <div id="comment-${cmt.id}" class="mb-2 d-flex group-comment-item animate-fade-in">
-                    <div class="post-author-avatar me-2" style="width: 32px; height: 32px; font-size: 0.9rem;">
-                        ${avatarHtml}
-                    </div>
-                    <div class="ms-2 position-relative" style="background-color: #f0f2f5; border-radius: 15px; padding: 8px 12px; flex-grow: 1;">
-                        <strong>
-                            <a href="/profile/${cmt.senderUsername}" style="text-decoration: none; color: inherit;">${cmt.senderName}</a>
-                        </strong>
-                        <p class="mb-0">${cmt.content}</p>
-                        <small class="text-muted">Vừa xong</small>
-                        ${deleteBtnHtml}
-                    </div>
+    <div class="modal fade" id="deleteCommentModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content" style="border-radius: 20px; border: none;">
+                <div class="modal-body text-center pt-4">
+                    <div style="width: 60px; height: 60px; background-color: #fee2e2; color: #dc2626; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; margin: 0 auto 15px auto;">🗑️</div>
+                    <h5 class="fw-bold">Xóa bình luận?</h5>
+                    <p class="text-muted small">Hành động này không thể hoàn tác.</p>
                 </div>
-            `;
-                container.insertAdjacentHTML('beforeend', html);
-            }
+                <div class="modal-footer border-0 justify-content-center pt-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-danger" id="btn-confirm-delete-comment">Xóa</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script layout:fragment="scripts">
+    function previewFile(storagePath, fileName, title) {
+        const modal = new bootstrap.Modal(document.getElementById('previewModal'));
+        document.getElementById('previewTitle').textContent = title || fileName;
+        const ext = fileName.split('.').pop().toLowerCase();
+        const url = '/view-file/' + storagePath;
+        let html = '';
+        if (['jpg', 'jpeg', 'png', 'gif'].includes(ext)) html = `<img src="${url}" class="preview-image">`;
+        else if (ext === 'pdf') html = `<iframe src="${url}" class="preview-iframe"></iframe>`;
+        else html = `<div class="p-5 text-center">Không hỗ trợ xem trước. <a href="/download/${storagePath}" class="btn btn-primary">Tải xuống</a></div>`;
+        document.getElementById('previewContent').innerHTML = html;
+        modal.show();
+    }
+
+    let stompClientFeed = null;
+    function connectFeed() {
+        const socket = new SockJS('/ws');
+        stompClientFeed = Stomp.over(socket);
+        stompClientFeed.debug = null;
+        stompClientFeed.connect({}, function (frame) {
+            stompClientFeed.subscribe('/topic/comments', function (payload) {
+                const data = JSON.parse(payload.body);
+                if (data.type === 'DELETE_COMMENT') handleDeleteCommentUI(data.commentId);
+                else appendNewComment(data);
+            });
+        });
+    }
+
+    function handleDeleteCommentUI(id) {
+        const el = document.getElementById('comment-' + id);
+        if (el) { el.style.opacity = '0'; setTimeout(() => el.remove(), 500); }
+    }
+
+    function deleteComment(id) {
+        const token = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+        const header = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+        fetch('/api/comments/' + id + '/delete', { method: 'POST', headers: { [header]: token } });
+    }
+
+    // === SỬA HÀM NÀY ĐỂ CHÈN LÊN ĐẦU ===
+    function appendNewComment(cmt) {
+        if (!cmt.content || !cmt.postId) return;
+
+        // Tìm đúng div danh sách comment (comments-list-{id})
+        const container = document.getElementById('comments-list-' + cmt.postId);
+
+        if (container) {
+            const initial = cmt.senderName.charAt(0).toUpperCase();
+            const avatarHtml = cmt.senderAvatar ? `<img src="/view-file/${cmt.senderAvatar}" alt="Avatar">` : `<span>${initial}</span>`;
+
+            const html = `
+            <div id="comment-${cmt.id}" class="mb-2 d-flex group-comment-item animate-fade-in">
+                <div class="post-author-avatar me-2" style="width: 32px; height: 32px; font-size: 0.9rem;">${avatarHtml}</div>
+                <div class="ms-2 position-relative" style="background-color: #f0f2f5; border-radius: 15px; padding: 8px 12px; flex-grow: 1;">
+                    <strong><a href="/profile/${cmt.senderUsername}" style="text-decoration: none; color: inherit;">${cmt.senderName}</a></strong>
+                    <p class="mb-0">${cmt.content}</p>
+                    <small class="text-muted">Vừa xong</small>
+                    <button class="btn btn-sm text-danger position-absolute top-0 end-0 p-1 delete-comment-btn" data-id="${cmt.id}" style="font-size: 12px; margin-right: 5px;">✖</button>
+                </div>
+            </div>`;
+
+            // SỬA: Dùng afterbegin để chèn lên ĐẦU danh sách (trên comment cũ)
+            container.insertAdjacentHTML('afterbegin', html);
         }
+    }
 
-        // --- 3. ĐĂNG KÝ SỰ KIỆN ---
+    let commentIdToDelete = null;
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('.delete-comment-btn');
+        if (btn) {
+            e.preventDefault();
+            commentIdToDelete = btn.getAttribute('data-id');
+            new bootstrap.Modal(document.getElementById('deleteCommentModal')).show();
+        }
+    });
 
-        // Ủy quyền sự kiện click cho nút xóa (để hoạt động với cả comment mới thêm)
-        document.addEventListener('click', function(e) {
-            if (e.target && e.target.classList.contains('delete-comment-btn')) {
-                e.preventDefault();
-                const commentId = e.target.getAttribute('data-id');
-                if (confirm("Bạn có chắc chắn muốn xóa bình luận này?")) {
-                    deleteComment(commentId);
-                }
-            }
+    document.getElementById('btn-confirm-delete-comment').addEventListener('click', function() {
+        if (commentIdToDelete) {
+            deleteComment(commentIdToDelete);
+            bootstrap.Modal.getInstance(document.getElementById('deleteCommentModal')).hide();
+            commentIdToDelete = null;
+        }
+    });
+
+    function toggleComments(postId, showMore) {
+        const hidden = document.querySelectorAll('.hidden-comment-' + postId);
+        const btnMore = document.getElementById('btn-more-' + postId);
+        const btnLess = document.getElementById('btn-less-' + postId);
+
+        hidden.forEach(el => {
+            if (showMore) { el.classList.remove('d-none'); el.classList.add('animate-fade-in'); }
+            else { el.classList.add('d-none'); el.classList.remove('animate-fade-in'); }
         });
 
-        // Thêm style animation
-        const style = document.createElement('style');
-        style.innerHTML = `.animate-fade-in { animation: fadeIn 0.5s ease-in; } @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }`;
-        document.head.appendChild(style);
+        if (showMore) { btnMore.style.display = 'none'; btnLess.style.display = 'inline-block'; }
+        else { btnMore.style.display = 'inline-block'; btnLess.style.display = 'none'; }
+    }
 
-        // Chạy khi load trang
-        document.addEventListener('DOMContentLoaded', connectFeed);
-    </script>
+    const style = document.createElement('style');
+    style.innerHTML = `.animate-fade-in { animation: fadeIn 0.5s ease-in; } @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }`;
+    document.head.appendChild(style);
 
-</div>
-<div class="modal fade" id="deleteCommentModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-sm"> <div class="modal-content" style="border-radius: 20px; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+    document.addEventListener('DOMContentLoaded', connectFeed);
+</script>
 
-        <div class="modal-body text-center pt-4 pb-0">
-            <div style="width: 60px; height: 60px; background-color: #fee2e2; color: #dc2626; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; margin: 0 auto 15px auto;">
-                🗑️
-            </div>
-            <h5 class="fw-bold text-dark mb-2">Xóa bình luận?</h5>
-            <p class="text-muted small mb-3">
-                Bạn có chắc chắn muốn xóa bình luận này không? Hành động này không thể hoàn tác.
-            </p>
-        </div>
-
-        <div class="modal-footer border-0 justify-content-center pb-4 pt-0 gap-2">
-            <button type="button" class="btn btn-light fw-bold px-3" data-bs-dismiss="modal"
-                    style="border-radius: 12px; min-width: 80px;">
-                Hủy
-            </button>
-            <button type="button" class="btn btn-danger fw-bold px-3" id="btn-confirm-delete-comment"
-                    style="border-radius: 12px; min-width: 80px; background-color: #dc2626; border: none;">
-                Xóa
-            </button>
-        </div>
-    </div>
-    </div>
-</div>
 </body>
 </html>
