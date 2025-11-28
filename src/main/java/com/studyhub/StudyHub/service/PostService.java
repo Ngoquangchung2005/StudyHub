@@ -29,4 +29,5 @@ public interface PostService {
     Post getPostById(Long id); // Lấy bài để hiển thị lên form sửa
     void updatePost(Long postId, PostDto postDto, Principal principal); // Lưu sửa đổi
     void deletePost(Long postId, Principal principal); // Xóa bài
+    void deleteComment(Long commentId, Principal principal); // <--- THÊM HÀM NÀY
 }

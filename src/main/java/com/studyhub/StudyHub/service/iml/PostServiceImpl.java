@@ -20,7 +20,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-
+// ... imports
+import com.studyhub.StudyHub.entity.Comment; // Đảm bảo import này
 @Service
 public class PostServiceImpl implements PostService {
 
@@ -287,5 +288,23 @@ public class PostServiceImpl implements PostService {
         // bạn có thể thêm logic xóa file trong StorageService nếu muốn.
         postRepository.delete(post);
     }
+    @Override
+    @Transactional
+    public void deleteComment(Long commentId, Principal principal) {
+        User currentUser = getCurrentUser(principal);
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy bình luận"));
+
+        // Kiểm tra quyền: Chỉ (Chủ comment) HOẶC (Chủ bài viết) mới được xóa
+        boolean isCommentOwner = comment.getUser().getId().equals(currentUser.getId());
+        boolean isPostOwner = comment.getPost().getUser().getId().equals(currentUser.getId());
+
+        if (!isCommentOwner && !isPostOwner) {
+            throw new RuntimeException("Bạn không có quyền xóa bình luận này");
+        }
+
+        commentRepository.delete(comment);
+    }
+
 
 }

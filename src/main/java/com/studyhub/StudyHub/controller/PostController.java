@@ -13,6 +13,11 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model; // THÊM DÒNG NÀY
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+// Thêm các import
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.http.ResponseEntity;
+import java.util.Map;
+import java.util.HashMap;
 
 import java.security.Principal;
 
@@ -27,6 +32,8 @@ public class PostController {
     private CategoryRepository categoryRepository;
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
 
     // === THÊM METHOD MỚI: HIỂN thị TRANG UPLOAD TÀI LIỆU ===
     @GetMapping("/upload")
@@ -154,6 +161,27 @@ public class PostController {
         }
         // Trả về trang trước đó (Referer) hoặc trang chủ
         return "redirect:/";
+    }
+    // 2. Thêm API xóa comment (Trả về JSON để JS xử lý, không Redirect)
+    @PostMapping("/api/comments/{commentId}/delete")
+    @ResponseBody // Quan trọng: Trả về dữ liệu, không trả về View
+    public ResponseEntity<?> deleteCommentRealtime(@PathVariable Long commentId, Principal principal) {
+        try {
+            // 1. Xóa trong database
+            postService.deleteComment(commentId, principal);
+
+            // 2. Chuẩn bị dữ liệu báo cho các Client qua WebSocket
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("type", "DELETE_COMMENT");
+            payload.put("commentId", commentId);
+
+            // 3. Gửi thông báo đến topic chung (Mọi người đang xem feed đều nhận được)
+            messagingTemplate.convertAndSend("/topic/comments", payload);
+
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
 }
