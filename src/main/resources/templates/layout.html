@@ -208,7 +208,14 @@
 
                     <ul class="dropdown-menu dropdown-menu-end shadow border-0 p-0" aria-labelledby="notiDropdown"
                         style="width: 350px; max-height: 85vh; overflow-y: auto; border-radius: 10px;">
-                        <li class="p-2 border-bottom fw-bold bg-white sticky-top">Thông báo</li>
+
+                        <li class="p-2 border-bottom bg-white sticky-top d-flex justify-content-between align-items-center">
+                            <span class="fw-bold ms-2">Thông báo</span>
+                            <button onclick="showDeleteAllNotiModal(event)" class="btn btn-sm btn-link text-danger text-decoration-none" style="font-size: 0.8rem;">
+                                🗑️ Xóa tất cả
+                            </button>
+                        </li>
+
                         <div id="noti-list">
                             <li class="text-center text-muted p-3">Đang tải...</li>
                         </div>
@@ -263,6 +270,26 @@
 <div layout:fragment="modals">
 </div>
 
+<div class="modal fade" id="deleteNotificationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content" style="border-radius: 20px; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+            <div class="modal-body text-center pt-4 pb-0">
+                <div style="width: 60px; height: 60px; background-color: #fee2e2; color: #dc2626; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; margin: 0 auto 15px auto;">
+                    🗑️
+                </div>
+                <h5 class="fw-bold text-dark mb-2">Xóa hết thông báo?</h5>
+                <p class="text-muted small mb-3">
+                    Bạn có chắc chắn muốn xóa toàn bộ thông báo không?
+                </p>
+            </div>
+            <div class="modal-footer border-0 justify-content-center pb-4 pt-0 gap-2">
+                <button type="button" class="btn btn-light fw-bold px-3" data-bs-dismiss="modal" style="border-radius: 12px; min-width: 80px;">Hủy</button>
+                <button type="button" class="btn btn-danger fw-bold px-3" id="btn-confirm-delete-notification" style="border-radius: 12px; min-width: 80px; background-color: #dc2626; border: none;">Xóa hết</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
@@ -274,7 +301,6 @@
 
     // Kết nối WebSocket toàn cục để lắng nghe thông báo
     function connectGlobal() {
-        // Kiểm tra xem đã đăng nhập chưa
         const userElement = document.getElementById('current-username-global');
         if (!userElement) return;
 
@@ -285,14 +311,12 @@
         stompClientGlobal.connect({}, function (frame) {
             console.log('Connected Global WS for Notifications');
 
-            // Đăng ký nhận thông báo cá nhân
             stompClientGlobal.subscribe('/user/queue/notifications', function (payload) {
                 const noti = JSON.parse(payload.body);
-                showNotificationPopup(noti); // Hiển thị Toast popup
-                updateUnreadCount(1);        // Tăng số đếm
+                showNotificationPopup(noti);
+                updateUnreadCount(1);
             });
 
-            // Gọi API lấy số lượng tin chưa đọc ban đầu
             fetchUnreadCount();
 
         }, function (error) {
@@ -318,14 +342,12 @@
         `;
         document.body.insertAdjacentHTML('beforeend', toastHtml);
 
-        // Tự ẩn sau 4 giây
         setTimeout(() => {
             const toast = document.querySelector('.toast.show');
             if(toast) toast.remove();
         }, 4000);
     }
 
-    // Hàm cập nhật số trên chấm đỏ
     function updateUnreadCount(increment) {
         const badge = document.getElementById('noti-badge');
         if (!badge) return;
@@ -346,7 +368,6 @@
         }
     }
 
-    // Gọi API lấy số lượng chưa đọc từ Server
     async function fetchUnreadCount() {
         try {
             const res = await fetch('/api/notifications/unread-count');
@@ -363,7 +384,46 @@
         }
     }
 
-    // Gọi API lấy danh sách thông báo khi bấm vào Chuông
+    // === HÀM HIỂN THỊ MODAL XÓA ===
+    function showDeleteAllNotiModal(event) {
+        event.stopPropagation(); // Ngăn chặn đóng dropdown
+        event.preventDefault();
+        const modal = new bootstrap.Modal(document.getElementById('deleteNotificationModal'));
+        modal.show();
+    }
+
+    // === ĐĂNG KÝ SỰ KIỆN CHO NÚT "XÓA HẾT" TRONG MODAL ===
+    document.addEventListener('DOMContentLoaded', () => {
+        const confirmBtn = document.getElementById('btn-confirm-delete-notification');
+        if(confirmBtn) {
+            confirmBtn.addEventListener('click', async () => {
+                try {
+                    const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+                    const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+
+                    const res = await fetch('/api/notifications/delete-all', {
+                        method: 'DELETE',
+                        headers: { [csrfHeader]: csrfToken }
+                    });
+
+                    if (res.ok) {
+                        document.getElementById('noti-list').innerHTML = '<li class="text-center text-muted p-3">Không có thông báo mới</li>';
+                        updateUnreadCount('reset');
+                        // Đóng modal
+                        const modalEl = document.getElementById('deleteNotificationModal');
+                        const modal = bootstrap.Modal.getInstance(modalEl);
+                        if(modal) modal.hide();
+                    } else {
+                        alert("Lỗi khi xóa thông báo");
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
+            });
+        }
+        connectGlobal();
+    });
+
     async function loadNotifications() {
         const list = document.getElementById('noti-list');
         updateUnreadCount('reset');
@@ -386,14 +446,24 @@
                 const time = new Date(n.createdAt).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
                 const unreadClass = !n.read ? 'bg-light fw-bold' : '';
 
+                // Avatar người gửi
+                const avatarImg = n.senderAvatar
+                    ? `<img src="/view-file/${n.senderAvatar}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">`
+                    : `<div style="width:40px; height:40px; border-radius:50%; background:#667eea; color:white; display:flex; align-items:center; justify-content:center; font-weight:bold;">${n.senderName ? n.senderName.charAt(0) : '?'}</div>`;
+
+                // Link chuyển hướng
+                const linkUrl = n.link || '#';
+
                 const item = `
                     <li>
-                        <a class="dropdown-item p-3 border-bottom ${unreadClass}" href="${n.link || '#'}" style="white-space: normal;">
-                            <div class="d-flex align-items-start">
-                                <div class="me-2" style="font-size: 1.2rem;">📣</div>
+                        <a class="dropdown-item p-3 border-bottom ${unreadClass}" href="${linkUrl}" style="white-space: normal;">
+                            <div class="d-flex align-items-center">
+                                <div class="me-3">
+                                    ${avatarImg}
+                                </div>
                                 <div>
-                                    <span class="d-block text-dark" style="font-size: 0.95rem;">${n.content}</span>
-                                    <small class="text-muted" style="font-size: 0.8rem;">${time}</small>
+                                    <span class="d-block text-dark" style="font-size: 0.9rem;">${n.content}</span>
+                                    <small class="text-primary" style="font-size: 0.75rem;">${time}</small>
                                 </div>
                             </div>
                         </a>
@@ -406,9 +476,6 @@
             list.innerHTML = '<li class="text-center text-danger p-3">Lỗi tải thông báo</li>';
         }
     }
-
-    // Kích hoạt kết nối khi trang load xong
-    document.addEventListener('DOMContentLoaded', connectGlobal);
 </script>
 
 <th:block layout:fragment="scripts"></th:block>

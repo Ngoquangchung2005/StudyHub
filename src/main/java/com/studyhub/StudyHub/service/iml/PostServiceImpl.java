@@ -165,8 +165,10 @@ public class PostServiceImpl implements PostService {
             reaction.setPost(post);
             reactionRepository.save(reaction);
             String notiContent = user.getName() + " đã thích bài viết của bạn.";
+            // Mới: "/?keyword=" + postId (Để redirect về trang chủ và load đúng bài viết đó)
+            String link = "/?keyword=" + postId;
             // Chú ý: post.getUser() là chủ bài viết
-            notificationService.sendNotification(user, post.getUser(), notiContent, "#post-" + postId);
+            notificationService.sendNotification(user, post.getUser(), notiContent, link);
         }
     }
     @Override

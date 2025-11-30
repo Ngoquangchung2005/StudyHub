@@ -54,6 +54,11 @@ public class NotificationService {
         return notificationRepository.findByRecipientIdOrderByCreatedAtDesc(userId)
                 .stream().map(NotificationDto::new).collect(Collectors.toList());
     }
+    // === THÊM HÀM NÀY ===
+    @Transactional
+    public void deleteAllNotifications(Long userId) {
+        notificationRepository.deleteAllByRecipientId(userId);
+    }
 
     public long countUnread(Long userId) {
         return notificationRepository.countByRecipientIdAndIsReadFalse(userId);

@@ -35,6 +35,12 @@ public class ChatRoom {
             inverseJoinColumns = @JoinColumn(name = "user_id")
     )
     private Set<User> members = new HashSet<>();
+    // === THÊM ĐOẠN NÀY VÀO ===
+    // CascadeType.ALL: Khi xóa Room, xóa luôn Messages
+    // orphanRemoval = true: Xóa các message mồ côi
+    @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Message> messages = new HashSet<>();
+    // ==========================
 
     public enum RoomType {
         ONE_TO_ONE,
