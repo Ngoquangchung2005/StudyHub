@@ -141,4 +141,12 @@ public class ChatDTOs {
         private String groupName;
         private List<Long> memberIds;
     }
+    @Data
+    public static class WebRTCMessage {
+        private String type;      // "offer", "answer", "candidate", "leave"
+        private String data;      // Dữ liệu SDP hoặc ICE candidate (dạng JSON string)
+        private Long roomId;      // ID phòng chat
+        private String sender;    // Username người gửi
+        private String recipient; // Username người nhận (quan trọng để định tuyến)
+    }
 }

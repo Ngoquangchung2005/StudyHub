@@ -7,6 +7,38 @@
 
     <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
 
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <form th:action="@{/admin/posts}" method="GET" class="row g-3">
+
+                <div class="col-md-6">
+                    <input type="text" name="keyword" class="form-control"
+                           placeholder="Tìm theo nội dung, tên tài liệu..."
+                           th:value="${keyword}">
+                </div>
+
+                <div class="col-md-4">
+                    <select name="categoryId" class="form-select">
+                        <option value="">-- Tất cả danh mục --</option>
+                        <option th:each="cat : ${categories}"
+                                th:value="${cat.id}"
+                                th:text="${cat.name}"
+                                th:selected="${categoryId == cat.id}">
+                        </option>
+                    </select>
+                </div>
+
+                <div class="col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search"></i> Tìm
+                    </button>
+                    <a th:href="@{/admin/posts}" class="btn btn-light" title="Làm mới">
+                        <i class="fas fa-sync-alt"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
     <div class="admin-table-container">
         <table class="table align-middle">
             <thead>
@@ -26,10 +58,15 @@
                 </td>
                 <td>
                     <div class="text-truncate" style="max-width: 300px;" th:if="${post.content != null}" th:text="${post.content}"></div>
+
                     <div th:if="${!post.documents.isEmpty()}" class="mt-1">
-                        <span class="badge bg-light text-primary border border-primary">
-                            <i class="fas fa-paperclip"></i> <span th:text="${post.documents.iterator().next().fileName}">File</span>
-                        </span>
+                        <div th:each="doc : ${post.documents}">
+                            <span class="badge bg-light text-primary border border-primary mb-1">
+                                <i class="fas fa-paperclip"></i> <span th:text="${doc.fileName}">File</span>
+                            </span>
+                            <span th:if="${doc.category != null}" class="badge bg-secondary ms-1"
+                                  th:text="${doc.category.name}" style="font-size: 0.7rem;">Cat</span>
+                        </div>
                     </div>
                 </td>
                 <td>
@@ -49,6 +86,11 @@
                             <i class="fas fa-trash"></i>
                         </button>
                     </form>
+                </td>
+            </tr>
+            <tr th:if="${posts.isEmpty()}">
+                <td colspan="5" class="text-center py-4 text-muted">
+                    Không tìm thấy bài viết nào phù hợp.
                 </td>
             </tr>
             </tbody>

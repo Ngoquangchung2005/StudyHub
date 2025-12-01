@@ -117,4 +117,29 @@ public class ChatController {
         dto.setUsername(user.getUsername());
         messagingTemplate.convertAndSend("/topic/room/" + dto.getRoomId() + "/typing", dto);
     }
+    // ... Các method cũ giữ nguyên
+    @MessageMapping("/chat.videoCall")
+    public void handleVideoCallSignal(@Payload ChatDTOs.WebRTCMessage message, Principal principal) {
+        // 1. Set người gửi là Username của người đang đăng nhập (để hiển thị bên kia biết ai gọi)
+        // Lưu ý: principal.getName() ở đây trả về Email, ta cần tìm ra Username để gửi đi cho đẹp
+        User sender = userRepository.findByEmail(principal.getName()).orElse(null);
+        if (sender != null) {
+            message.setSender(sender.getUsername());
+        } else {
+            message.setSender(principal.getName());
+        }
+
+        System.out.println("📹 Video Signal [" + message.getType() + "] from " + message.getSender() + " to " + message.getRecipient());
+
+        // 2. Tìm người nhận trong DB để lấy Email (Vì Security dùng Email làm ID)
+        User recipientUser = userRepository.findByUsername(message.getRecipient())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người nhận: " + message.getRecipient()));
+
+        // 3. Gửi đến Email của người nhận
+        messagingTemplate.convertAndSendToUser(
+                recipientUser.getEmail(), // <--- SỬA: Dùng Email thay vì Username
+                "/queue/video-call",
+                message
+        );
+    }
 }

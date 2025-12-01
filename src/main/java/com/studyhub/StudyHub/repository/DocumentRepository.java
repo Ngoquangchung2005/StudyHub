@@ -27,4 +27,6 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
     List<Document> searchDocuments(@Param("keyword") String keyword,
                                    @Param("categoryId") Long categoryId,
                                    Sort sort);
+    // === THÊM HÀM NÀY: Tìm tất cả tài liệu thuộc 1 danh mục ===
+    List<Document> findByCategoryId(Long categoryId);
 }

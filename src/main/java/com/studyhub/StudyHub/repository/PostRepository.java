@@ -62,4 +62,19 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             "LEFT JOIN FETCH p.reactions " +
             "WHERE p.user = :user AND p.isPublic = true") // <-- Thêm điều kiện isPublic = true
     List<Post> findPublicByUserWithDetails(@Param("user") User user, Sort sort);
+
+    // === THÊM HÀM NÀY CHO ADMIN ===
+    // Tìm kiếm bài viết (Không phân biệt public/private) theo từ khóa và danh mục
+    @Query("SELECT DISTINCT p FROM Post p " +
+            "LEFT JOIN FETCH p.user " +
+            "LEFT JOIN FETCH p.documents d " +
+            "LEFT JOIN d.category c " + // Join với category thông qua document
+            "WHERE (:categoryId IS NULL OR c.id = :categoryId) " +
+            "AND (:keyword IS NULL OR :keyword = '' OR " +
+            "LOWER(p.content) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+            "LOWER(d.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+            "LOWER(d.fileName) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+    List<Post> searchPostsForAdmin(@Param("keyword") String keyword,
+                                   @Param("categoryId") Long categoryId,
+                                   Sort sort);
 }

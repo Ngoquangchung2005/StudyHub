@@ -7,25 +7,28 @@
 
     <div class="row">
         <div class="col-md-4">
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white py-3">
-                    <h5 class="mb-0 fw-bold text-primary">Thêm Danh mục</h5>
+            <div class="card border-0 shadow-sm mb-4 sticky-top" style="top: 80px; z-index: 1;">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold text-primary" id="formTitle">Thêm Danh mục</h5>
+                    <button type="button" class="btn btn-sm btn-light" onclick="resetForm()" id="btnReset" style="display: none;">Hủy sửa</button>
                 </div>
                 <div class="card-body">
                     <form th:action="@{/admin/categories/save}" th:object="${newCategory}" method="POST">
+                        <input type="hidden" th:field="*{id}" id="fieldId">
+
                         <div class="mb-3">
                             <label class="form-label">Tên danh mục</label>
-                            <input type="text" th:field="*{name}" class="form-control" required>
+                            <input type="text" th:field="*{name}" id="fieldName" class="form-control" required>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Icon (Emoji)</label>
-                            <input type="text" th:field="*{icon}" class="form-control" placeholder="VD: 📚">
+                            <input type="text" th:field="*{icon}" id="fieldIcon" class="form-control" placeholder="VD: 📚">
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Mô tả</label>
-                            <textarea th:field="*{description}" class="form-control" rows="3"></textarea>
+                            <textarea th:field="*{description}" id="fieldDesc" class="form-control" rows="3"></textarea>
                         </div>
-                        <button type="submit" class="btn btn-primary w-100">
+                        <button type="submit" class="btn btn-primary w-100" id="btnSubmit">
                             <i class="fas fa-plus-circle"></i> Tạo mới
                         </button>
                     </form>
@@ -44,7 +47,7 @@
                         <th class="text-center">Icon</th>
                         <th>Tên danh mục</th>
                         <th>Mô tả</th>
-                        <th class="text-end">Hành động</th>
+                        <th class="text-end" style="min-width: 150px;">Hành động</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -53,12 +56,21 @@
                         <td class="fw-bold" th:text="${cat.name}">Name</td>
                         <td class="text-muted small" th:text="${cat.description}">Desc</td>
                         <td class="text-end">
-                            <form th:action="@{/admin/categories/{id}/delete(id=${cat.id})}" method="POST" class="d-inline"
-                                  onsubmit="return confirm('Chắc chắn xóa danh mục này?');">
-                                <button class="btn btn-action btn-danger">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </form>
+                            <a th:href="@{/admin/categories/{id}(id=${cat.id})}" class="btn btn-action btn-info text-white" title="Xem chi tiết">
+                                <i class="fas fa-eye"></i>
+                            </a>
+
+                            <button type="button" class="btn btn-action btn-warning text-white"
+                                    th:onclick="editCategory([[${cat.id}]], [[${cat.name}]], [[${cat.icon}]], [[${cat.description}]])"
+                                    title="Sửa">
+                                <i class="fas fa-pen"></i>
+                            </button>
+
+                            <button type="button" class="btn btn-action btn-danger"
+                                    th:onclick="'showDeleteModal(' + ${cat.id} + ')'"
+                                    title="Xóa">
+                                <i class="fas fa-trash"></i>
+                            </button>
                         </td>
                     </tr>
                     </tbody>
@@ -66,6 +78,73 @@
             </div>
         </div>
     </div>
+
+    <div class="modal fade" id="deleteCategoryModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 15px; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold text-danger">⚠️ Cảnh báo xóa</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center py-4">
+                    <div class="mb-3" style="font-size: 3rem;">🗑️</div>
+                    <p class="mb-2 fw-bold">Bạn có chắc chắn muốn xóa danh mục này?</p>
+                    <p class="text-muted small mb-0">
+                        Tất cả tài liệu thuộc danh mục này sẽ bị chuyển sang trạng thái <strong>"Chưa phân loại"</strong>.
+                    </p>
+                </div>
+                <div class="modal-footer border-0 justify-content-center pb-4">
+                    <button type="button" class="btn btn-light px-4 rounded-pill" data-bs-dismiss="modal">Hủy bỏ</button>
+
+                    <form id="deleteForm" method="POST" action="">
+
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                        <button type="submit" class="btn btn-danger px-4 rounded-pill fw-bold">Xóa ngay</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
+
+<script layout:fragment="scripts">
+    // Hàm hiển thị form sửa (Giữ nguyên)
+    function editCategory(id, name, icon, desc) {
+        document.getElementById('fieldId').value = id;
+        document.getElementById('fieldName').value = name;
+        document.getElementById('fieldIcon').value = icon;
+        document.getElementById('fieldDesc').value = desc;
+
+        document.getElementById('formTitle').textContent = 'Cập nhật Danh mục';
+        document.getElementById('btnSubmit').innerHTML = '<i class="fas fa-save"></i> Lưu thay đổi';
+        document.getElementById('btnSubmit').classList.replace('btn-primary', 'btn-warning');
+        document.getElementById('btnReset').style.display = 'block';
+    }
+
+    // Hàm reset form (Giữ nguyên)
+    function resetForm() {
+        document.getElementById('fieldId').value = '';
+        document.getElementById('fieldName').value = '';
+        document.getElementById('fieldIcon').value = '';
+        document.getElementById('fieldDesc').value = '';
+
+        document.getElementById('formTitle').textContent = 'Thêm Danh mục';
+        document.getElementById('btnSubmit').innerHTML = '<i class="fas fa-plus-circle"></i> Tạo mới';
+        document.getElementById('btnSubmit').classList.replace('btn-warning', 'btn-primary');
+        document.getElementById('btnReset').style.display = 'none';
+    }
+
+    // === HÀM HIỂN THỊ MODAL XÓA (MỚI) ===
+    function showDeleteModal(categoryId) {
+        // Cập nhật action cho form trong modal
+        const deleteForm = document.getElementById('deleteForm');
+        deleteForm.action = '/admin/categories/' + categoryId + '/delete';
+
+        // Hiển thị Modal
+        const modal = new bootstrap.Modal(document.getElementById('deleteCategoryModal'));
+        modal.show();
+    }
+</script>
 </body>
 </html>

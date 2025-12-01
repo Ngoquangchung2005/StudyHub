@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{admin/admin-layout}">
+<head><title>Chi tiết danh mục</title></head>
+<body>
+<div layout:fragment="content">
+
+    <div class="d-flex align-items-center mb-4">
+        <a th:href="@{/admin/categories}" class="btn btn-light me-3 rounded-circle" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+        <div>
+            <h3 class="mb-0 fw-bold">
+                <span th:text="${category.icon}"></span>
+                <span th:text="${category.name}">Category Name</span>
+            </h3>
+            <p class="text-muted mb-0" th:text="${category.description}">Mô tả...</p>
+        </div>
+    </div>
+
+    <div class="admin-table-container">
+        <h5 class="mb-3">Danh sách tài liệu (<span th:text="${documents.size()}">0</span>)</h5>
+
+        <div class="alert alert-info" th:if="${documents.isEmpty()}">
+            Chưa có tài liệu nào trong danh mục này.
+        </div>
+
+        <table class="table align-middle" th:if="${!documents.isEmpty()}">
+            <thead>
+            <tr>
+                <th>Tên tài liệu</th>
+                <th>Người đăng</th>
+                <th>Ngày đăng</th>
+                <th>Lượt tải</th>
+                <th>Hành động</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="doc : ${documents}">
+                <td>
+                    <div class="d-flex align-items-center">
+                        <div class="me-2 fs-4">📄</div>
+                        <div>
+                            <div class="fw-bold" th:text="${doc.title}">Title</div>
+                            <small class="text-muted" th:text="${doc.fileName}">filename.pdf</small>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <img th:if="${doc.user.avatarUrl != null}" th:src="@{/view-file/{f}(f=${doc.user.avatarUrl})}" class="rounded-circle me-2" width="30" height="30">
+                        <span th:text="${doc.user.name}">User</span>
+                    </div>
+                </td>
+                <td th:text="${#temporals.format(doc.uploadedAt, 'dd/MM/yyyy')}">Date</td>
+                <td th:text="${doc.downloads}">0</td>
+                <td>
+                    <a th:href="@{/download/{f}(f=${doc.storagePath})}" class="btn btn-action btn-outline-primary" target="_blank">
+                        <i class="fas fa-download"></i>
+                    </a>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+</body>
+</html>

@@ -3,7 +3,7 @@
 // --- Biến toàn cục ---
 const messageForm = document.querySelector('#messageForm');
 const messageInput = document.querySelector('#message');
-// === SỬA ĐOẠN NÀY ===
+
 // Kiểm tra xem element có tồn tại không trước khi lấy .value
 const userIdEl = document.querySelector('#current-user-id');
 const usernameEl = document.querySelector('#current-username');
@@ -15,10 +15,8 @@ const currentUsername = usernameEl ? usernameEl.value : null;
 // Nếu không có user ID (tức là không ở trang chat), ta không cần chạy tiếp các logic kết nối chat
 if (!currentUserId) {
     console.log("Không phải trang chat, bỏ qua logic chat.js");
-    // Tuy nhiên, vì chat.js chứa nhiều hàm, ta chỉ cần đảm bảo
-    // connect() không được gọi tự động nếu không có ID,
-    // hoặc các hàm bên dưới check null.
 }
+
 const messageSendBtn = messageForm ? messageForm.querySelector('button[type="submit"]') : null;
 const messageArea = document.querySelector('#chat-messages-window');
 const chatRoomList = document.querySelector('#chat-room-list');
@@ -36,9 +34,8 @@ const imageBtn = document.querySelector('#image-btn');
 const filePreview = document.querySelector('#file-preview');
 const cancelFileBtn = document.querySelector('#cancel-file-btn');
 
-// === THÊM: BIẾN LƯU MESSAGE ID CẦN THU HỒI ===
+// === BIẾN LƯU MESSAGE ID CẦN THU HỒI ===
 let messageIdToRecall = null;
-
 
 let stompClient = null;
 let currentRoomId = null;
@@ -66,6 +63,18 @@ async function onConnected() {
     stompClient.subscribe('/topic/presence', onPresenceMessageReceived);
     stompClient.subscribe(`/user/${currentUsername}/queue/notify`, onNotificationReceived);
 
+    // === SỬA DÒNG NÀY ===
+    // Đăng ký vào kênh cá nhân chuẩn. Spring sẽ tự động map '/user/queue/...'
+    // vào phiên làm việc của user đang đăng nhập (dựa trên Email).
+    stompClient.subscribe('/user/queue/video-call', function(payload) {
+        // Gọi hàm bên video.js để xử lý
+        if (typeof handleVideoSignal === "function") {
+            handleVideoSignal(payload);
+        } else {
+            console.warn("Hàm handleVideoSignal không tồn tại. Kiểm tra file video.js");
+        }
+    });
+
     // === ĐĂNG KÝ SỰ KIỆN CHO NÚT THU HỒI TRONG POPUP ===
     const confirmRecallBtn = document.getElementById('btn-confirm-recall-action');
     if (confirmRecallBtn) {
@@ -73,7 +82,6 @@ async function onConnected() {
     }
 
     // === ĐĂNG KÝ SỰ KIỆN CHO NÚT XÁC NHẬN RỜI NHÓM TRONG MODAL ===
-    // Đây là nút "Rời nhóm ngay" nằm trong popup
     const confirmLeaveBtn = document.getElementById('btn-confirm-leave-group');
     if (confirmLeaveBtn) {
         confirmLeaveBtn.addEventListener('click', handleConfirmLeaveGroup);
@@ -200,19 +208,21 @@ function onRoomSelected(event) {
 
     selectRoom(roomId, roomName, avatarUrl, roomType);
 }
-
 async function selectRoom(roomId, roomName, avatarUrl, roomType) {
     if (currentRoomId === roomId) return;
     currentRoomId = roomId;
 
+    // Hủy đăng ký các subscription cũ
     subscriptions.forEach(sub => sub.unsubscribe());
     subscriptions.clear();
 
+    // Hiển thị giao diện chat
     if (chatWelcomeScreen) chatWelcomeScreen.style.display = 'none';
     if (chatMainWindow) chatMainWindow.style.display = 'flex';
     if (messageInput) messageInput.disabled = false;
     if (messageSendBtn) messageSendBtn.disabled = false;
 
+    // Highlight phòng đang chọn
     document.querySelectorAll('#chat-room-list .user-list-item').forEach(item => {
         item.classList.remove('active');
         if (item.getAttribute('data-room-id') === roomId) {
@@ -220,42 +230,73 @@ async function selectRoom(roomId, roomName, avatarUrl, roomType) {
         }
     });
 
+    // === CẬP NHẬT HEADER CHAT ===
     if (chatMainHeader) {
         const avatarHtml = getAvatarHtml(avatarUrl, roomName, 'user-avatar');
+        let partnerUsername = null;
 
-        // === LOGIC HIỂN THỊ NÚT RỜI NHÓM ===
-        // Nếu là GROUP thì thêm nút Rời nhóm
-        // data-bs-toggle="modal" và data-bs-target="#leaveGroupModal" sẽ tự động mở Popup khi click
-        let actionButtonHtml = '';
+        // 1. Tìm username đối phương nếu là chat 1-1
+        if (roomType === 'ONE_TO_ONE') {
+            const roomItem = document.querySelector(`.user-list-item[data-room-id="${roomId}"]`);
+            const userInfoDiv = roomItem ? roomItem.querySelector('.user-info') : null;
+            partnerUsername = userInfoDiv ? userInfoDiv.getAttribute('data-username') : null;
+        }
+
+        // 2. Tạo HTML cơ bản cho Header (Avatar + Tên)
+        let headerContent = `
+            ${avatarHtml}
+            <div class="ms-2 flex-grow-1">
+                <h5 class="mb-0 fw-bold">${roomName}</h5>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+        `;
+
+        // 3. Thêm placeholder cho nút Video Call (nếu là 1-1)
+        if (roomType === 'ONE_TO_ONE' && partnerUsername) {
+            headerContent += `<button id="btn-start-video-call" class="btn btn-primary btn-sm rounded-circle" title="Gọi Video">📹</button>`;
+        }
+
+        // 4. Thêm nút Rời nhóm (nếu là Group)
         if (roomType === 'GROUP') {
-            actionButtonHtml = `
-                <button class="btn btn-outline-danger btn-sm ms-auto"
-                        data-bs-toggle="modal"
-                        data-bs-target="#leaveGroupModal"
-                        title="Rời nhóm"
-                        style="border-radius: 20px; font-weight: 600;">
+            headerContent += `
+                <button class="btn btn-outline-danger btn-sm" 
+                        data-bs-toggle="modal" 
+                        data-bs-target="#leaveGroupModal" 
+                        title="Rời nhóm">
                     🚪 Rời nhóm
                 </button>
             `;
         }
 
-        chatMainHeader.innerHTML = `
-            ${avatarHtml}
-            <div class="ms-2">
-                <h5 class="mb-0 fw-bold">${roomName}</h5>
-            </div>
-            ${actionButtonHtml}
-        `;
+        headerContent += `</div>`; // Đóng div wrapper
+        chatMainHeader.innerHTML = headerContent;
+
+        // === QUAN TRỌNG: GẮN SỰ KIỆN CLICK CHO NÚT VIDEO CALL ===
+        const btnVideoCall = document.getElementById('btn-start-video-call');
+        if (btnVideoCall && partnerUsername) {
+            btnVideoCall.addEventListener('click', function() {
+                // Gọi hàm bên file video.js
+                if (typeof startVideoCall === 'function') {
+                    startVideoCall(partnerUsername);
+                } else {
+                    console.error("Hàm startVideoCall không tồn tại! Kiểm tra file video.js");
+                    alert("Lỗi: Không thể khởi động cuộc gọi.");
+                }
+            });
+        }
     }
 
+    // Reset trạng thái typing
     typingUsers.clear();
     updateTypingIndicator();
 
+    // Đăng ký WebSocket cho phòng mới
     const msgSub = stompClient.subscribe(`/topic/room/${roomId}`, onMessageReceived);
     const typeSub = stompClient.subscribe(`/topic/room/${roomId}/typing`, onTypingReceived);
     subscriptions.set('messages', msgSub);
     subscriptions.set('typing', typeSub);
 
+    // Tải lịch sử tin nhắn
     messageArea.innerHTML = '<p class="text-center mt-3 text-muted">Đang tải lịch sử...</p>';
     try {
         const response = await fetch(`/api/chat/room/${roomId}/messages`);
