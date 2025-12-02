@@ -5,7 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDate; // <-- THÊM
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -33,7 +33,7 @@ public class User {
     @Column(columnDefinition = "TEXT")
     private String bio; // Mô tả tiểu sử
 
-    // === THÊM TRƯỜNG MỚI (GIỐNG FACEBOOK) ===
+
     @Column(length = 255)
     private String coverPhotoUrl; // Ảnh bìa
 

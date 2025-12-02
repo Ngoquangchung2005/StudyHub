@@ -197,6 +197,27 @@
             </div>
         </div>
     </div>
+    <div class="modal fade" id="groupMembersModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 15px;">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold">Thành viên nhóm</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="input-group mb-3">
+                        <input type="text" id="input-add-member" class="form-control" placeholder="Nhập username để thêm..." style="border-radius: 20px 0 0 20px;">
+                        <button class="btn btn-primary" id="btn-add-member-confirm" style="border-radius: 0 20px 20px 0;">Thêm</button>
+                    </div>
+                    <div id="add-member-error" class="text-danger small mb-2" style="display:none;"></div>
+
+                    <h6 class="text-muted small fw-bold mb-2">DANH SÁCH HIỆN TẠI</h6>
+                    <div id="group-members-list" style="max-height: 300px; overflow-y: auto;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div class="modal fade" id="incomingCallModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered modal-sm">

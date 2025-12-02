@@ -117,27 +117,35 @@ public class ChatController {
         dto.setUsername(user.getUsername());
         messagingTemplate.convertAndSend("/topic/room/" + dto.getRoomId() + "/typing", dto);
     }
-    // ... Các method cũ giữ nguyên
+    // ... các import giữ nguyên
+
+    // === SỬA LẠI HÀM NÀY ===
     @MessageMapping("/chat.videoCall")
     public void handleVideoCallSignal(@Payload ChatDTOs.WebRTCMessage message, Principal principal) {
-        // 1. Set người gửi là Username của người đang đăng nhập (để hiển thị bên kia biết ai gọi)
-        // Lưu ý: principal.getName() ở đây trả về Email, ta cần tìm ra Username để gửi đi cho đẹp
-        User sender = userRepository.findByEmail(principal.getName()).orElse(null);
-        if (sender != null) {
-            message.setSender(sender.getUsername());
+
+        // 1. XỬ LÝ NGƯỜI GỬI (SENDER)
+        // principal.getName() hiện tại là Email (do CustomUserDetailsService quy định)
+        // Nhưng Client cần Username để hiển thị ai đang gọi.
+        User senderUser = userRepository.findByEmail(principal.getName()).orElse(null);
+        if (senderUser != null) {
+            message.setSender(senderUser.getUsername()); // Gửi Username (VD: "chung")
         } else {
-            message.setSender(principal.getName());
+            message.setSender(principal.getName()); // Fallback
         }
 
         System.out.println("📹 Video Signal [" + message.getType() + "] from " + message.getSender() + " to " + message.getRecipient());
 
-        // 2. Tìm người nhận trong DB để lấy Email (Vì Security dùng Email làm ID)
-        User recipientUser = userRepository.findByUsername(message.getRecipient())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy người nhận: " + message.getRecipient()));
+        // 2. XỬ LÝ NGƯỜI NHẬN (RECIPIENT)
+        // Client gửi lên Username (VD: "azin"), nhưng WebSocket cần Email (VD: "azin@gmail.com") để định tuyến.
+        String recipientUsername = message.getRecipient();
 
-        // 3. Gửi đến Email của người nhận
+        User recipientUser = userRepository.findByUsername(recipientUsername)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy user có username: " + recipientUsername));
+
+        // 3. GỬI TÍN HIỆU
+        // Dùng Email của người nhận để gửi tin nhắn
         messagingTemplate.convertAndSendToUser(
-                recipientUser.getEmail(), // <--- SỬA: Dùng Email thay vì Username
+                recipientUser.getEmail(), // <--- QUAN TRỌNG: Phải dùng Email
                 "/queue/video-call",
                 message
         );

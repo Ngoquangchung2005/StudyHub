@@ -8,11 +8,9 @@ const messageInput = document.querySelector('#message');
 const userIdEl = document.querySelector('#current-user-id');
 const usernameEl = document.querySelector('#current-username');
 
-// Nếu không tìm thấy (đang ở trang Home), gán null để không bị lỗi crash trang
 const currentUserId = userIdEl ? userIdEl.value : null;
 const currentUsername = usernameEl ? usernameEl.value : null;
 
-// Nếu không có user ID (tức là không ở trang chat), ta không cần chạy tiếp các logic kết nối chat
 if (!currentUserId) {
     console.log("Không phải trang chat, bỏ qua logic chat.js");
 }
@@ -63,29 +61,32 @@ async function onConnected() {
     stompClient.subscribe('/topic/presence', onPresenceMessageReceived);
     stompClient.subscribe(`/user/${currentUsername}/queue/notify`, onNotificationReceived);
 
-    // === SỬA DÒNG NÀY ===
-    // Đăng ký vào kênh cá nhân chuẩn. Spring sẽ tự động map '/user/queue/...'
-    // vào phiên làm việc của user đang đăng nhập (dựa trên Email).
+    // Lắng nghe tín hiệu Video Call
     stompClient.subscribe('/user/queue/video-call', function(payload) {
-        // Gọi hàm bên video.js để xử lý
         if (typeof handleVideoSignal === "function") {
             handleVideoSignal(payload);
-        } else {
-            console.warn("Hàm handleVideoSignal không tồn tại. Kiểm tra file video.js");
         }
     });
 
-    // === ĐĂNG KÝ SỰ KIỆN CHO NÚT THU HỒI TRONG POPUP ===
+    // === ĐĂNG KÝ SỰ KIỆN POPUP ===
     const confirmRecallBtn = document.getElementById('btn-confirm-recall-action');
-    if (confirmRecallBtn) {
-        confirmRecallBtn.addEventListener('click', executeRecall);
-    }
+    if (confirmRecallBtn) confirmRecallBtn.addEventListener('click', executeRecall);
 
-    // === ĐĂNG KÝ SỰ KIỆN CHO NÚT XÁC NHẬN RỜI NHÓM TRONG MODAL ===
     const confirmLeaveBtn = document.getElementById('btn-confirm-leave-group');
-    if (confirmLeaveBtn) {
-        confirmLeaveBtn.addEventListener('click', handleConfirmLeaveGroup);
-    }
+    if (confirmLeaveBtn) confirmLeaveBtn.addEventListener('click', handleConfirmLeaveGroup);
+
+    // === ĐĂNG KÝ SỰ KIỆN CHO NHÓM ===
+    const newGroupBtn = document.querySelector('#new-group-btn');
+    const confirmGroupBtn = document.querySelector('#confirm-create-group-btn');
+    const groupSearchInput = document.querySelector('#search-user-group');
+
+    if (newGroupBtn) newGroupBtn.addEventListener('click', loadUsersForGroupCreation);
+    if (confirmGroupBtn) confirmGroupBtn.addEventListener('click', handleCreateGroup);
+    if (groupSearchInput) groupSearchInput.addEventListener('input', (e) => filterGroupUserList(e.target.value));
+
+    // === ĐĂNG KÝ SỰ KIỆN THÊM THÀNH VIÊN VÀO NHÓM ===
+    const btnAddMemberConfirm = document.getElementById('btn-add-member-confirm');
+    if(btnAddMemberConfirm) btnAddMemberConfirm.addEventListener('click', handleAddMemberToGroup);
 
     try {
         const response = await fetch('/api/chat/online-users');
@@ -102,23 +103,6 @@ async function onConnected() {
     if (messageForm) messageForm.addEventListener('submit', onMessageSubmit, true);
     if (messageInput) messageInput.addEventListener('input', onTypingInput);
     if (newChatBtn) newChatBtn.addEventListener('click', loadUsersForNewChat);
-
-    // === Sự kiện cho nút "Tạo nhóm" và "Xác nhận tạo nhóm" ===
-    const newGroupBtn = document.querySelector('#new-group-btn');
-    const confirmGroupBtn = document.querySelector('#confirm-create-group-btn');
-    const groupSearchInput = document.querySelector('#search-user-group');
-
-    if (newGroupBtn) {
-        newGroupBtn.addEventListener('click', loadUsersForGroupCreation);
-    }
-    if (confirmGroupBtn) {
-        confirmGroupBtn.addEventListener('click', handleCreateGroup);
-    }
-    if (groupSearchInput) {
-        groupSearchInput.addEventListener('input', function(e) {
-            filterGroupUserList(e.target.value);
-        });
-    }
 
     // Sự kiện upload file
     if (fileBtn) fileBtn.addEventListener('click', () => { fileInput.setAttribute('accept', '*/*'); fileInput.click(); });
@@ -208,21 +192,19 @@ function onRoomSelected(event) {
 
     selectRoom(roomId, roomName, avatarUrl, roomType);
 }
+
 async function selectRoom(roomId, roomName, avatarUrl, roomType) {
     if (currentRoomId === roomId) return;
     currentRoomId = roomId;
 
-    // Hủy đăng ký các subscription cũ
     subscriptions.forEach(sub => sub.unsubscribe());
     subscriptions.clear();
 
-    // Hiển thị giao diện chat
     if (chatWelcomeScreen) chatWelcomeScreen.style.display = 'none';
     if (chatMainWindow) chatMainWindow.style.display = 'flex';
     if (messageInput) messageInput.disabled = false;
     if (messageSendBtn) messageSendBtn.disabled = false;
 
-    // Highlight phòng đang chọn
     document.querySelectorAll('#chat-room-list .user-list-item').forEach(item => {
         item.classList.remove('active');
         if (item.getAttribute('data-room-id') === roomId) {
@@ -230,19 +212,16 @@ async function selectRoom(roomId, roomName, avatarUrl, roomType) {
         }
     });
 
-    // === CẬP NHẬT HEADER CHAT ===
     if (chatMainHeader) {
         const avatarHtml = getAvatarHtml(avatarUrl, roomName, 'user-avatar');
         let partnerUsername = null;
 
-        // 1. Tìm username đối phương nếu là chat 1-1
         if (roomType === 'ONE_TO_ONE') {
             const roomItem = document.querySelector(`.user-list-item[data-room-id="${roomId}"]`);
             const userInfoDiv = roomItem ? roomItem.querySelector('.user-info') : null;
             partnerUsername = userInfoDiv ? userInfoDiv.getAttribute('data-username') : null;
         }
 
-        // 2. Tạo HTML cơ bản cho Header (Avatar + Tên)
         let headerContent = `
             ${avatarHtml}
             <div class="ms-2 flex-grow-1">
@@ -251,14 +230,18 @@ async function selectRoom(roomId, roomName, avatarUrl, roomType) {
             <div class="d-flex align-items-center gap-2">
         `;
 
-        // 3. Thêm placeholder cho nút Video Call (nếu là 1-1)
         if (roomType === 'ONE_TO_ONE' && partnerUsername) {
             headerContent += `<button id="btn-start-video-call" class="btn btn-primary btn-sm rounded-circle" title="Gọi Video">📹</button>`;
         }
 
-        // 4. Thêm nút Rời nhóm (nếu là Group)
+        // === UPDATE: NÚT QUẢN LÝ NHÓM ===
         if (roomType === 'GROUP') {
             headerContent += `
+                <button class="btn btn-light btn-sm rounded-circle ms-2" 
+                        onclick="openGroupMembersModal(${roomId})" 
+                        title="Thành viên nhóm">
+                    ⚙️
+                </button>
                 <button class="btn btn-outline-danger btn-sm" 
                         data-bs-toggle="modal" 
                         data-bs-target="#leaveGroupModal" 
@@ -268,35 +251,29 @@ async function selectRoom(roomId, roomName, avatarUrl, roomType) {
             `;
         }
 
-        headerContent += `</div>`; // Đóng div wrapper
+        headerContent += `</div>`;
         chatMainHeader.innerHTML = headerContent;
 
-        // === QUAN TRỌNG: GẮN SỰ KIỆN CLICK CHO NÚT VIDEO CALL ===
         const btnVideoCall = document.getElementById('btn-start-video-call');
         if (btnVideoCall && partnerUsername) {
             btnVideoCall.addEventListener('click', function() {
-                // Gọi hàm bên file video.js
                 if (typeof startVideoCall === 'function') {
                     startVideoCall(partnerUsername);
                 } else {
-                    console.error("Hàm startVideoCall không tồn tại! Kiểm tra file video.js");
-                    alert("Lỗi: Không thể khởi động cuộc gọi.");
+                    console.error("Hàm startVideoCall không tồn tại!");
                 }
             });
         }
     }
 
-    // Reset trạng thái typing
     typingUsers.clear();
     updateTypingIndicator();
 
-    // Đăng ký WebSocket cho phòng mới
     const msgSub = stompClient.subscribe(`/topic/room/${roomId}`, onMessageReceived);
     const typeSub = stompClient.subscribe(`/topic/room/${roomId}/typing`, onTypingReceived);
     subscriptions.set('messages', msgSub);
     subscriptions.set('typing', typeSub);
 
-    // Tải lịch sử tin nhắn
     messageArea.innerHTML = '<p class="text-center mt-3 text-muted">Đang tải lịch sử...</p>';
     try {
         const response = await fetch(`/api/chat/room/${roomId}/messages`);
@@ -332,8 +309,9 @@ async function checkUrlForRedirect() {
 }
 
 // ===========================================
-// === DANH SÁCH CHAT MỚI (MODAL) ===
+// === CHAT MỚI & TẠO NHÓM (MODAL) ===
 // ===========================================
+
 async function loadUsersForNewChat() {
     try {
         newUserChatList.innerHTML = '<p>Đang tải danh sách...</p>';
@@ -346,7 +324,6 @@ async function loadUsersForNewChat() {
             const status = presenceStatus.get(user.username) === 'ONLINE' ? 'online' : '';
             const statusText = status ? 'Online' : 'Offline';
             const avatarHtml = getAvatarHtml(user.avatarUrl, user.name, 'user-avatar');
-
             const userElement = document.createElement('a');
             userElement.href = '#';
             userElement.classList.add('user-list-item');
@@ -378,11 +355,9 @@ async function onStartNewChat(event) {
         const response = await fetch(`/api/chat/room/with/${otherUserId}`);
         if (!response.ok) throw new Error('Không thể tạo phòng chat');
         const roomDto = await response.json();
-
         const modalEl = document.querySelector('#newUserChatModal');
         const modal = bootstrap.Modal.getInstance(modalEl);
         if (modal) modal.hide();
-
         await loadChatRooms();
         selectRoom(roomDto.id, roomDto.oneToOnePartnerName, roomDto.oneToOnePartnerAvatarUrl, 'ONE_TO_ONE');
     } catch (error) {
@@ -390,9 +365,279 @@ async function onStartNewChat(event) {
     }
 }
 
+// --- LOGIC TẠO NHÓM ---
+
+let selectedUserIdsForGroup = new Set();
+
+async function loadUsersForGroupCreation() {
+    const groupUserListEl = document.querySelector('#group-user-list');
+    if (!groupUserListEl) return;
+
+    document.querySelector('#group-name-input').value = '';
+    document.querySelector('#search-user-group').value = '';
+    selectedUserIdsForGroup.clear();
+
+    groupUserListEl.innerHTML = '<p class="text-center text-muted">Đang tải...</p>';
+
+    try {
+        const response = await fetch('/api/chat/users');
+        if (!response.ok) throw new Error('Lỗi tải danh sách user');
+        const users = await response.json();
+
+        groupUserListEl.innerHTML = '';
+
+        if (users.length === 0) {
+            groupUserListEl.innerHTML = '<p class="text-center p-2">Không tìm thấy user nào khác.</p>';
+            return;
+        }
+
+        users.forEach(user => {
+            const item = document.createElement('div');
+            item.className = 'user-select-item d-flex align-items-center p-2 border-bottom';
+            item.style.cursor = 'pointer';
+            item.setAttribute('data-search-name', user.name.toLowerCase());
+
+            const avatarHtml = getAvatarHtml(user.avatarUrl, user.name, 'user-avatar-small');
+
+            item.innerHTML = `
+                <div class="form-check m-0 d-flex align-items-center w-100">
+                    <input class="form-check-input me-3" type="checkbox" value="${user.id}" id="chk-user-${user.id}" style="width: 20px; height: 20px;">
+                    <label class="form-check-label d-flex align-items-center w-100" for="chk-user-${user.id}" style="cursor:pointer;">
+                        ${avatarHtml}
+                        <span class="ms-2 fw-bold">${user.name}</span>
+                    </label>
+                </div>
+            `;
+
+            item.addEventListener('click', (e) => {
+                if (e.target.tagName === 'INPUT') {
+                    toggleUserSelection(user.id, e.target.checked);
+                    return;
+                }
+                e.preventDefault();
+                const checkbox = item.querySelector('input[type="checkbox"]');
+                checkbox.checked = !checkbox.checked;
+                toggleUserSelection(user.id, checkbox.checked);
+            });
+
+            groupUserListEl.appendChild(item);
+        });
+
+    } catch (error) {
+        console.error(error);
+        groupUserListEl.innerHTML = '<p class="text-danger text-center">Lỗi tải dữ liệu</p>';
+    }
+}
+
+function toggleUserSelection(userId, isChecked) {
+    if (isChecked) {
+        selectedUserIdsForGroup.add(parseInt(userId));
+    } else {
+        selectedUserIdsForGroup.delete(parseInt(userId));
+    }
+}
+
+function filterGroupUserList(keyword) {
+    const items = document.querySelectorAll('#group-user-list .user-select-item');
+    const k = keyword.toLowerCase();
+    items.forEach(item => {
+        const name = item.getAttribute('data-search-name');
+        if (name.includes(k)) {
+            item.style.display = 'flex';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+
+async function handleCreateGroup() {
+    const groupNameInput = document.querySelector('#group-name-input');
+    const groupName = groupNameInput.value.trim();
+
+    if (!groupName) {
+        alert("Vui lòng nhập tên nhóm!");
+        groupNameInput.focus();
+        return;
+    }
+
+    if (selectedUserIdsForGroup.size === 0) {
+        alert("Vui lòng chọn ít nhất 1 thành viên!");
+        return;
+    }
+
+    const confirmBtn = document.querySelector('#confirm-create-group-btn');
+    const originalText = confirmBtn.textContent;
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = "Đang tạo...";
+
+    try {
+        const csrfMeta = document.querySelector('meta[name="_csrf"]');
+        const csrfHeaderMeta = document.querySelector('meta[name="_csrf_header"]');
+        const headers = { 'Content-Type': 'application/json' };
+        if (csrfHeaderMeta && csrfMeta) {
+            headers[csrfHeaderMeta.getAttribute('content')] = csrfMeta.getAttribute('content');
+        }
+
+        const payload = {
+            groupName: groupName,
+            memberIds: Array.from(selectedUserIdsForGroup)
+        };
+
+        const response = await fetch('/api/chat/room/group', {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) throw new Error('Lỗi tạo nhóm');
+        const newRoom = await response.json();
+
+        const modalEl = document.querySelector('#createGroupModal');
+        if (modalEl) {
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            if (modal) modal.hide();
+        }
+
+        await loadChatRooms();
+        selectRoom(newRoom.id, newRoom.name, null, 'GROUP');
+
+    } catch (error) {
+        console.error(error);
+        alert("Không thể tạo nhóm. Vui lòng thử lại.");
+    } finally {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = originalText;
+    }
+}
+
 // ===========================================
-// === HIỂN THỊ TIN NHẮN ===
+// === QUẢN LÝ THÀNH VIÊN NHÓM (MỚI) ===
 // ===========================================
+
+async function openGroupMembersModal(roomId) {
+    window.currentGroupSettingsId = roomId;
+
+    const modalList = document.getElementById('group-members-list');
+    modalList.innerHTML = '<p class="text-center text-muted">Đang tải...</p>';
+
+    const modal = new bootstrap.Modal(document.getElementById('groupMembersModal'));
+    modal.show();
+
+    try {
+        const response = await fetch(`/api/chat/room/${roomId}/members`);
+        if (response.ok) {
+            const members = await response.json();
+            renderGroupMembers(members);
+        }
+    } catch (e) {
+        console.error(e);
+        modalList.innerHTML = '<p class="text-danger text-center">Lỗi tải danh sách</p>';
+    }
+}
+
+function renderGroupMembers(members) {
+    const listEl = document.getElementById('group-members-list');
+    listEl.innerHTML = '';
+
+    const myId = document.getElementById('current-user-id').value;
+
+    members.forEach(m => {
+        const isMe = String(m.id) === String(myId);
+        const avatarHtml = getAvatarHtml(m.avatarUrl, m.name, 'user-avatar-small');
+
+        const kickBtn = isMe ? '<span class="badge bg-secondary">Bạn</span>' :
+            `<button class="btn btn-sm btn-outline-danger py-0" onclick="kickMember(${m.id})">Đuổi</button>`;
+
+        const item = document.createElement('div');
+        item.className = 'd-flex align-items-center justify-content-between p-2 border-bottom';
+        item.innerHTML = `
+            <div class="d-flex align-items-center">
+                ${avatarHtml}
+                <div class="ms-2">
+                    <div class="fw-bold" style="font-size: 0.9rem;">${m.name}</div>
+                    <div class="text-muted small">@${m.username}</div>
+                </div>
+            </div>
+            <div>${kickBtn}</div>
+        `;
+        listEl.appendChild(item);
+    });
+}
+
+// Xử lý thêm thành viên
+async function handleAddMemberToGroup() {
+    const input = document.getElementById('input-add-member');
+    const username = input.value.trim();
+    const roomId = window.currentGroupSettingsId;
+    const errorDiv = document.getElementById('add-member-error');
+
+    if(!username) return;
+
+    try {
+        const res = await fetch('/api/chat/users');
+        const users = await res.json();
+
+        const foundUser = users.find(u => u.username === username);
+
+        if (!foundUser) {
+            errorDiv.textContent = "Không tìm thấy username này!";
+            errorDiv.style.display = 'block';
+            return;
+        }
+
+        const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+        const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+
+        const addRes = await fetch(`/api/chat/room/${roomId}/add/${foundUser.id}`, {
+            method: 'POST',
+            headers: { [csrfHeader]: csrfToken }
+        });
+
+        if (addRes.ok) {
+            input.value = '';
+            errorDiv.style.display = 'none';
+            alert("Đã thêm thành viên!");
+            openGroupMembersModal(roomId); // Reload lại list
+        } else {
+            errorDiv.textContent = "Lỗi: Có thể người này đã ở trong nhóm.";
+            errorDiv.style.display = 'block';
+        }
+
+    } catch (e) {
+        console.error(e);
+        errorDiv.textContent = "Lỗi hệ thống";
+        errorDiv.style.display = 'block';
+    }
+}
+
+// Xử lý kick thành viên
+async function kickMember(userId) {
+    if(!confirm("Bạn có chắc chắn muốn mời người này ra khỏi nhóm?")) return;
+
+    const roomId = window.currentGroupSettingsId;
+    const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+    const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+
+    try {
+        const res = await fetch(`/api/chat/room/${roomId}/kick/${userId}`, {
+            method: 'POST',
+            headers: { [csrfHeader]: csrfToken }
+        });
+
+        if(res.ok) {
+            openGroupMembersModal(roomId);
+        } else {
+            alert("Lỗi khi xóa thành viên.");
+        }
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+// ===========================================
+// === CÁC HÀM CŨ (DISPLAY MSG, UPLOAD, ETC) ===
+// ===========================================
+
 function displayMessage(messageDto) {
     const messageRow = document.createElement('div');
     messageRow.classList.add('msg-row');
@@ -421,23 +666,22 @@ function displayMessage(messageDto) {
                 </div>
             `;
         } else {
-            // Xử lý tin nhắn hệ thống (VD: "User X đã rời nhóm")
-            if (messageDto.content.includes("đã rời khỏi nhóm")) {
-                innerContent = `<em class="text-muted">${messageDto.content}</em>`;
+            if (messageDto.content.includes("đã rời khỏi nhóm") || messageDto.content.includes("đã thêm") || messageDto.content.includes("đã mời")) {
+                innerContent = `<em class="text-muted small">${messageDto.content}</em>`;
             } else {
                 innerContent = messageDto.content;
             }
         }
 
-        if (messageDto.content && messageDto.type !== 'TEXT' && !messageDto.content.includes("đã rời khỏi nhóm")) {
+        if (messageDto.content && messageDto.type !== 'TEXT' && !innerContent.includes("em class")) {
             innerContent += `<div class="mt-1 small">${messageDto.content}</div>`;
         }
 
         let formattedTime = '';
         try { formattedTime = new Date(messageDto.timestamp).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'}); } catch(e){}
 
-        if (messageDto.content.includes("đã rời khỏi nhóm")) {
-            contentHtml = `<div class="msg-content" style="background: #e4e6eb; color: #555; font-style: italic;" title="${formattedTime}">${innerContent}</div>`;
+        if (innerContent.includes("em class")) {
+            contentHtml = `<div class="msg-content" style="background: #f8f9fa; color: #555; border: 1px solid #eee; box-shadow:none;" title="${formattedTime}">${innerContent}</div>`;
         } else {
             contentHtml = `<div class="msg-content" title="${formattedTime}">${innerContent}</div>`;
         }
@@ -486,28 +730,21 @@ function displayMessage(messageDto) {
     messageArea.appendChild(messageRow);
 }
 
-// ===========================================
-// === UPLOAD FILE LOGIC ===
-// ===========================================
 function handleFileSelect(event) {
     const file = event.target.files[0];
     if (!file) return;
     if (file.size > 50 * 1024 * 1024) { alert('File quá lớn! Tối đa 50MB.'); return; }
-
     selectedFile = file;
     const fileName = file.name;
     const fileSize = (file.size / 1024 / 1024).toFixed(2) + ' MB';
     const fileIcon = getFileIcon(file.type);
-
     const previewName = document.querySelector('#preview-file-name');
     const previewSize = document.querySelector('#preview-file-size');
     const previewIcon = document.querySelector('#preview-file-icon');
-
     if (previewName) previewName.textContent = fileName;
     if (previewSize) previewSize.textContent = fileSize;
     if (previewIcon) previewIcon.textContent = fileIcon;
     if (filePreview) filePreview.style.display = 'flex';
-
     uploadFile(file);
 }
 
@@ -568,9 +805,6 @@ function onMessageSubmit(event) {
     }
 }
 
-// ===========================================
-// === THU HỒI TIN NHẮN ===
-// ===========================================
 function recallMessage(messageId) {
     messageIdToRecall = messageId;
     const modalElement = document.getElementById('recallConfirmationModal');
@@ -684,165 +918,13 @@ function updateAllPresenceIndicators(username, status) {
 
 if (document.querySelector('.messenger-container')) connect();
 
-// === LOGIC TẠO NHÓM MỚI ===
-
-let selectedUserIdsForGroup = new Set();
-
-async function loadUsersForGroupCreation() {
-    const groupUserListEl = document.querySelector('#group-user-list');
-    if (!groupUserListEl) return;
-
-    document.querySelector('#group-name-input').value = '';
-    document.querySelector('#search-user-group').value = '';
-    selectedUserIdsForGroup.clear();
-
-    groupUserListEl.innerHTML = '<p class="text-center text-muted">Đang tải...</p>';
-
-    try {
-        const response = await fetch('/api/chat/users');
-        if (!response.ok) throw new Error('Lỗi tải danh sách user');
-        const users = await response.json();
-
-        groupUserListEl.innerHTML = '';
-
-        if (users.length === 0) {
-            groupUserListEl.innerHTML = '<p class="text-center p-2">Không tìm thấy user nào khác.</p>';
-            return;
-        }
-
-        users.forEach(user => {
-            const item = document.createElement('div');
-            item.className = 'user-select-item d-flex align-items-center p-2 border-bottom';
-            item.style.cursor = 'pointer';
-            item.setAttribute('data-search-name', user.name.toLowerCase());
-
-            const avatarHtml = getAvatarHtml(user.avatarUrl, user.name, 'user-avatar-small');
-
-            item.innerHTML = `
-                <div class="form-check m-0 d-flex align-items-center w-100">
-                    <input class="form-check-input me-3" type="checkbox" value="${user.id}" id="chk-user-${user.id}" style="width: 20px; height: 20px;">
-                    <label class="form-check-label d-flex align-items-center w-100" for="chk-user-${user.id}" style="cursor:pointer;">
-                        ${avatarHtml}
-                        <span class="ms-2 fw-bold">${user.name}</span>
-                    </label>
-                </div>
-            `;
-
-            item.addEventListener('click', (e) => {
-                if (e.target.tagName === 'INPUT') {
-                    toggleUserSelection(user.id, e.target.checked);
-                    return;
-                }
-                e.preventDefault();
-                const checkbox = item.querySelector('input[type="checkbox"]');
-                checkbox.checked = !checkbox.checked;
-                toggleUserSelection(user.id, checkbox.checked);
-            });
-
-            groupUserListEl.appendChild(item);
-        });
-
-    } catch (error) {
-        console.error(error);
-        groupUserListEl.innerHTML = '<p class="text-danger text-center">Lỗi tải dữ liệu</p>';
-    }
-}
-
-function toggleUserSelection(userId, isChecked) {
-    if (isChecked) {
-        selectedUserIdsForGroup.add(parseInt(userId));
-    } else {
-        selectedUserIdsForGroup.delete(parseInt(userId));
-    }
-}
-
-function filterGroupUserList(keyword) {
-    const items = document.querySelectorAll('#group-user-list .user-select-item');
-    const k = keyword.toLowerCase();
-    items.forEach(item => {
-        const name = item.getAttribute('data-search-name');
-        if (name.includes(k)) {
-            item.style.display = 'flex';
-        } else {
-            item.style.display = 'none';
-        }
-    });
-}
-
-async function handleCreateGroup() {
-    const groupNameInput = document.querySelector('#group-name-input');
-    const groupName = groupNameInput.value.trim();
-
-    if (!groupName) {
-        alert("Vui lòng nhập tên nhóm!");
-        groupNameInput.focus();
-        return;
-    }
-
-    if (selectedUserIdsForGroup.size === 0) {
-        alert("Vui lòng chọn ít nhất 1 thành viên!");
-        return;
-    }
-
-    const confirmBtn = document.querySelector('#confirm-create-group-btn');
-    const originalText = confirmBtn.textContent;
-    confirmBtn.disabled = true;
-    confirmBtn.textContent = "Đang tạo...";
-
-    try {
-        const csrfMeta = document.querySelector('meta[name="_csrf"]');
-        const csrfHeaderMeta = document.querySelector('meta[name="_csrf_header"]');
-        const headers = {
-            'Content-Type': 'application/json'
-        };
-        if (csrfHeaderMeta && csrfMeta) {
-            headers[csrfHeaderMeta.getAttribute('content')] = csrfMeta.getAttribute('content');
-        }
-
-        const payload = {
-            groupName: groupName,
-            memberIds: Array.from(selectedUserIdsForGroup)
-        };
-
-        const response = await fetch('/api/chat/room/group', {
-            method: 'POST',
-            headers: headers,
-            body: JSON.stringify(payload)
-        });
-
-        if (!response.ok) throw new Error('Lỗi tạo nhóm');
-
-        const newRoom = await response.json();
-
-        const modalEl = document.querySelector('#createGroupModal');
-        if (modalEl) {
-            const modal = bootstrap.Modal.getInstance(modalEl);
-            if (modal) modal.hide();
-        }
-
-        await loadChatRooms();
-        selectRoom(newRoom.id, newRoom.name, null, 'GROUP');
-
-    } catch (error) {
-        console.error(error);
-        alert("Không thể tạo nhóm. Vui lòng thử lại.");
-    } finally {
-        confirmBtn.disabled = false;
-        confirmBtn.textContent = originalText;
-    }
-}
-
-// ===========================================
-// === XỬ LÝ RỜI NHÓM (ĐÃ CẬP NHẬT VỚI POPUP) ===
-// ===========================================
+// Logic Rời Nhóm (Giữ nguyên)
 async function handleConfirmLeaveGroup() {
     if (!currentRoomId) return;
-
     const btn = document.getElementById('btn-confirm-leave-group');
     const originalText = btn.textContent;
     btn.disabled = true;
     btn.textContent = "Đang xử lý...";
-
     try {
         const csrfMeta = document.querySelector('meta[name="_csrf"]');
         const csrfHeaderMeta = document.querySelector('meta[name="_csrf_header"]');
@@ -850,36 +932,20 @@ async function handleConfirmLeaveGroup() {
         if (csrfHeaderMeta && csrfMeta) {
             headers[csrfHeaderMeta.getAttribute('content')] = csrfMeta.getAttribute('content');
         }
-
-        // Gọi API Rời nhóm
         const response = await fetch(`/api/chat/room/${currentRoomId}/leave`, {
             method: 'POST',
             headers: headers
         });
-
         if (response.ok) {
-            // 1. Đóng popup Modal
-            // Lấy instance của Modal đã có sẵn trong HTML (id="leaveGroupModal")
             const modalEl = document.getElementById('leaveGroupModal');
             const modal = bootstrap.Modal.getInstance(modalEl);
             if (modal) modal.hide();
-
-            // 2. Xóa room khỏi danh sách bên trái (Sidebar)
             const roomItem = document.querySelector(`.user-list-item[data-room-id="${currentRoomId}"]`);
             if (roomItem) roomItem.remove();
-
-            // 3. Reset giao diện chính (về màn hình chào mừng)
             chatMainWindow.style.display = 'none';
             chatWelcomeScreen.style.display = 'flex';
-
-            // 4. Hủy đăng ký socket của phòng cũ
-            if (stompClient) {
-                stompClient.unsubscribe(`/topic/room/${currentRoomId}`);
-            }
+            if (stompClient) stompClient.unsubscribe(`/topic/room/${currentRoomId}`);
             currentRoomId = null;
-
-            // Thông báo nhỏ (tùy chọn)
-            // alert("Đã rời nhóm thành công."); // Có thể bỏ dòng này nếu không cần alert
         } else {
             const text = await response.text();
             alert("Lỗi: " + text);

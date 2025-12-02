@@ -109,5 +109,28 @@ public class ChatRoomController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+    // ... các API cũ
+
+    // 1. Lấy danh sách thành viên
+    @GetMapping("/room/{roomId}/members")
+    public ResponseEntity<List<ChatDTOs.UserDto>> getRoomMembers(@PathVariable Long roomId) {
+        return ResponseEntity.ok(chatService.getGroupMembers(roomId));
+    }
+
+    // 2. Thêm thành viên
+    @PostMapping("/room/{roomId}/add/{userId}")
+    public ResponseEntity<?> addMember(@PathVariable Long roomId, @PathVariable Long userId, Principal principal) {
+        User currentUser = getCurrentUser(principal);
+        chatService.addMemberToGroup(roomId, userId, currentUser);
+        return ResponseEntity.ok().build();
+    }
+
+    // 3. Xóa thành viên (Kick)
+    @PostMapping("/room/{roomId}/kick/{userId}")
+    public ResponseEntity<?> kickMember(@PathVariable Long roomId, @PathVariable Long userId, Principal principal) {
+        User currentUser = getCurrentUser(principal);
+        chatService.removeMemberFromGroup(roomId, userId, currentUser);
+        return ResponseEntity.ok().build();
+    }
 
 }
