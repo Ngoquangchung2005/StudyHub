@@ -11,8 +11,7 @@ import java.util.List;
 
 public interface PostRepository extends JpaRepository<Post, Long> {
 
-    // === SỬA QUERY NÀY ===
-    // Thêm điều kiện: WHERE p.isPublic = true
+
     @Query("SELECT p FROM Post p " +
             "LEFT JOIN FETCH p.user " +
             "LEFT JOIN FETCH p.documents " +
@@ -23,7 +22,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     List<Post> findAllWithDetails(Sort sort);
 
 
-    // === NẾU BẠN ĐÃ THÊM HÀM TÌM KIẾM, HÃY SỬA CẢ HÀM NÀY ===
+
     @Query("SELECT DISTINCT p FROM Post p " +
             "LEFT JOIN FETCH p.user " +
             "LEFT JOIN FETCH p.documents d " +
@@ -39,8 +38,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     List<Post> searchPosts(@Param("keyword") String keyword, Sort sort);
 
 
-    // Hàm lấy bài theo User (Profile) thì GIỮ NGUYÊN
-    // (Vì vào profile thì có thể xem hết hoặc tùy logic bạn muốn ẩn sau này)
+    // Hàm lấy bài theo User
     @Query("SELECT p FROM Post p " +
             "LEFT JOIN FETCH p.user " +
             "LEFT JOIN FETCH p.documents " +
@@ -50,9 +48,6 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             "WHERE p.user = :user")
     List<Post> findAllByUserWithDetails(@Param("user") User user, Sort sort);
 
-    // ... (Các hàm cũ giữ nguyên)
-
-    // === THÊM HÀM MỚI ===
     // Lấy danh sách bài đăng CÔNG KHAI của một user cụ thể
     @Query("SELECT p FROM Post p " +
             "LEFT JOIN FETCH p.user " +
@@ -63,7 +58,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             "WHERE p.user = :user AND p.isPublic = true") // <-- Thêm điều kiện isPublic = true
     List<Post> findPublicByUserWithDetails(@Param("user") User user, Sort sort);
 
-    // === THÊM HÀM NÀY CHO ADMIN ===
+
     // Tìm kiếm bài viết (Không phân biệt public/private) theo từ khóa và danh mục
     @Query("SELECT DISTINCT p FROM Post p " +
             "LEFT JOIN FETCH p.user " +

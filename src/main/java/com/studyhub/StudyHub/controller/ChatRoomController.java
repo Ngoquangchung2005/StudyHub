@@ -25,7 +25,7 @@ public class ChatRoomController {
 
     @Autowired private ChatService chatService;
     @Autowired private UserRepository userRepository;
-    // === THÊM DÒNG NÀY ===
+
     @Autowired private PresenceService presenceService;
 
     // Helper
@@ -77,7 +77,7 @@ public class ChatRoomController {
     public ResponseEntity<Set<String>> getOnlineUsers() {
         return ResponseEntity.ok(presenceService.getOnlineUsers());
     }
-    // === THÊM API MỚI ===
+
     @PostMapping("/room/group")
     public ResponseEntity<ChatDTOs.ChatRoomDto> createGroupRoom(
             @RequestBody ChatDTOs.CreateGroupRequest request,

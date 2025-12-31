@@ -32,7 +32,6 @@ public class PostServiceImpl implements PostService {
     @Autowired private ReactionRepository reactionRepository;
     @Autowired private NotificationService notificationService;
 
-    // === THÊM DÒNG NÀY ===
     @Autowired private CategoryRepository categoryRepository;
     @Autowired private SimpMessagingTemplate messagingTemplate; // <-- Inject thêm cái này
 

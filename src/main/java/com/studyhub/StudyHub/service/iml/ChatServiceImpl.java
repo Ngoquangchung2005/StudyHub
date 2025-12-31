@@ -32,7 +32,7 @@ public class ChatServiceImpl implements ChatService {
     // Inject SimpMessagingTemplate để gửi socket
     @Autowired private SimpMessagingTemplate messagingTemplate;
 
-    // ... (Giữ nguyên các hàm getChatRooms, getOrCreateOneToOneRoom, getMessageHistory...)
+
 
     @Override
     @Transactional(readOnly = true)
@@ -65,7 +65,7 @@ public class ChatServiceImpl implements ChatService {
                 .collect(Collectors.toList());
     }
 
-    // === SỬA HÀM NÀY ===
+
     @Override
     @Transactional
     public ChatRoomDto createGroupRoom(String groupName, List<Long> memberIds, User creator) {

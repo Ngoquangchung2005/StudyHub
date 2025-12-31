@@ -38,7 +38,7 @@ public class Message {
     @Column(name = "is_recalled", nullable = false)
     private boolean isRecalled = false;
 
-    // === THÊM CÁC TRƯỜNG MỚI ===
+
 
     // Loại tin nhắn: TEXT, IMAGE, FILE
     @Enumerated(EnumType.STRING)

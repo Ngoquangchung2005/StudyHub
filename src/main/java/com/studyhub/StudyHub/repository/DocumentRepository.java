@@ -14,7 +14,7 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
     // Hàm này dùng để kiểm tra file khi người dùng bấm Tải xuống
     Optional<Document> findByStoragePath(String storagePath);
 
-    // Query này ĐÃ ĐÚNG theo yêu cầu của bạn (chỉ lấy isPublic = true)
+
     @Query("SELECT d FROM Document d " +
             "LEFT JOIN FETCH d.user " +
             "LEFT JOIN FETCH d.category " +
@@ -27,6 +27,6 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
     List<Document> searchDocuments(@Param("keyword") String keyword,
                                    @Param("categoryId") Long categoryId,
                                    Sort sort);
-    // === THÊM HÀM NÀY: Tìm tất cả tài liệu thuộc 1 danh mục ===
+
     List<Document> findByCategoryId(Long categoryId);
 }

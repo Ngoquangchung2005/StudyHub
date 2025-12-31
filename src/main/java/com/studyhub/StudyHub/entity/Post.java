@@ -22,7 +22,7 @@ public class Post {
     @Column(columnDefinition = "TEXT")
     private String content;
 
-    // === THÊM DÒNG NÀY ===
+
     @Column(nullable = false)
     private boolean isPublic = true; // Mặc định là công khai
     // =====================

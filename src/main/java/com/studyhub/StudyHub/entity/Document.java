@@ -17,7 +17,7 @@ public class Document {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // === THÊM CÁC TRƯỜNG MỚI ===
+
     @Column(length = 255)
     private String title; // Tiêu đề tài liệu
 
@@ -42,9 +42,9 @@ public class Document {
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime uploadedAt; // Thời gian upload
-    // === KẾT THÚC TRƯỜNG MỚI ===
 
-    // === CÁC TRƯỜNG CŨ (GIỮ NGUYÊN) ===
+
+
     @Column(nullable = false)
     private String fileName;
 
@@ -57,9 +57,9 @@ public class Document {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id")
     private Post post;
-    // === KẾT THÚC TRƯỜNG CŨ ===
 
-    // === THÊM QUAN HỆ VỚI CATEGORY ===
+
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
     private Category category;
@@ -67,5 +67,5 @@ public class Document {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user; // Người upload
-    // === KẾT THÚC QUAN HỆ ===
+
 }

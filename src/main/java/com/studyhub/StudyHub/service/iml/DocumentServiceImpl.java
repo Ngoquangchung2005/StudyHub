@@ -17,13 +17,13 @@ public class DocumentServiceImpl implements DocumentService {
     private DocumentRepository documentRepository;
 
     @Override
-    @Transactional(readOnly = true) // <-- THÊM DÒNG NÀY
+    @Transactional(readOnly = true)
     public List<Document> getAllDocuments() {
         return documentRepository.findAll(Sort.by(Sort.Direction.DESC, "uploadedAt"));
     }
 
     @Override
-    @Transactional(readOnly = true) // <-- QUAN TRỌNG: THÊM DÒNG NÀY
+    @Transactional(readOnly = true)
     public List<Document> searchDocuments(String keyword, Long categoryId) {
         // Fix lỗi keyword rỗng như đã bàn
         if (keyword != null && keyword.trim().isEmpty()) {
