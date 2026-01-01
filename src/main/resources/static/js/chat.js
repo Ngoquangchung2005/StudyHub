@@ -68,6 +68,16 @@ async function onConnected() {
         }
     });
 
+    // === TẢI DANH BẠ (Đã sửa lại vị trí cho đúng logic) ===
+    // Tải danh sách bạn bè cho Tab danh bạ
+    if (typeof loadFriendList === 'function') {
+        loadFriendList();
+    }
+
+    // Lắng nghe sự kiện click vào Tab "Danh bạ" để reload nếu cần
+    const contactTab = document.getElementById('pills-contacts-tab');
+    if(contactTab) contactTab.addEventListener('click', loadFriendList);
+
     // === ĐĂNG KÝ SỰ KIỆN POPUP ===
     const confirmRecallBtn = document.getElementById('btn-confirm-recall-action');
     if (confirmRecallBtn) confirmRecallBtn.addEventListener('click', executeRecall);
@@ -898,7 +908,19 @@ function onPresenceMessageReceived(payload) {
 }
 
 function onNotificationReceived(payload) {
-    if (payload.body === "NEW_ROOM") loadChatRooms();
+    console.log("Notification:", payload.body);
+    if (payload.body === "NEW_ROOM") {
+        loadChatRooms();
+    }
+    else if (payload.body === "FRIEND_REQUEST") {
+        // Có thể hiện Toast notification ở đây
+        alert("Bạn có lời mời kết bạn mới!");
+    }
+    else if (payload.body === "FRIEND_ACCEPTED") {
+        alert("Lời mời kết bạn đã được chấp nhận!");
+        loadFriendList(); // Load lại danh bạ để thấy bạn mới
+        loadChatRooms();  // Có thể họ đã chat
+    }
 }
 
 function scrollToBottom() {
@@ -957,4 +979,70 @@ async function handleConfirmLeaveGroup() {
         btn.disabled = false;
         btn.textContent = originalText;
     }
+}
+
+async function loadFriendList() {
+    const container = document.getElementById('friend-list-container');
+    if(!container) return;
+
+    try {
+        const response = await fetch('/api/friends/list');
+        if (!response.ok) return;
+        const friends = await response.json();
+
+        container.innerHTML = '';
+
+        if(friends.length === 0) {
+            container.innerHTML = '<p class="text-center text-muted mt-4">Chưa có bạn bè nào.</p>';
+            return;
+        }
+
+        friends.forEach(friend => {
+            // Kiểm tra trạng thái online từ Map đã có sẵn (presenceStatus)
+            const isOnline = presenceStatus.get(friend.username) === 'ONLINE';
+            const statusClass = isOnline ? 'online' : '';
+            const statusText = isOnline ? 'Online' : 'Offline';
+
+            const avatarHtml = getAvatarHtml(friend.avatarUrl, friend.name, 'user-avatar');
+
+            // Tạo phần tử hiển thị bạn bè
+            const el = document.createElement('div');
+            el.className = 'user-list-item';
+            // Quan trọng: Thêm data-username để hàm updatePresence tìm thấy
+            el.setAttribute('data-username', friend.username);
+
+            // Khi click vào bạn bè -> Mở chat ngay (gọi API tạo phòng)
+            el.onclick = () => startChatWithFriend(friend.id);
+
+            el.innerHTML = `
+                ${avatarHtml}
+                <div class="user-info" data-username="${friend.username}"> <span class="user-name">${friend.name}</span>
+                    <span class="user-status-text">
+                        <span class="status-dot ${statusClass}"></span>
+                        <span class="status-text">${statusText}</span>
+                    </span>
+                </div>
+                <button class="btn btn-sm btn-light ms-auto">💬</button>
+            `;
+            container.appendChild(el);
+        });
+
+    } catch (e) {
+        console.error("Lỗi tải danh bạ:", e);
+    }
+}
+
+// Hàm hỗ trợ click vào bạn bè là chat luôn
+async function startChatWithFriend(friendId) {
+    try {
+        const response = await fetch(`/api/chat/room/with/${friendId}`);
+        if(response.ok) {
+            const roomDto = await response.json();
+            // Chuyển về tab Chat
+            document.getElementById('pills-chats-tab').click();
+            await loadChatRooms();
+            // Select phòng chat đó
+            selectRoom(roomDto.id, roomDto.oneToOnePartnerName, roomDto.oneToOnePartnerAvatarUrl, 'ONE_TO_ONE');
+        }
+    } catch(e) { console.error(e); }
 }

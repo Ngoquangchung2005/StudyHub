@@ -19,22 +19,41 @@
             <div class="sidebar-header">
                 <h2 class="fw-bold mb-3">Chat</h2>
 
+                <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+                    <li class="nav-item w-50" role="presentation">
+                        <button class="nav-link active w-100" id="pills-chats-tab" data-bs-toggle="pill" data-bs-target="#pills-chats" type="button" role="tab">Tin nhắn</button>
+                    </li>
+                    <li class="nav-item w-50" role="presentation">
+                        <button class="nav-link w-100" id="pills-contacts-tab" data-bs-toggle="pill" data-bs-target="#pills-contacts" type="button" role="tab">Danh bạ</button>
+                    </li>
+                </ul>
+
                 <div class="search-bar-wrapper">
                     <span class="search-icon">🔍</span>
-                    <input type="text" class="search-input" placeholder="Tìm kiếm trên StudyHub">
+                    <input type="text" class="search-input" placeholder="Tìm kiếm...">
                 </div>
 
-                <div class="mt-3 d-flex gap-2 flex-column">
-                    <button class="btn-new-chat" id="new-chat-btn" data-bs-toggle="modal" data-bs-target="#newUserChatModal">
-                        + Cuộc trò chuyện mới
-                    </button>
-                    <button class="btn-new-chat" id="new-group-btn" data-bs-toggle="modal" data-bs-target="#createGroupModal" style="background-color: #f0f2f5; color: #333;">
-                        👥 Tạo nhóm mới
-                    </button>
-                </div>
+                <a href="/friends" class="btn btn-outline-primary btn-sm w-100 mt-2" style="border-radius: 20px;">
+                    Xem lời mời kết bạn
+                </a>
             </div>
 
-            <div class="sidebar-content" id="chat-room-list">
+            <div class="tab-content sidebar-content" id="pills-tabContent">
+                <div class="tab-pane fade show active" id="pills-chats" role="tabpanel">
+                    <div id="chat-room-list">
+                    </div>
+                    <div class="mt-3 px-3">
+                        <button class="btn-new-chat w-100" id="new-chat-btn" data-bs-toggle="modal" data-bs-target="#newUserChatModal">
+                            + Cuộc trò chuyện mới
+                        </button>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="pills-contacts" role="tabpanel">
+                    <div id="friend-list-container" class="pt-2">
+                        <p class="text-center text-muted small">Đang tải danh bạ...</p>
+                    </div>
+                </div>
             </div>
         </aside>
 

@@ -35,19 +35,44 @@
                     Tiểu sử của user.
                 </p>
             </div>
-            <div class="profile-buttons"
-                 sec:authorize="isAuthenticated()"
-                 th:if="${currentUser != null && currentUser.id == profileUser.id}">
-                <a th:href="@{/profile/edit}" class="btn btn-primary">
+
+            <div class="mt-3 profile-buttons" sec:authorize="isAuthenticated()">
+                <a th:if="${isOwner}" th:href="@{/profile/edit}" class="btn btn-primary">
                     ⚙️ Chỉnh sửa trang cá nhân
                 </a>
-            </div>
-            <div class="profile-buttons"
-                 sec:authorize="isAuthenticated()"
-                 th:if="${currentUser != null && currentUser.id != profileUser.id}">
-                <a th:href="@{/chat(withUser=${profileUser.id})}" class="btn btn-outline-primary">
-                    💬 Nhắn tin
-                </a>
+
+                <div th:unless="${isOwner}" id="friend-action-area" class="d-flex gap-2 align-items-center justify-content-center justify-content-md-start">
+
+                    <a th:href="@{/chat(withUser=${profileUser.id})}" class="btn btn-outline-primary btn-sm rounded-pill d-flex align-items-center">
+                        💬 Nhắn tin
+                    </a>
+
+                    <button th:if="${friendshipStatus == 'NONE'}"
+                            id="btn-add-friend"
+                            class="btn btn-primary btn-sm rounded-pill"
+                            th:onclick="'sendFriendRequest(' + ${profileUser.id} + ')'">
+                        ➕ Thêm bạn bè
+                    </button>
+
+                    <button th:if="${friendshipStatus == 'SENT'}"
+                            class="btn btn-secondary btn-sm rounded-pill" disabled>
+                        📩 Đã gửi lời mời
+                    </button>
+
+                    <div th:if="${friendshipStatus == 'RECEIVED'}" class="d-inline-flex align-items-center">
+                        <span class="text-muted small me-2 d-none d-sm-inline">Đã gửi lời mời cho bạn</span>
+                        <button class="btn btn-success btn-sm rounded-pill"
+                                th:onclick="'acceptFriendRequestOnProfile(' + ${friendshipId} + ')'">
+                            ✅ Chấp nhận
+                        </button>
+                    </div>
+
+                    <button th:if="${friendshipStatus == 'FRIEND'}"
+                            class="btn btn-outline-success btn-sm rounded-pill fw-bold"
+                            data-bs-toggle="dropdown">
+                        🤝 Bạn bè
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -263,5 +288,78 @@
         </div>
     </div>
 </div>
+
+<script layout:fragment="scripts">
+    // Gửi lời mời kết bạn
+    async function sendFriendRequest(userId) {
+        const btn = document.getElementById('btn-add-friend');
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = 'Đang gửi...';
+
+        try {
+            const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+            const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+
+            const response = await fetch(`/api/friends/request/${userId}`, {
+                method: 'POST',
+                headers: {
+                    [csrfHeader]: csrfToken
+                }
+            });
+
+            if (response.ok) {
+                // Đổi nút thành "Đã gửi lời mời"
+                const container = document.getElementById('friend-action-area');
+                // Giữ lại nút nhắn tin và cập nhật nút trạng thái
+                const chatBtn = `<a href="/chat?withUser=${userId}" class="btn btn-outline-primary btn-sm rounded-pill d-flex align-items-center">💬 Nhắn tin</a>`;
+                const sentBtn = `<button class="btn btn-secondary btn-sm rounded-pill" disabled>📩 Đã gửi lời mời</button>`;
+
+                container.innerHTML = chatBtn + " " + sentBtn;
+            } else {
+                alert("Lỗi khi gửi lời mời.");
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        } catch (error) {
+            console.error(error);
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    }
+
+    // Chấp nhận lời mời (khi đang ở trang Profile người đó)
+    async function acceptFriendRequestOnProfile(friendshipId) {
+        if(!confirm("Chấp nhận lời mời kết bạn?")) return;
+
+        try {
+            const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+            const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+
+            const response = await fetch(`/api/friends/accept/${friendshipId}`, {
+                method: 'POST',
+                headers: {
+                    [csrfHeader]: csrfToken
+                }
+            });
+
+            if (response.ok) {
+                // Đổi nút thành "Bạn bè"
+                const container = document.getElementById('friend-action-area');
+                // Lấy userId từ URL hoặc DOM nếu cần, ở đây chỉ cần thay đổi UI
+                // Do đã chấp nhận nên hiển thị nút Bạn bè
+
+                // Lưu ý: Nếu muốn giữ nút nhắn tin, ta cần lấy lại HTML cũ hoặc reload.
+                // Cách đơn giản nhất để cập nhật UI đồng bộ là reload lại trang:
+                location.reload();
+            } else {
+                alert("Lỗi khi chấp nhận.");
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    }
+</script>
+
 </body>
 </html>

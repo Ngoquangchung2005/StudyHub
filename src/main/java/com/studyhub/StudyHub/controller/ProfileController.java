@@ -4,8 +4,9 @@ import com.studyhub.StudyHub.dto.CommentDto;
 import com.studyhub.StudyHub.dto.ProfileUpdateDto;
 import com.studyhub.StudyHub.entity.Post;
 import com.studyhub.StudyHub.entity.User;
-import com.studyhub.StudyHub.entity.UserType; // <-- THÊM
+import com.studyhub.StudyHub.entity.UserType;
 import com.studyhub.StudyHub.repository.UserRepository;
+import com.studyhub.StudyHub.service.FriendService;
 import com.studyhub.StudyHub.service.PostService;
 import com.studyhub.StudyHub.service.StorageService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,8 +18,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import com.studyhub.StudyHub.dto.ChangePasswordDto; // Import DTO mới
-import org.springframework.security.crypto.password.PasswordEncoder; // Import này
+import com.studyhub.StudyHub.dto.ChangePasswordDto;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.io.IOException;
 import java.security.Principal;
@@ -30,37 +31,46 @@ public class ProfileController {
     @Autowired private UserRepository userRepository;
     @Autowired private StorageService storageService;
     @Autowired private PostService postService;
-    // === THÊM DÒNG NÀY ===
     @Autowired private PasswordEncoder passwordEncoder;
+    @Autowired private FriendService friendService;
 
-    // Helper (lấy từ GlobalControllerAdvice cho chắc)
+    // Helper: Lấy user hiện tại từ Principal
     private User getCurrentUser(Principal principal) {
         String usernameOrEmail = principal.getName();
         return userRepository.findByUsernameOrEmail(usernameOrEmail, usernameOrEmail)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy user"));
     }
+
     @GetMapping("/profile/{username}")
     public String showProfilePage(@PathVariable("username") String username, Model model, Principal principal) {
         // 1. Tìm user của trang profile (profileUser)
         User profileUser = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy user: " + username));
 
-        // 2. Xác định người xem có phải là chính chủ không?
+        User currentUser = null;
         boolean isOwner = false;
+        String friendshipStatus = "NONE";
+        Long friendshipId = null;
+
+        // 2. Xác định người xem và trạng thái bạn bè
         if (principal != null) {
-            User currentUser = getCurrentUser(principal);
+            currentUser = getCurrentUser(principal);
             model.addAttribute("currentUserId", currentUser.getId());
 
-            // So sánh ID
+            // So sánh ID để xem có phải chính chủ không
             if (currentUser.getId().equals(profileUser.getId())) {
                 isOwner = true;
+                friendshipStatus = "SELF";
+            } else {
+                // Nếu không phải chính chủ, lấy trạng thái bạn bè từ Service
+                friendshipStatus = friendService.getFriendshipStatus(currentUser.getId(), profileUser.getId());
+                friendshipId = friendService.getFriendshipId(currentUser.getId(), profileUser.getId());
             }
         } else {
             model.addAttribute("currentUserId", 0L);
         }
 
-        // 3. Lấy danh sách bài đăng (Truyền thêm biến isOwner)
-        // Nếu isOwner = true -> Lấy hết. Nếu false -> Chỉ lấy public.
+        // 3. Lấy danh sách bài đăng (Nếu isOwner = true -> Lấy hết. Nếu false -> Chỉ lấy public)
         List<Post> posts = postService.getPostsByUser(profileUser, isOwner);
 
         // 4. Gửi thông tin sang view
@@ -68,6 +78,11 @@ public class ProfileController {
         model.addAttribute("posts", posts);
         model.addAttribute("pageTitle", profileUser.getName());
         model.addAttribute("commentDto", new CommentDto());
+
+        // Gửi các biến phục vụ cho nút kết bạn và quyền chỉnh sửa
+        model.addAttribute("isOwner", isOwner);
+        model.addAttribute("friendshipStatus", friendshipStatus);
+        model.addAttribute("friendshipId", friendshipId);
 
         return "profile-view";
     }
@@ -84,7 +99,7 @@ public class ProfileController {
         dto.setName(user.getName());
         dto.setBio(user.getBio());
 
-        // === THÊM: Load dữ liệu cũ ===
+        // Load dữ liệu cũ
         dto.setUserType(user.getUserType());
         dto.setSchool(user.getSchool());
         dto.setMajor(user.getMajor());
@@ -92,20 +107,18 @@ public class ProfileController {
         dto.setHometown(user.getHometown());
         dto.setBirthday(user.getBirthday());
         dto.setContactPhone(user.getContactPhone());
-        // === KẾT THÚC ===
 
         model.addAttribute("profileDto", dto);
         model.addAttribute("pageTitle", "Cài đặt tài khoản");
 
-        // Gửi avatarUrl hiện tại để hiển thị
+        // Gửi avatarUrl và coverPhotoUrl hiện tại để hiển thị
         model.addAttribute("currentAvatarUrl", user.getAvatarUrl());
-        // === THÊM: Gửi coverPhotoUrl ===
         model.addAttribute("currentCoverPhotoUrl", user.getCoverPhotoUrl());
+
         // Gửi danh sách UserType (Enum)
         model.addAttribute("userTypes", UserType.values());
-        // === KẾT THÚC ===
 
-        return "profile-edit"; // Trả về file profile-edit.html
+        return "profile-edit";
     }
 
     /**
@@ -119,7 +132,7 @@ public class ProfileController {
 
         User user = getCurrentUser(principal);
 
-        // 1. Cập nhật thông tin (Tên, Bio, và các trường mới)
+        // 1. Cập nhật thông tin
         user.setName(profileDto.getName());
         user.setBio(profileDto.getBio());
         user.setUserType(profileDto.getUserType());
@@ -130,12 +143,10 @@ public class ProfileController {
         user.setBirthday(profileDto.getBirthday());
         user.setContactPhone(profileDto.getContactPhone());
 
-
         // 2. Xử lý Upload Avatar
         MultipartFile avatarFile = profileDto.getAvatarFile();
         if (avatarFile != null && !avatarFile.isEmpty()) {
             try {
-                // (Có thể thêm logic xóa file avatar cũ ở đây)
                 String uniqueFileName = storageService.saveFile(avatarFile);
                 user.setAvatarUrl(uniqueFileName);
             } catch (Exception e) {
@@ -148,7 +159,6 @@ public class ProfileController {
         MultipartFile coverFile = profileDto.getCoverPhotoFile();
         if (coverFile != null && !coverFile.isEmpty()) {
             try {
-                // (Có thể thêm logic xóa file ảnh bìa cũ ở đây)
                 String uniqueFileName = storageService.saveFile(coverFile);
                 user.setCoverPhotoUrl(uniqueFileName);
             } catch (Exception e) {
@@ -163,6 +173,7 @@ public class ProfileController {
         redirectAttributes.addFlashAttribute("successMessage", "Cập nhật profile thành công!");
         return "redirect:/profile/" + user.getUsername();
     }
+
     /**
      * Hiển thị trang Đổi mật khẩu
      */
@@ -170,7 +181,7 @@ public class ProfileController {
     public String showChangePasswordForm(Model model) {
         model.addAttribute("passwordDto", new ChangePasswordDto());
         model.addAttribute("pageTitle", "Đổi mật khẩu");
-        return "change-password"; // Trả về file template mới
+        return "change-password";
     }
 
     /**
@@ -194,7 +205,7 @@ public class ProfileController {
             return "redirect:/profile/change-password";
         }
 
-        // 3. (Tùy chọn) Kiểm tra độ dài mật khẩu mới
+        // 3. Kiểm tra độ dài mật khẩu mới
         if (passwordDto.getNewPassword().length() < 6) {
             redirectAttributes.addFlashAttribute("errorMessage", "Mật khẩu mới phải có ít nhất 6 ký tự!");
             return "redirect:/profile/change-password";
@@ -205,6 +216,6 @@ public class ProfileController {
         userRepository.save(user);
 
         redirectAttributes.addFlashAttribute("successMessage", "Đổi mật khẩu thành công!");
-        return "redirect:/profile/edit"; // Quay lại trang cài đặt
+        return "redirect:/profile/edit";
     }
 }
