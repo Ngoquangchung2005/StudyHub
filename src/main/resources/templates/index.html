@@ -169,7 +169,10 @@
                     <h5 class="card-title">Liên hệ</h5>
                     <div class="user-list-container" th:if="${contacts != null}">
                         <div th:each="contact : ${contacts}" th:if="${contact.type == T(com.studyhub.StudyHub.entity.ChatRoom.RoomType).ONE_TO_ONE}">
-                            <a th:href="@{/chat(withUser=${contact.oneToOnePartnerId})}" class="user-list-item-link">
+                            <a th:href="@{/chat(withUser=${contact.oneToOnePartnerId})}"
+                               class="user-list-item-link"
+                               th:attr="data-username=${contact.oneToOnePartnerUsername}">
+
                                 <div class="user-list-item">
                                     <div class="user-avatar-container">
                                         <img th:if="${contact.oneToOnePartnerAvatarUrl}" th:src="@{/view-file/{f}(f=${contact.oneToOnePartnerAvatarUrl})}" class="user-avatar-image">
@@ -232,17 +235,46 @@
         modal.show();
     }
 
+    // === PHẦN LOGIC PRESENCE & FEED (Realtime) ===
     let stompClientFeed = null;
-    function connectFeed() {
+
+    function connectFeedAndPresence() {
         const socket = new SockJS('/ws');
         stompClientFeed = Stomp.over(socket);
-        stompClientFeed.debug = null;
+        stompClientFeed.debug = null; // Tắt log debug cho gọn
+
         stompClientFeed.connect({}, function (frame) {
+            console.log("Connected to Feed & Presence WebSocket");
+
+            // 1. Lắng nghe bình luận mới
             stompClientFeed.subscribe('/topic/comments', function (payload) {
                 const data = JSON.parse(payload.body);
                 if (data.type === 'DELETE_COMMENT') handleDeleteCommentUI(data.commentId);
                 else appendNewComment(data);
             });
+
+            // 2. Lắng nghe trạng thái Online/Offline
+            stompClientFeed.subscribe('/topic/presence', function (payload) {
+                const presence = JSON.parse(payload.body); // {username: "...", status: "ONLINE"/"OFFLINE"}
+                updateUserPresenceStatus(presence.username, presence.status);
+            });
+        });
+    }
+
+    // Hàm cập nhật giao diện chấm xanh
+    function updateUserPresenceStatus(username, status) {
+        // Tìm các thẻ contact dựa trên attribute data-username mà ta đã thêm trong HTML
+        const userItems = document.querySelectorAll(`.user-list-item-link[data-username="${username}"]`);
+
+        userItems.forEach(link => {
+            const dot = link.querySelector('.status-dot');
+            if (dot) {
+                if (status === 'ONLINE') {
+                    dot.classList.add('online');
+                } else {
+                    dot.classList.remove('online');
+                }
+            }
         });
     }
 
@@ -257,7 +289,7 @@
         fetch('/api/comments/' + id + '/delete', { method: 'POST', headers: { [header]: token } });
     }
 
-    // === SỬA HÀM NÀY ĐỂ CHÈN LÊN ĐẦU ===
+    // Chèn comment mới lên đầu danh sách
     function appendNewComment(cmt) {
         if (!cmt.content || !cmt.postId) return;
 
@@ -279,7 +311,7 @@
                 </div>
             </div>`;
 
-            // SỬA: Dùng afterbegin để chèn lên ĐẦU danh sách (trên comment cũ)
+            // Chèn lên đầu
             container.insertAdjacentHTML('afterbegin', html);
         }
     }
@@ -320,7 +352,8 @@
     style.innerHTML = `.animate-fade-in { animation: fadeIn 0.5s ease-in; } @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }`;
     document.head.appendChild(style);
 
-    document.addEventListener('DOMContentLoaded', connectFeed);
+    // Kích hoạt kết nối khi trang tải xong
+    document.addEventListener('DOMContentLoaded', connectFeedAndPresence);
 </script>
 
 </body>

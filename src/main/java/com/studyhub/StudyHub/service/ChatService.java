@@ -1,7 +1,5 @@
 package com.studyhub.StudyHub.service;
 
-
-
 import com.studyhub.StudyHub.dto.ChatDTOs;
 import com.studyhub.StudyHub.dto.ChatDTOs.ChatRoomDto;
 import com.studyhub.StudyHub.dto.ChatDTOs.MessageDto;
@@ -18,12 +16,14 @@ public interface ChatService {
 
     // Lấy lịch sử tin nhắn của 1 phòng
     List<MessageDto> getMessageHistory(Long roomId);
-    // === THÊM DÒNG NÀY ===
-    ChatRoomDto createGroupRoom(String groupName, java.util.List<Long> memberIds, User creator);
-    // === THÊM HÀM NÀY ===
+
+    // Tạo nhóm chat
+    ChatRoomDto createGroupRoom(String groupName, List<Long> memberIds, User creator);
+
+    // Rời nhóm
     void leaveGroup(Long roomId, User user);
 
-    // === THÊM CÁC HÀM QUẢN LÝ NHÓM ===
+    // Quản lý thành viên nhóm
     void addMemberToGroup(Long roomId, Long userId, User adder);
     void removeMemberFromGroup(Long roomId, Long userId, User remover);
     List<ChatDTOs.UserDto> getGroupMembers(Long roomId);
