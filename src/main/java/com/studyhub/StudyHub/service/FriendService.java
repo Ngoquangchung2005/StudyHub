@@ -122,4 +122,8 @@ public class FriendService {
         Optional<Friendship> f = friendshipRepository.findRelationship(u1, u2);
         return f.map(Friendship::getId).orElse(null);
     }
+    // Thêm vào trong class FriendService
+    public List<User> searchUsers(String keyword, Long currentUserId) {
+        return userRepository.searchUsers(keyword, currentUserId);
+    }
 }
