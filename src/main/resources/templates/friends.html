@@ -1,240 +1,391 @@
-<!DOCTYPE html>
-<html lang="en"
-      xmlns:th="http://www.thymeleaf.org"
-      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorate="~{layout.html}">
-<head>
-    <title>Lời mời kết bạn</title>
-</head>
-<body>
-<div layout:fragment="content" class="container mt-4">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
+    <!DOCTYPE html>
+    <html lang="en"
+          xmlns:th="http://www.thymeleaf.org"
+          xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+          layout:decorate="~{layout.html}">
+    <head>
+        <title>Lời mời kết bạn</title>
+    </head>
+    <body>
+    <div layout:fragment="content" class="container mt-4">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
 
-            <div class="card border-0 shadow-sm" style="border-radius: 15px;">
-                <div class="card-header bg-white border-0 pt-4 pb-2">
-                    <h4 class="fw-bold">🔔 Lời mời kết bạn</h4>
-                </div>
-                <div class="card-body">
-                    <div th:if="${#lists.isEmpty(requests)}" class="text-center py-5 text-muted">
-                        <span style="font-size: 50px;">📭</span>
-                        <p class="mt-3">Hiện không có lời mời kết bạn nào.</p>
+                <div class="card border-0 shadow-sm" style="border-radius: 15px;">
+                    <div class="card-header bg-white border-0 pt-4 pb-2">
+                        <h4 class="fw-bold"><i class="fa-solid fa-user-plus text-primary"></i> Lời mời kết bạn</h4>
                     </div>
+                    <div class="card-body" id="requests-container">
+                        <div id="no-requests-msg" th:if="${#lists.isEmpty(requests)}" class="text-center py-5 text-muted">
+                            <i class="fa-regular fa-envelope-open fa-4x mb-3 text-secondary"></i>
+                            <p class="mt-2">Hiện không có lời mời kết bạn nào.</p>
+                        </div>
 
-                    <div th:each="req : ${requests}" class="d-flex align-items-center justify-content-between p-3 mb-2 border rounded-3 friend-request-item">
-                        <div class="d-flex align-items-center">
-                            <img th:if="${req.requester.avatarUrl}"
-                                 th:src="@{'/view-file/' + ${req.requester.avatarUrl}}"
-                                 class="rounded-circle" style="width: 50px; height: 50px; object-fit: cover;">
-                            <div th:unless="${req.requester.avatarUrl}"
-                                 class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center"
-                                 style="width: 50px; height: 50px; font-weight: bold;"
-                                 th:text="${#strings.substring(req.requester.name, 0, 1)}"></div>
+                        <div th:each="req : ${requests}" class="d-flex align-items-center justify-content-between p-3 mb-2 border rounded-3 friend-request-item">
+                            <div class="d-flex align-items-center">
+                                <img th:if="${req.requester.avatarUrl}"
+                                     th:src="@{'/view-file/' + ${req.requester.avatarUrl}}"
+                                     class="rounded-circle" style="width: 50px; height: 50px; object-fit: cover;">
+                                <div th:unless="${req.requester.avatarUrl}"
+                                     class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center"
+                                     style="width: 50px; height: 50px; font-weight: bold;"
+                                     th:text="${#strings.substring(req.requester.name, 0, 1)}"></div>
 
-                            <div class="ms-3">
-                                <h6 class="mb-0 fw-bold" th:text="${req.requester.name}">User Name</h6>
-                                <small class="text-muted" th:text="'@' + ${req.requester.username}">@username</small>
+                                <div class="ms-3">
+                                    <h6 class="mb-0 fw-bold" th:text="${req.requester.name}">User Name</h6>
+                                    <small class="text-muted" th:text="'@' + ${req.requester.username}">@username</small>
+                                </div>
+                            </div>
+                            <div>
+                                <button class="btn btn-primary btn-sm btn-accept" th:data-id="${req.id}">
+                                    <i class="fa-solid fa-check"></i> Chấp nhận
+                                </button>
+                                <button class="btn btn-light btn-sm text-danger">
+                                    <i class="fa-solid fa-xmark"></i> Xóa
+                                </button>
                             </div>
                         </div>
-                        <div>
-                            <button class="btn btn-primary btn-sm btn-accept" th:data-id="${req.id}">Chấp nhận</button>
-                            <button class="btn btn-light btn-sm text-danger">Xóa</button>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm mt-4" style="border-radius: 15px;">
+                    <div class="card-header bg-white border-0 pt-4 pb-2">
+                        <h5 class="fw-bold"><i class="fa-solid fa-users text-success"></i> Bạn bè (<span id="friend-count" th:text="${friends != null ? friends.size() : 0}">0</span>)</h5>
+                    </div>
+                    <div class="card-body" id="friends-container">
+                        <div id="no-friends-msg" th:if="${#lists.isEmpty(friends)}" class="text-center py-3 text-muted">
+                            Bạn chưa có bạn bè nào. Hãy tìm kiếm và kết bạn nhé!
                         </div>
-                    </div>
-                </div>
-            </div>
 
-            <div class="card border-0 shadow-sm mt-4" style="border-radius: 15px;">
-                <div class="card-header bg-white border-0 pt-4 pb-2">
-                    <h5 class="fw-bold">👥 Bạn bè (<span th:text="${friends != null ? friends.size() : 0}">0</span>)</h5>
-                </div>
-                <div class="card-body">
-                    <div th:if="${#lists.isEmpty(friends)}" class="text-center py-3 text-muted">
-                        Bạn chưa có bạn bè nào. Hãy tìm kiếm và kết bạn nhé!
-                    </div>
+                        <div th:each="friend : ${friends}" class="border-bottom p-2 d-flex align-items-center justify-content-between friend-item-row">
+                            <a th:href="@{'/profile/' + ${friend.username}}" class="d-flex align-items-center text-decoration-none text-dark flex-grow-1">
 
-                    <div th:each="friend : ${friends}" class="border-bottom p-2 d-flex align-items-center justify-content-between friend-item-row">
-                        <a th:href="@{'/profile/' + ${friend.username}}" class="d-flex align-items-center text-decoration-none text-dark flex-grow-1">
+                                <img th:if="${friend.avatarUrl}"
+                                     th:src="@{'/view-file/' + ${friend.avatarUrl}}"
+                                     class="rounded-circle" style="width: 45px; height: 45px; object-fit: cover;">
+                                <div th:unless="${friend.avatarUrl}"
+                                     class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center"
+                                     style="width: 45px; height: 45px; font-weight: bold;"
+                                     th:text="${#strings.substring(friend.name, 0, 1)}"></div>
 
-                            <img th:if="${friend.avatarUrl}"
-                                 th:src="@{'/view-file/' + ${friend.avatarUrl}}"
-                                 class="rounded-circle" style="width: 45px; height: 45px; object-fit: cover;">
-                            <div th:unless="${friend.avatarUrl}"
-                                 class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center"
-                                 style="width: 45px; height: 45px; font-weight: bold;"
-                                 th:text="${#strings.substring(friend.name, 0, 1)}"></div>
-
-                            <div class="ms-3">
-                                <h6 class="mb-0 fw-bold" th:text="${friend.name}">Friend Name</h6>
-                                <small class="text-muted" th:text="'@' + ${friend.username}">@username</small>
-                            </div>
-                        </a>
-
-                        <div>
-                            <a th:href="@{'/profile/' + ${friend.username}}" class="btn btn-outline-secondary btn-sm rounded-pill me-1">
-                                <i class="bi bi-person"></i>
+                                <div class="ms-3">
+                                    <h6 class="mb-0 fw-bold" th:text="${friend.name}">Friend Name</h6>
+                                    <small class="text-muted" th:text="'@' + ${friend.username}">@username</small>
+                                </div>
                             </a>
-                            <button class="btn btn-outline-danger btn-sm rounded-pill btn-unfriend" th:data-id="${friend.id}" title="Hủy kết bạn">
-                                <i class="bi bi-person-x-fill"></i>
+
+                            <div>
+                                <a th:href="@{'/profile/' + ${friend.username}}" class="btn btn-outline-secondary btn-sm rounded-pill me-1" title="Trang cá nhân">
+                                    <i class="fa-solid fa-user"></i>
+                                </a>
+                                <button class="btn btn-outline-danger btn-sm rounded-pill btn-unfriend" th:data-id="${friend.id}" title="Hủy kết bạn">
+                                    <i class="fa-solid fa-user-xmark"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm mt-4" style="border-radius: 15px;">
+                    <div class="card-body">
+                        <h5 class="fw-bold mb-3"><i class="fa-solid fa-magnifying-glass text-info"></i> Tìm kiếm bạn mới</h5>
+                        <div class="input-group">
+                            <input type="text" id="search-friend-input" class="form-control" placeholder="Nhập tên hoặc email...">
+                            <button class="btn btn-outline-primary" id="btn-search-users">
+                                <i class="fa-solid fa-search"></i> Tìm
                             </button>
                         </div>
+                        <div id="search-results" class="mt-3"></div>
                     </div>
-                </div>
-            </div>
-
-            <div class="card border-0 shadow-sm mt-4" style="border-radius: 15px;">
-                <div class="card-body">
-                    <h5 class="fw-bold mb-3">Tìm kiếm bạn mới</h5>
-                    <div class="input-group">
-                        <input type="text" id="search-friend-input" class="form-control" placeholder="Nhập tên hoặc email...">
-                        <button class="btn btn-outline-primary" id="btn-search-users">Tìm</button>
-                    </div>
-                    <div id="search-results" class="mt-3"></div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <script>
-        const csrfToken = document.querySelector('meta[name="_csrf"]').content;
-        const csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
+        <script>
+            const csrfToken = document.querySelector('meta[name="_csrf"]').content;
+            const csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
 
-        // --- 1. Xử lý Chấp nhận kết bạn ---
-        document.querySelectorAll('.btn-accept').forEach(btn => {
-            btn.addEventListener('click', async function() {
-                const id = this.getAttribute('data-id');
+            // === REALTIME WEBSOCKET LOGIC ===
+            const waitForWs = setInterval(() => {
+                if (typeof stompClientGlobal !== 'undefined' && stompClientGlobal && stompClientGlobal.connected) {
+                    clearInterval(waitForWs);
+                    subscribeToFriendUpdates();
+                }
+            }, 500);
+
+            function subscribeToFriendUpdates() {
+                console.log("Đang lắng nghe sự kiện bạn bè...");
+                stompClientGlobal.subscribe('/user/queue/friends', function(payload) {
+                    const event = JSON.parse(payload.body);
+
+                    if (event.type === 'NEW_REQUEST') {
+                        handleNewRequest(event.data, event.id);
+                    } else if (event.type === 'REQUEST_ACCEPTED') {
+                        handleRequestAccepted(event.data);
+                    }
+                });
+            }
+
+            // --- HÀM HIỂN THỊ POPUP (TOAST) ---
+            function showFriendToast(title, message, avatarUrl, type = 'info', extraHtml = '') {
+                const container = document.querySelector('.toast-container');
+
+                // Avatar mặc định nếu null
+                let avatarImg = '';
+                if (avatarUrl) {
+                    avatarImg = `<img src="/view-file/${avatarUrl}" class="rounded-circle me-2" style="width: 40px; height: 40px; object-fit: cover;">`;
+                } else {
+                    avatarImg = `<div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-2" style="width: 40px; height: 40px; font-weight: bold;">?</div>`;
+                }
+
+                const borderClass = type === 'success' ? 'toast-left-border-success' : 'toast-left-border-primary';
+                const icon = type === 'success' ? '<i class="fa-solid fa-check-circle text-success"></i>' : '<i class="fa-solid fa-user-plus text-primary"></i>';
+
+                const toastHtml = `
+                <div class="toast custom-toast ${borderClass} show" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="10000">
+                    <div class="toast-header border-0 bg-transparent">
+                        ${icon}
+                        <strong class="me-auto ms-2">${title}</strong>
+                        <small class="text-muted">Vừa xong</small>
+                        <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                    <div class="toast-body d-flex align-items-center pt-0">
+                        ${avatarImg}
+                        <div>
+                            <p class="mb-1" style="font-size: 0.95rem;">${message}</p>
+                            ${extraHtml} </div>
+                    </div>
+                </div>
+            `;
+
+                // Tạo element từ HTML string
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = toastHtml.trim();
+                const toastEl = tempDiv.firstChild;
+
+                container.appendChild(toastEl);
+
+                // Kích hoạt nút trong Toast (nếu có)
+                if(extraHtml) {
+                    const btnAccept = toastEl.querySelector('.btn-toast-accept');
+                    if(btnAccept) {
+                        btnAccept.addEventListener('click', function() {
+                            const reqId = this.getAttribute('data-id');
+                            acceptRequestFromToast(reqId, toastEl);
+                        });
+                    }
+                }
+
+                // Tự động ẩn sau 10s (Bootstrap tự xử lý class 'show' nhưng ta remove DOM luôn cho sạch)
+                setTimeout(() => {
+                    if(toastEl && document.body.contains(toastEl)) {
+                        toastEl.classList.remove('show');
+                        setTimeout(() => toastEl.remove(), 500);
+                    }
+                }, 10000);
+            }
+
+            // --- XỬ LÝ SỰ KIỆN TỪ SERVER ---
+
+            // 1. Khi có lời mời kết bạn mới
+            function handleNewRequest(user, requestId) {
+                // Cập nhật giao diện danh sách (giữ nguyên logic cũ để list vẫn đúng)
+                updateRequestsListUI(user, requestId);
+
+                // HIỂN THỊ POPUP ĐẸP
+                const extraButtons = `
+                <div class="mt-2">
+                    <button class="btn btn-sm btn-primary btn-toast-accept rounded-pill px-3" data-id="${requestId}">
+                        Chấp nhận
+                    </button>
+                </div>
+            `;
+                showFriendToast('Lời mời kết bạn', `<strong>${user.name}</strong> muốn kết bạn với bạn.`, user.avatarUrl, 'info', extraButtons);
+            }
+
+            // 2. Khi lời mời được chấp nhận
+            function handleRequestAccepted(friend) {
+                // Cập nhật giao diện danh sách
+                updateFriendsListUI(friend);
+
+                // HIỂN THỊ POPUP ĐẸP
+                showFriendToast('Đã kết bạn', `<strong>${friend.name}</strong> đã chấp nhận lời mời!`, friend.avatarUrl, 'success');
+            }
+
+            // --- HÀM CẬP NHẬT UI LIST (Tách ra cho gọn) ---
+            function updateRequestsListUI(user, requestId) {
+                const noMsg = document.getElementById('no-requests-msg');
+                if(noMsg) noMsg.style.display = 'none';
+
+                const container = document.getElementById('requests-container');
+
+                let avatarHtml = user.avatarUrl
+                    ? `<img src="/view-file/${user.avatarUrl}" class="rounded-circle" style="width: 50px; height: 50px; object-fit: cover;">`
+                    : `<div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; font-weight: bold;">${user.name.charAt(0)}</div>`;
+
+                const html = `
+                <div class="d-flex align-items-center justify-content-between p-3 mb-2 border rounded-3 friend-request-item animate__animated animate__fadeInDown" style="background-color: #f0f8ff;">
+                    <div class="d-flex align-items-center">
+                        ${avatarHtml}
+                        <div class="ms-3">
+                            <h6 class="mb-0 fw-bold">${user.name} <span class="badge bg-danger">Mới</span></h6>
+                            <small class="text-muted">@${user.username}</small>
+                        </div>
+                    </div>
+                    <div>
+                        <button class="btn btn-primary btn-sm btn-accept" data-id="${requestId}"><i class="fa-solid fa-check"></i> Chấp nhận</button>
+                        <button class="btn btn-light btn-sm text-danger"><i class="fa-solid fa-xmark"></i> Xóa</button>
+                    </div>
+                </div>`;
+                container.insertAdjacentHTML('afterbegin', html);
+                attachEvents();
+            }
+
+            function updateFriendsListUI(friend) {
+                const noMsg = document.getElementById('no-friends-msg');
+                if(noMsg) noMsg.style.display = 'none';
+
+                const container = document.getElementById('friends-container');
+                const countSpan = document.getElementById('friend-count');
+                if(countSpan) countSpan.innerText = (parseInt(countSpan.innerText) || 0) + 1;
+
+                let avatarHtml = friend.avatarUrl
+                    ? `<img src="/view-file/${friend.avatarUrl}" class="rounded-circle" style="width: 45px; height: 45px; object-fit: cover;">`
+                    : `<div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center" style="width: 45px; height: 45px; font-weight: bold;">${friend.name.charAt(0)}</div>`;
+
+                const html = `
+                <div class="border-bottom p-2 d-flex align-items-center justify-content-between friend-item-row animate__animated animate__fadeIn" style="background-color: #e8f5e9;">
+                    <a href="/profile/${friend.username}" class="d-flex align-items-center text-decoration-none text-dark flex-grow-1">
+                        ${avatarHtml}
+                        <div class="ms-3">
+                            <h6 class="mb-0 fw-bold">${friend.name}</h6>
+                            <small class="text-muted">@${friend.username}</small>
+                        </div>
+                    </a>
+                    <div>
+                        <a href="/profile/${friend.username}" class="btn btn-outline-secondary btn-sm rounded-pill me-1"><i class="fa-solid fa-user"></i></a>
+                        <button class="btn btn-outline-danger btn-sm rounded-pill btn-unfriend" data-id="${friend.id}"><i class="fa-solid fa-user-xmark"></i></button>
+                    </div>
+                </div>`;
+                container.insertAdjacentHTML('afterbegin', html);
+                attachEvents();
+            }
+
+            // --- LOGIC XỬ LÝ API ---
+
+            // Xử lý nút chấp nhận TRÊN TOAST
+            async function acceptRequestFromToast(id, toastElement) {
+                // Đổi nút thành loading
+                const btn = toastElement.querySelector('.btn-toast-accept');
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                btn.disabled = true;
+
                 try {
                     const res = await fetch(`/api/friends/accept/${id}`, {
                         method: 'POST',
                         headers: { [csrfHeader]: csrfToken }
                     });
                     if(res.ok) {
-                        alert("Đã kết bạn thành công!");
-                        location.reload();
+                        // Đóng toast cũ
+                        const bsToast = new bootstrap.Toast(toastElement);
+                        bsToast.hide();
+
+                        // Xóa dòng request trong list (nếu đang ở trang friends)
+                        const reqItem = document.querySelector(`.btn-accept[data-id="${id}"]`);
+                        if(reqItem) {
+                            reqItem.closest('.friend-request-item').remove();
+                            // Reload để đồng bộ lại list friend chuẩn xác nhất
+                            location.reload();
+                        } else {
+                            location.reload();
+                        }
                     }
                 } catch(e) { console.error(e); }
-            });
-        });
-
-        // --- 2. Xử lý Hủy kết bạn (MỚI THÊM) ---
-        document.querySelectorAll('.btn-unfriend').forEach(btn => {
-            btn.addEventListener('click', async function() {
-                const friendId = this.getAttribute('data-id');
-
-                if(!confirm("Bạn có chắc chắn muốn hủy kết bạn với người này?")) {
-                    return;
-                }
-
-                try {
-                    const res = await fetch(`/api/friends/unfriend/${friendId}`, {
-                        method: 'POST',
-                        headers: { [csrfHeader]: csrfToken }
-                    });
-
-                    if(res.ok) {
-                        // Xóa dòng này khỏi giao diện ngay lập tức
-                        this.closest('.friend-item-row').remove();
-                        // Hoặc reload nếu muốn cập nhật số lượng chính xác
-                        // location.reload();
-                    } else {
-                        alert("Có lỗi xảy ra khi hủy kết bạn.");
-                    }
-                } catch(e) {
-                    console.error(e);
-                    alert("Lỗi kết nối.");
-                }
-            });
-        });
-
-        // --- 3. Xử lý Tìm kiếm và Kết bạn ---
-        document.getElementById('btn-search-users').addEventListener('click', async function() {
-            const keyword = document.getElementById('search-friend-input').value.trim();
-            if (!keyword) return;
-
-            const resultsDiv = document.getElementById('search-results');
-            resultsDiv.innerHTML = '<div class="text-center py-3"><div class="spinner-border text-primary" role="status"></div></div>';
-
-            try {
-                const res = await fetch(`/api/friends/search?keyword=${encodeURIComponent(keyword)}`);
-                if (res.ok) {
-                    const users = await res.json();
-                    resultsDiv.innerHTML = '';
-
-                    if (users.length === 0) {
-                        resultsDiv.innerHTML = '<p class="text-muted text-center">Không tìm thấy người dùng nào.</p>';
-                        return;
-                    }
-
-                    users.forEach(user => {
-                        let avatarHtml = '';
-                        if (user.avatarUrl) {
-                            avatarHtml = `<img src="/view-file/${user.avatarUrl}" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;">`;
-                        } else {
-                            const initial = user.name ? user.name.charAt(0) : 'U';
-                            avatarHtml = `<div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; font-weight: bold;">${initial}</div>`;
-                        }
-
-                        let actionBtn = '';
-                        if (user.status === 'FRIEND') {
-                            actionBtn = `<span class="badge bg-success">Đã là bạn</span>`;
-                        } else if (user.status === 'SENT') {
-                            actionBtn = `<button class="btn btn-secondary btn-sm" disabled>Đã gửi</button>`;
-                        } else if (user.status === 'RECEIVED') {
-                            actionBtn = `<span class="badge bg-warning text-dark">Đang chờ duyệt</span>`;
-                        } else {
-                            actionBtn = `<button class="btn btn-outline-primary btn-sm btn-add-friend" data-id="${user.id}">Kết bạn</button>`;
-                        }
-
-                        const item = document.createElement('div');
-                        item.className = 'd-flex align-items-center justify-content-between p-2 border-bottom';
-                        item.innerHTML = `
-                            <div class="d-flex align-items-center">
-                                ${avatarHtml}
-                                <div class="ms-3">
-                                    <h6 class="mb-0 fw-bold">${user.name}</h6>
-                                    <small class="text-muted">@${user.username}</small>
-                                </div>
-                            </div>
-                            <div>${actionBtn}</div>
-                        `;
-                        resultsDiv.appendChild(item);
-                    });
-                    attachAddFriendEvents();
-                }
-            } catch (e) {
-                console.error(e);
-                resultsDiv.innerHTML = '<p class="text-danger text-center">Có lỗi xảy ra.</p>';
             }
-        });
 
-        function attachAddFriendEvents() {
-            document.querySelectorAll('.btn-add-friend').forEach(btn => {
-                btn.addEventListener('click', async function() {
-                    const userId = this.getAttribute('data-id');
-                    this.disabled = true;
-                    this.textContent = 'Đang gửi...';
-
-                    try {
-                        const res = await fetch(`/api/friends/request/${userId}`, {
-                            method: 'POST',
-                            headers: { [csrfHeader]: csrfToken }
-                        });
-
-                        if (res.ok) {
-                            this.className = 'btn btn-secondary btn-sm';
-                            this.textContent = 'Đã gửi lời mời';
-                        } else {
-                            this.disabled = false;
-                            this.textContent = 'Lỗi';
-                        }
-                    } catch (e) {
-                        this.disabled = false;
-                        this.textContent = 'Lỗi';
-                    }
+            function attachEvents() {
+                // Nút chấp nhận trong danh sách
+                document.querySelectorAll('.btn-accept').forEach(btn => {
+                    const newBtn = btn.cloneNode(true);
+                    btn.parentNode.replaceChild(newBtn, btn);
+                    newBtn.addEventListener('click', async function() {
+                        const id = this.getAttribute('data-id');
+                        try {
+                            const res = await fetch(`/api/friends/accept/${id}`, {
+                                method: 'POST',
+                                headers: { [csrfHeader]: csrfToken }
+                            });
+                            if(res.ok) {
+                                this.closest('.friend-request-item').remove();
+                                location.reload();
+                            }
+                        } catch(e) { console.error(e); }
+                    });
                 });
+
+                // Nút hủy kết bạn
+                document.querySelectorAll('.btn-unfriend').forEach(btn => {
+                    const newBtn = btn.cloneNode(true);
+                    btn.parentNode.replaceChild(newBtn, btn);
+                    newBtn.addEventListener('click', async function() {
+                        const friendId = this.getAttribute('data-id');
+                        if(!confirm("Hủy kết bạn?")) return;
+                        try {
+                            const res = await fetch(`/api/friends/unfriend/${friendId}`, {
+                                method: 'POST',
+                                headers: { [csrfHeader]: csrfToken }
+                            });
+                            if(res.ok) {
+                                this.closest('.friend-item-row').remove();
+                                const countSpan = document.getElementById('friend-count');
+                                if (countSpan) countSpan.innerText = Math.max(0, (parseInt(countSpan.innerText)||0) - 1);
+                            }
+                        } catch(e) { console.error(e); }
+                    });
+                });
+            }
+
+            // Logic Tìm kiếm giữ nguyên...
+            document.getElementById('btn-search-users').addEventListener('click', async function() {
+                const keyword = document.getElementById('search-friend-input').value.trim();
+                if (!keyword) return;
+                const resultsDiv = document.getElementById('search-results');
+                resultsDiv.innerHTML = '<div class="text-center py-3"><div class="spinner-border text-primary"></div></div>';
+                try {
+                    const res = await fetch(`/api/friends/search?keyword=${encodeURIComponent(keyword)}`);
+                    if (res.ok) {
+                        const users = await res.json();
+                        resultsDiv.innerHTML = '';
+                        if (users.length === 0) { resultsDiv.innerHTML = '<p class="text-muted text-center">Không tìm thấy.</p>'; return; }
+                        users.forEach(user => {
+                            let avatarHtml = user.avatarUrl ? `<img src="/view-file/${user.avatarUrl}" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;">` : `<div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">${user.name.charAt(0)}</div>`;
+                            let actionBtn = '';
+                            if (user.status === 'FRIEND') actionBtn = `<span class="badge bg-success">Bạn bè</span>`;
+                            else if (user.status === 'SENT') actionBtn = `<button class="btn btn-secondary btn-sm" disabled>Đã gửi</button>`;
+                            else if (user.status === 'RECEIVED') actionBtn = `<span class="badge bg-warning text-dark">Chờ duyệt</span>`;
+                            else actionBtn = `<button class="btn btn-outline-primary btn-sm btn-add-friend" data-id="${user.id}">Kết bạn</button>`;
+
+                            const item = document.createElement('div');
+                            item.className = 'd-flex align-items-center justify-content-between p-2 border-bottom';
+                            item.innerHTML = `<div class="d-flex align-items-center">${avatarHtml}<div class="ms-3"><h6 class="mb-0 fw-bold">${user.name}</h6><small class="text-muted">@${user.username}</small></div></div><div>${actionBtn}</div>`;
+                            resultsDiv.appendChild(item);
+                        });
+                        document.querySelectorAll('.btn-add-friend').forEach(btn => {
+                            btn.addEventListener('click', async function() {
+                                const userId = this.getAttribute('data-id');
+                                this.disabled = true; this.textContent = '...';
+                                try {
+                                    const res = await fetch(`/api/friends/request/${userId}`, { method: 'POST', headers: { [csrfHeader]: csrfToken } });
+                                    if (res.ok) { this.className = 'btn btn-secondary btn-sm'; this.textContent = 'Đã gửi'; }
+                                } catch (e) { this.disabled = false; }
+                            });
+                        });
+                    }
+                } catch (e) { resultsDiv.innerHTML = '<p class="text-danger">Lỗi.</p>'; }
             });
-        }
-    </script>
-</div>
-</body>
-</html>
+
+            attachEvents();
+        </script>
+    </div>
+    </body>
+    </html>

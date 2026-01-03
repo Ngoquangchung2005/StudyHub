@@ -6,11 +6,14 @@ import com.studyhub.StudyHub.repository.FriendshipRepository;
 import com.studyhub.StudyHub.repository.NotificationRepository;
 import com.studyhub.StudyHub.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate; // Mới thêm
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashMap; // Mới thêm
 import java.util.List;
+import java.util.Map; // Mới thêm
 import java.util.Optional;
 
 @Service
@@ -20,8 +23,10 @@ public class FriendService {
     @Autowired private UserRepository userRepository;
     @Autowired private NotificationRepository notificationRepository;
 
-    // Inject NotificationService để dùng chung logic thông báo
     @Autowired private NotificationService notificationService;
+
+    // Inject thêm cái này để gửi tin nhắn Realtime
+    @Autowired private SimpMessagingTemplate messagingTemplate;
 
     // Gửi lời mời kết bạn
     @Transactional
@@ -41,13 +46,28 @@ public class FriendService {
         friendship.setStatus(Friendship.FriendshipStatus.PENDING);
         friendshipRepository.save(friendship);
 
-        // Lưu DB & Gửi Realtime chuẩn format
+        // 1. Gửi thông báo như cũ
         notificationService.sendNotification(
                 requester,
                 addressee,
                 requester.getName() + " muốn kết bạn với bạn.",
-                "/friends" // Khi bấm vào thông báo sẽ dẫn đến trang Lời mời
+                "/friends"
         );
+
+        // 2. Gửi sự kiện Realtime để bên kia hiện ngay lời mời (MỚI THÊM)
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("type", "NEW_REQUEST");
+        payload.put("id", friendship.getId()); // ID của friendship để nút chấp nhận hoạt động
+
+        Map<String, Object> requesterInfo = new HashMap<>();
+        requesterInfo.put("name", requester.getName());
+        requesterInfo.put("username", requester.getUsername());
+        requesterInfo.put("avatarUrl", requester.getAvatarUrl());
+
+        payload.put("data", requesterInfo);
+
+        // Gửi đến user nhận (dùng email làm định danh như trong config security)
+        messagingTemplate.convertAndSendToUser(addressee.getEmail(), "/queue/friends", payload);
     }
 
     // Chấp nhận kết bạn
@@ -62,19 +82,33 @@ public class FriendService {
         friendship.setStatus(Friendship.FriendshipStatus.ACCEPTED);
         friendshipRepository.save(friendship);
 
-        // Thông báo cho người gửi lời mời (requester) biết là mình (addressee) đã đồng ý
+        // 1. Gửi thông báo như cũ
         notificationService.sendNotification(
                 friendship.getAddressee(),
                 friendship.getRequester(),
                 friendship.getAddressee().getName() + " đã chấp nhận lời mời kết bạn.",
-                "/profile/" + friendship.getAddressee().getUsername() // Bấm vào sẽ sang trang cá nhân bạn bè
+                "/profile/" + friendship.getAddressee().getUsername()
         );
+
+        // 2. Gửi sự kiện Realtime để người gửi thấy mình đã được chấp nhận (MỚI THÊM)
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("type", "REQUEST_ACCEPTED");
+
+        Map<String, Object> newFriendInfo = new HashMap<>();
+        newFriendInfo.put("id", friendship.getAddressee().getId());
+        newFriendInfo.put("name", friendship.getAddressee().getName());
+        newFriendInfo.put("username", friendship.getAddressee().getUsername());
+        newFriendInfo.put("avatarUrl", friendship.getAddressee().getAvatarUrl());
+
+        payload.put("data", newFriendInfo);
+
+        // Gửi ngược lại cho người đã gửi lời mời ban đầu
+        messagingTemplate.convertAndSendToUser(friendship.getRequester().getEmail(), "/queue/friends", payload);
     }
 
     // === BỔ SUNG HÀM TỪ CHỐI KẾT BẠN ===
     @Transactional
     public void declineFriendRequest(Long friendshipId) {
-        // Xóa bản ghi Friendship khỏi database
         friendshipRepository.deleteById(friendshipId);
     }
 
@@ -122,7 +156,7 @@ public class FriendService {
         Optional<Friendship> f = friendshipRepository.findRelationship(u1, u2);
         return f.map(Friendship::getId).orElse(null);
     }
-    // Thêm vào trong class FriendService
+
     public List<User> searchUsers(String keyword, Long currentUserId) {
         return userRepository.searchUsers(keyword, currentUserId);
     }

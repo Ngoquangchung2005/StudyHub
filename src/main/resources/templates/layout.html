@@ -12,6 +12,9 @@
     <title layout:title-pattern="$CONTENT_TITLE - StudyHub">StudyHub</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
     <link th:href="@{/css/chat.css}" rel="stylesheet" />
@@ -199,9 +202,7 @@
                        data-bs-toggle="dropdown" aria-expanded="false" onclick="loadNotifications()"
                        style="width: 40px; height: 40px; background: #f0f2f5; border-radius: 50%;">
 
-                        <svg class="nav-icon-svg" viewBox="0 0 16 16" style="width: 20px; height: 20px;">
-                            <path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2zm.995-14.901a1 1 0 1 0-1.99 0A5.002 5.002 0 0 0 3 6c0 1.098-.5 6-2 7h14c-1.5-1-2-5.902-2-7 0-2.42-1.72-4.44-4.005-4.901z"/>
-                        </svg>
+                        <i class="fa-solid fa-bell" style="font-size: 20px;"></i>
 
                         <span id="noti-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
                               style="display: none;">0</span>
@@ -213,7 +214,7 @@
                         <li class="p-2 border-bottom bg-white sticky-top d-flex justify-content-between align-items-center">
                             <span class="fw-bold ms-2">Thông báo</span>
                             <button onclick="showDeleteAllNotiModal(event)" class="btn btn-sm btn-link text-danger text-decoration-none" style="font-size: 0.8rem;">
-                                🗑️ Xóa tất cả
+                                <i class="fa-solid fa-trash-can"></i> Xóa tất cả
                             </button>
                         </li>
 
@@ -240,19 +241,19 @@
                         <li>
                             <a class="dropdown-item py-2 d-flex align-items-center"
                                th:href="@{/profile/{username}(username=${currentUser.username})}">
-                                <span class="me-2">👤</span> Trang cá nhân
+                                <i class="fa-solid fa-user me-2"></i> Trang cá nhân
                             </a>
                         </li>
                         <li>
                             <a class="dropdown-item py-2 d-flex align-items-center" th:href="@{/profile/edit}">
-                                <span class="me-2">⚙️</span> Cài đặt & Avatar
+                                <i class="fa-solid fa-gear me-2"></i> Cài đặt & Avatar
                             </a>
                         </li>
                         <li><hr class="dropdown-divider"></li>
                         <li>
                             <form th:action="@{/logout}" method="POST" class="m-0">
                                 <button type="submit" class="dropdown-item py-2 text-danger d-flex align-items-center">
-                                    <span class="me-2">🚪</span> Đăng xuất
+                                    <i class="fa-solid fa-right-from-bracket me-2"></i> Đăng xuất
                                 </button>
                             </form>
                         </li>
@@ -276,7 +277,7 @@
         <div class="modal-content" style="border-radius: 20px; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
             <div class="modal-body text-center pt-4 pb-0">
                 <div style="width: 60px; height: 60px; background-color: #fee2e2; color: #dc2626; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; margin: 0 auto 15px auto;">
-                    🗑️
+                    <i class="fa-solid fa-trash-can"></i>
                 </div>
                 <h5 class="fw-bold text-dark mb-2">Xóa hết thông báo?</h5>
                 <p class="text-muted small mb-3">
@@ -332,7 +333,7 @@
             <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
               <div class="toast show shadow" role="alert" aria-live="assertive" aria-atomic="true" style="border-radius: 10px;">
                 <div class="toast-header">
-                  <strong class="me-auto text-primary">🔔 Thông báo mới</strong>
+                  <strong class="me-auto text-primary"><i class="fa-solid fa-bell"></i> Thông báo mới</strong>
                   <small>Vừa xong</small>
                   <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
                 </div>
