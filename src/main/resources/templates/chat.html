@@ -67,7 +67,13 @@
                 </div>
             </div>
 
-            <div id="chat-main-window" class="chat-window" style="display: none;">
+            <div id="chat-main-window" class="chat-window" style="display: none; position: relative;">
+
+                <div id="connection-status"><i class="fa-solid fa-wifi"></i> Mất kết nối. Đang thử lại...</div>
+
+                <div id="new-message-alert" onclick="forceScrollBottom()">
+                    <i class="fa-solid fa-arrow-down"></i> Tin nhắn mới
+                </div>
 
                 <header class="chat-header" id="chat-main-header">
                 </header>
@@ -101,7 +107,7 @@
                         <div class="input-wrapper">
                             <input type="text" id="message" autocomplete="off"
                                    class="msg-input" placeholder="Nhập tin nhắn..." disabled />
-                            <button type="submit" class="send-btn" disabled>➤</button>
+                            <button type="submit" class="send-btn" id="btn-send" disabled>➤</button>
                         </div>
                     </form>
                 </footer>
@@ -216,6 +222,7 @@
             </div>
         </div>
     </div>
+
     <div class="modal fade" id="groupMembersModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content" style="border-radius: 15px;">

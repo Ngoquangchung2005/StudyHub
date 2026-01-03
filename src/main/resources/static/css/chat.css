@@ -352,3 +352,52 @@
     width: 0 !important;
     height: 0 !important;
 }
+/* --- TRẠNG THÁI KẾT NỐI --- */
+#connection-status {
+    display: none; /* Mặc định ẩn */
+    background-color: #dc3545;
+    color: white;
+    text-align: center;
+    padding: 8px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 100;
+    border-top-left-radius: 15px; /* Bo góc theo khung chat */
+    border-top-right-radius: 15px;
+}
+
+#connection-status.reconnecting {
+    background-color: #ffc107; /* Màu vàng khi đang thử kết nối lại */
+    color: #333;
+}
+
+/* --- NÚT 'TIN NHẮN MỚI' (Khi đang scroll ở trên) --- */
+#new-message-alert {
+    display: none;
+    position: absolute;
+    bottom: 80px; /* Nằm trên thanh nhập liệu */
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #667eea;
+    color: white;
+    padding: 8px 15px;
+    border-radius: 20px;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    font-size: 0.85rem;
+    z-index: 90;
+    animation: fadeInUp 0.3s ease;
+}
+
+#new-message-alert:hover {
+    background-color: #5a6fd6;
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translate(-50%, 10px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+}
