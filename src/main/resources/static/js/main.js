@@ -18,7 +18,7 @@ window.startChatWithFriend = startChatWithFriend;
 // --- DOMContentLoaded ---
 document.addEventListener('DOMContentLoaded', () => {
     if (!currentUser.id) {
-        console.log("Không phải trang chat, bỏ qua logic chat.js");
+        console.log("Không phải trang chat, bỏ qua logic chatjs");
         return;
     }
 

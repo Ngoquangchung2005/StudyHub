@@ -47,10 +47,12 @@ public class ChatFileController {
             String contentType = file.getContentType();
             if (contentType != null && contentType.startsWith("image/")) {
                 response.put("messageType", "IMAGE");
+            } else if (contentType != null && contentType.startsWith("audio/")) {
+                // [THÊM MỚI] Kiểm tra Audio
+                response.put("messageType", "AUDIO");
             } else {
                 response.put("messageType", "FILE");
             }
-
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {

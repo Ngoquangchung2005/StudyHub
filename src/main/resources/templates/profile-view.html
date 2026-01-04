@@ -361,9 +361,9 @@
     }
 
     // === THÊM ĐOẠN NÀY ĐỂ TỰ ĐỘNG CẬP NHẬT TRẠNG THÁI ===
-    // Đảm bảo chat.js hoặc file script chứa logic socket đã được load và chạy
+    // Đảm bảo chatjs hoặc file script chứa logic socket đã được load và chạy
     document.addEventListener('DOMContentLoaded', () => {
-        // Lắng nghe sự kiện "friend-status-changed" do chat.js phát ra
+        // Lắng nghe sự kiện "friend-status-changed" do chatjs phát ra
         window.addEventListener('friend-status-changed', function() {
             console.log("Profile View: Nhận tín hiệu thay đổi bạn bè -> Reload trang.");
             location.reload();
