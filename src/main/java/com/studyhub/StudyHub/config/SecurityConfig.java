@@ -75,8 +75,8 @@ public class SecurityConfig {
                                                 "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; " +
                                                 // Cho phép Script
                                                 "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; " +
-                                                // Quan trọng: Cho phép tải Font từ cdnjs
-                                                "font-src 'self' https://cdnjs.cloudflare.com; " +
+                                                // === SỬA DÒNG NÀY: Thêm https://cdn.jsdelivr.net ===
+                                                "font-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; " +
                                                 "img-src 'self' data:; " +
                                                 "connect-src 'self' ws: wss: http: https:;"
                                 )
