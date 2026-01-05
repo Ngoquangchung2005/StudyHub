@@ -401,3 +401,27 @@
     from { opacity: 0; transform: translate(-50%, 10px); }
     to { opacity: 1; transform: translate(-50%, 0); }
 }
+/* ... Giữ nguyên các code cũ ... */
+
+/* --- STYLE CHO AUDIO MESSAGE --- */
+.msg-audio {
+    display: flex;
+    align-items: center;
+    min-width: 250px;
+}
+
+.msg-audio audio {
+    height: 40px;
+    width: 100%;
+    outline: none;
+    border-radius: 20px;
+}
+
+/* Tùy chỉnh màu trình phát audio trên Chrome */
+.msg-audio audio::-webkit-media-controls-panel {
+    background-color: #f1f3f4;
+}
+
+.sent .msg-audio audio::-webkit-media-controls-panel {
+    background-color: #eef2ff; /* Màu hơi tím nhạt cho tin nhắn gửi đi */
+}

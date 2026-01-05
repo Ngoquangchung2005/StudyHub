@@ -1,13 +1,15 @@
 // main.js
 import { state, dom, currentUser } from './state.js';
 import { connect } from './socket.js';
-import { onMessageSubmit, onTypingInput, executeRecall } from './messaging.js';
+// Đảm bảo import initMessagingFeatures từ messaging.js
+import { onMessageSubmit, onTypingInput, executeRecall, initMessagingFeatures } from './messaging.js';
 import { handleFileSelect, cancelFileUpload } from './upload.js';
 import { loadFriendList, unfriendUser, startChatWithFriend } from './friends.js';
 import { loadUsersForNewChat, loadChatRooms } from './rooms.js';
 import { loadUsersForGroupCreation, handleCreateGroup, filterGroupUserList, handleConfirmLeaveGroup, handleAddMemberToGroup, openGroupMembersModal, kickMember } from './groups.js';
 import { scrollToBottom } from './utils.js';
-import { startRecording, stopRecordingAndSend, cancelRecording } from './recorder.js';
+
+// --- ĐÃ XÓA DÒNG IMPORT TỪ recorder.js VÌ FILE NÀY KHÔNG TỒN TẠI ---
 
 // --- Expose functions to Global Scope (for HTML onclick attributes) ---
 window.openGroupMembersModal = openGroupMembersModal;
@@ -21,6 +23,9 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log("Không phải trang chat, bỏ qua logic chatjs");
         return;
     }
+
+    // Kích hoạt tính năng Emoji và Audio (Logic nằm bên messaging.js)
+    initMessagingFeatures();
 
     if (document.querySelector('.messenger-container')) {
         connect();
