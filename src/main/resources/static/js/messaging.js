@@ -2,8 +2,6 @@
 import { state, dom, currentUser } from './state.js';
 import { getAvatarHtml, getFileIcon, scrollToBottom } from './utils.js';
 import { cancelFileUpload } from './upload.js';
-
-// --- [THÊM MỚI] IMPORT TRỰC TIẾP THƯ VIỆN EMOJI TỪ CDN ---
 import { EmojiButton } from 'https://cdn.jsdelivr.net/npm/@joeattardi/emoji-button@4.6.4/dist/index.min.js';
 
 // --- BIẾN TOÀN CỤC CHO GHI ÂM ---
@@ -18,14 +16,13 @@ export function initMessagingFeatures() {
     initVoiceRecording();
 }
 
-// 1. CHỨC NĂNG EMOJI (Đã sửa để dùng EmojiButton được import)
+// 1. CHỨC NĂNG EMOJI
 function initEmojiPicker() {
-    // Không cần check typeof EmojiButton nữa vì đã import cứng
     try {
         const picker = new EmojiButton({
             position: 'top-start',
             zIndex: 1000,
-            autoHide: false // Giữ picker mở nếu click nhầm ra ngoài (tùy chọn)
+            autoHide: false
         });
         const trigger = document.getElementById('emoji-btn');
 
@@ -34,8 +31,6 @@ function initEmojiPicker() {
                 const input = document.getElementById('message');
                 input.value += selection.emoji;
                 input.focus();
-
-                // [FIX LỖI NÚT GỬI] Kích hoạt sự kiện input để bật nút gửi
                 input.dispatchEvent(new Event('input'));
             });
 
@@ -62,15 +57,10 @@ async function startRecording() {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         mediaRecorder = new MediaRecorder(stream);
         audioChunks = [];
-
-        mediaRecorder.ondataavailable = event => {
-            audioChunks.push(event.data);
-        };
-
+        mediaRecorder.ondataavailable = event => { audioChunks.push(event.data); };
         mediaRecorder.start();
         toggleRecordingUI(true);
         startTimer();
-
     } catch (error) {
         alert("Không thể truy cập microphone. Vui lòng cấp quyền.");
         console.error(error);
@@ -92,9 +82,7 @@ function stopAndSendRecording() {
         mediaRecorder.onstop = async () => {
             const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
             const audioFile = new File([audioBlob], "voice-message.webm", { type: 'audio/webm' });
-
             await uploadAndSendAudio(audioFile);
-
             mediaRecorder.stream.getTracks().forEach(track => track.stop());
             toggleRecordingUI(false);
             stopTimer();
@@ -106,7 +94,6 @@ function stopAndSendRecording() {
 function toggleRecordingUI(isRecording) {
     const recordingUI = document.getElementById('recording-ui');
     const messageForm = document.getElementById('messageForm');
-
     if (isRecording) {
         recordingUI.style.display = 'flex';
         messageForm.style.display = 'none';
@@ -132,23 +119,18 @@ function stopTimer() {
     document.getElementById('recording-timer').textContent = "00:00";
 }
 
-// Upload Audio có CSRF Token
 async function uploadAndSendAudio(file) {
     const formData = new FormData();
     formData.append('file', file);
-
     const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
     const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
 
     try {
         const response = await fetch('/api/chat/upload', {
             method: 'POST',
-            headers: {
-                [csrfHeader]: csrfToken
-            },
+            headers: { [csrfHeader]: csrfToken },
             body: formData
         });
-
         if (response.ok) {
             const data = await response.json();
             sendWebSocketMessage(null, 'AUDIO', data);
@@ -156,12 +138,9 @@ async function uploadAndSendAudio(file) {
             console.error("Lỗi upload audio:", response.status);
             alert('Lỗi khi gửi ghi âm.');
         }
-    } catch (error) {
-        console.error("Upload error:", error);
-    }
+    } catch (error) { console.error("Upload error:", error); }
 }
 
-// Hàm gửi WebSocket
 function sendWebSocketMessage(content, type, fileData = null) {
     if (state.stompClient && state.currentRoomId && state.isConnected) {
         const sendMessageDto = {
@@ -173,13 +152,11 @@ function sendWebSocketMessage(content, type, fileData = null) {
             fileSize: fileData ? fileData.fileSize : null,
             mimeType: fileData ? fileData.mimeType : null
         };
-
         state.stompClient.send("/app/chat.sendMessage", {}, JSON.stringify(sendMessageDto));
         scrollToBottom(true);
     }
 }
 
-// Xử lý gửi tin nhắn
 export function onMessageSubmit(event) {
     event.preventDefault();
     const messageContent = dom.messageInput.value.trim();
@@ -193,23 +170,24 @@ export function onMessageSubmit(event) {
             mimeType: state.selectedFile.type
         };
         sendWebSocketMessage(messageContent, type, fileData);
-    }
-    else if (messageContent) {
+    } else if (messageContent) {
         sendWebSocketMessage(messageContent, 'TEXT', null);
     }
 
     dom.messageInput.value = '';
     cancelFileUpload();
     sendTypingEvent(false);
-
-    // Cập nhật lại nút gửi
     if(window.toggleSendButton) window.toggleSendButton();
 }
 
-// Xử lý tin nhắn nhận được
+// --- XỬ LÝ TIN NHẮN NHẬN ĐƯỢC ---
 export function onMessageReceived(payload) {
     const messageDto = JSON.parse(payload.body);
-    if (state.currentRoomId && String(messageDto.roomId) === String(state.currentRoomId)) {
+    const incomingRoomId = String(messageDto.roomId);
+    const currentRoomId = state.currentRoomId ? String(state.currentRoomId) : null;
+
+    if (currentRoomId === incomingRoomId) {
+        // Đang xem phòng này -> hiển thị tin nhắn
         const existingElement = document.querySelector(`.msg-row[data-message-id="${messageDto.id}"]`);
         if (existingElement) {
             if (messageDto.isRecalled) {
@@ -226,10 +204,47 @@ export function onMessageReceived(payload) {
             const isMyMessage = String(messageDto.senderId) === String(currentUser.id);
             scrollToBottom(isMyMessage);
         }
+    } else {
+        // Đang ở phòng khác -> Hiện dấu chấm đỏ bên cạnh tên
+        showUnreadDot(incomingRoomId);
+    }
+
+    // [ĐÃ XÓA] Không gọi updateSidebarPreview nữa để giữ nguyên Online/Offline
+}
+
+// --- CHỈ HIỆN CHẤM ĐỎ CẠNH TÊN ---
+function showUnreadDot(roomId) {
+    // 1. Badge trên Navbar
+    const navBadge = document.getElementById('nav-chat-badge');
+    if (navBadge) {
+        navBadge.style.display = 'block';
+        playNotificationSound();
+    }
+
+    // 2. Tìm dòng chat trong sidebar
+    const roomElement = document.getElementById(`room-item-${roomId}`);
+    if (roomElement) {
+        // Tìm thẻ chứa tên (class .user-name)
+        const nameElement = roomElement.querySelector('.user-name');
+
+        // Nếu tìm thấy tên và CHƯA có dấu chấm thì thêm vào
+        if (nameElement && !nameElement.querySelector('.unread-dot')) {
+            const dot = document.createElement('span');
+            dot.className = 'unread-dot'; // Class CSS lấy từ chat.css
+            nameElement.appendChild(dot); // Thêm chấm vào ngay sau tên
+        }
+
+        // Đẩy phòng này lên đầu danh sách để dễ thấy
+        const parentList = roomElement.parentNode;
+        if(parentList) parentList.prepend(roomElement);
     }
 }
 
-// Hiển thị tin nhắn
+function playNotificationSound() {
+    const audio = new Audio('/sounds/notification.mp3');
+    audio.play().catch(e => {});
+}
+
 export function displayMessage(messageDto) {
     const messageRow = document.createElement('div');
     messageRow.classList.add('msg-row');
@@ -239,32 +254,17 @@ export function displayMessage(messageDto) {
     messageRow.classList.add(isSent ? 'sent' : 'received');
 
     let contentHtml = '';
-
     if (messageDto.isRecalled) {
         contentHtml = `<div class="msg-content recalled">Tin nhắn đã được thu hồi</div>`;
     } else {
         let innerContent = '';
-
         if (messageDto.type === 'IMAGE') {
             innerContent = `<img src="/view-file/${messageDto.filePath}" class="msg-image" onclick="window.open(this.src)" title="Xem ảnh gốc">`;
         } else if (messageDto.type === 'AUDIO') {
-            innerContent = `
-                <div class="msg-audio">
-                    <audio controls controlsList="nodownload">
-                        <source src="/view-file/${messageDto.filePath}" type="${messageDto.mimeType || 'audio/webm'}">
-                    </audio>
-                </div>`;
+            innerContent = `<div class="msg-audio"><audio controls controlsList="nodownload"><source src="/view-file/${messageDto.filePath}" type="${messageDto.mimeType || 'audio/webm'}"></audio></div>`;
         } else if (messageDto.type === 'FILE') {
             const fileSizeMB = messageDto.fileSize ? (messageDto.fileSize / 1024 / 1024).toFixed(2) + ' MB' : '';
-            innerContent = `
-                <div class="msg-file">
-                    <span style="font-size: 24px;">${getFileIcon(messageDto.mimeType || '')}</span>
-                    <div class="ms-2">
-                        <div style="font-weight:600; font-size: 14px;">${messageDto.fileName}</div>
-                        <div style="font-size: 11px; opacity: 0.8;">${fileSizeMB}</div>
-                    </div>
-                    <a href="/download/${messageDto.filePath}" target="_blank" class="ms-auto text-dark">⬇</a>
-                </div>`;
+            innerContent = `<div class="msg-file"><span style="font-size: 24px;">${getFileIcon(messageDto.mimeType || '')}</span><div class="ms-2"><div style="font-weight:600; font-size: 14px;">${messageDto.fileName}</div><div style="font-size: 11px; opacity: 0.8;">${fileSizeMB}</div></div><a href="/download/${messageDto.filePath}" target="_blank" class="ms-auto text-dark">⬇</a></div>`;
         } else {
             if (messageDto.content.includes("đã rời khỏi nhóm") || messageDto.content.includes("đã thêm") || messageDto.content.includes("đã mời")) {
                 innerContent = `<em class="text-muted small">${messageDto.content}</em>`;
@@ -272,50 +272,35 @@ export function displayMessage(messageDto) {
                 innerContent = messageDto.content;
             }
         }
-
         if (messageDto.content && messageDto.type !== 'TEXT' && !innerContent.includes("em class") && messageDto.type !== 'AUDIO') {
             innerContent += `<div class="mt-1 small">${messageDto.content}</div>`;
         }
-
-        // Format thời gian an toàn
         let formattedTime = '';
-        try {
-            formattedTime = new Date(messageDto.timestamp).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'});
-        } catch(e) {}
-
+        try { formattedTime = new Date(messageDto.timestamp).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'}); } catch(e){}
         contentHtml = `<div class="msg-content" title="${formattedTime}">${innerContent}</div>`;
     }
 
     let avatarHtml = '';
-    if (!isSent) {
-        avatarHtml = getAvatarHtml(messageDto.senderAvatarUrl, messageDto.senderName, 'msg-avatar-small');
-    }
-
+    if (!isSent) avatarHtml = getAvatarHtml(messageDto.senderAvatarUrl, messageDto.senderName, 'msg-avatar-small');
     let actionsHtml = '';
-    if (isSent && !messageDto.isRecalled) {
-        actionsHtml = `<div class="msg-actions"><button type="button" class="btn-option">⋮</button><div class="action-popup"><div class="action-item btn-confirm-recall">Thu hồi</div></div></div>`;
-    }
-
+    if (isSent && !messageDto.isRecalled) actionsHtml = `<div class="msg-actions"><button type="button" class="btn-option">⋮</button><div class="action-popup"><div class="action-item btn-confirm-recall">Thu hồi</div></div></div>`;
     messageRow.innerHTML = `${avatarHtml}${contentHtml}${actionsHtml}`;
 
     if (isSent && !messageDto.isRecalled) {
         const btnOption = messageRow.querySelector('.btn-option');
         const popup = messageRow.querySelector('.action-popup');
         const btnRecall = messageRow.querySelector('.btn-confirm-recall');
-
         if (btnOption) btnOption.addEventListener('click', (e) => {
             e.stopPropagation();
             document.querySelectorAll('.action-popup.show').forEach(el => { if(el !== popup) el.classList.remove('show'); });
             popup.classList.toggle('show');
         });
-
         if (btnRecall) btnRecall.addEventListener('click', (e) => {
             e.stopPropagation();
             recallMessage(messageDto.id);
             popup.classList.remove('show');
         });
     }
-
     dom.messageArea.appendChild(messageRow);
 }
 
@@ -324,13 +309,11 @@ export function onTypingInput() {
     clearTimeout(state.typingTimeout);
     state.typingTimeout = setTimeout(() => sendTypingEvent(false), 3000);
 }
-
 function sendTypingEvent(isTyping) {
     if (state.stompClient && state.currentRoomId) {
         state.stompClient.send("/app/chat.typing", {}, JSON.stringify({ roomId: state.currentRoomId, isTyping: isTyping }));
     }
 }
-
 export function onTypingReceived(payload) {
     const typingDto = JSON.parse(payload.body);
     if (typingDto.username === currentUser.username) return;
@@ -338,7 +321,6 @@ export function onTypingReceived(payload) {
     else state.typingUsers.delete(typingDto.username);
     updateTypingIndicator();
 }
-
 function updateTypingIndicator() {
     const now = new Date();
     state.typingUsers.forEach((time, username) => { if (now - time > 5000) state.typingUsers.delete(username); });
@@ -347,14 +329,12 @@ function updateTypingIndicator() {
     else if (names.length === 1) dom.typingIndicator.textContent = `${names[0]} đang gõ...`;
     else dom.typingIndicator.textContent = "Nhiều người đang gõ...";
 }
-
 export function recallMessage(messageId) {
     state.messageIdToRecall = messageId;
     const modalElement = document.getElementById('recallConfirmationModal');
     const modal = new bootstrap.Modal(modalElement);
     modal.show();
 }
-
 export function executeRecall() {
     if (!state.messageIdToRecall) return;
     if (state.stompClient && state.currentRoomId) {

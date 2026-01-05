@@ -2,7 +2,7 @@
 import { state, dom, currentUser } from './state.js';
 import { getAvatarHtml, scrollToBottom } from './utils.js';
 import { onMessageReceived, onTypingReceived, displayMessage } from './messaging.js';
-import { openGroupMembersModal } from './groups.js'; // Sẽ export function này từ groups.js
+import { openGroupMembersModal } from './groups.js';
 
 export async function loadChatRooms() {
     try {
@@ -22,16 +22,22 @@ export async function loadChatRooms() {
             const roomElement = document.createElement('a');
             roomElement.href = '#';
             roomElement.classList.add('user-list-item');
+
+            // Thêm ID để tìm kiếm khi có tin nhắn đến
+            roomElement.id = `room-item-${room.id}`;
+
             roomElement.setAttribute('data-room-id', room.id);
             roomElement.setAttribute('data-room-name', roomName);
             roomElement.setAttribute('data-room-type', room.type);
             if(avatarUrl) roomElement.setAttribute('data-avatar-url', avatarUrl);
 
             const avatarHtml = getAvatarHtml(avatarUrl, roomName, 'user-avatar');
+
+            // [ĐÃ SỬA] Chỉ hiển thị Status, xóa class 'room-last-msg'
             roomElement.innerHTML = `
                 ${avatarHtml}
                 <div class="user-info" data-username="${partnerUsername}">
-                    <span class="user-name">${roomName}</span>
+                    <span class="user-name room-name">${roomName}</span>
                     <span class="user-status-text">
                         <span class="status-dot ${status}"></span>
                         <span class="status-text">${statusText}</span>
@@ -60,6 +66,20 @@ function onRoomSelected(event) {
 export async function selectRoom(roomId, roomName, avatarUrl, roomType) {
     if (state.currentRoomId === roomId) return;
     state.currentRoomId = roomId;
+
+    // --- XÓA DẤU CHẤM ĐỎ KHI CLICK VÀO PHÒNG ---
+    const roomElement = document.getElementById(`room-item-${roomId}`);
+    if (roomElement) {
+        const dot = roomElement.querySelector('.unread-dot');
+        if (dot) dot.remove(); // Xóa dấu chấm bên cạnh tên
+
+        const anyDot = document.querySelector('.unread-dot');
+        if (!anyDot) {
+            const navBadge = document.getElementById('nav-chat-badge');
+            if (navBadge) navBadge.style.display = 'none';
+        }
+    }
+    // ------------------------------------------------------
 
     state.subscriptions.forEach(sub => sub.unsubscribe());
     state.subscriptions.clear();
@@ -90,8 +110,6 @@ export async function selectRoom(roomId, roomName, avatarUrl, roomType) {
             headerContent += `<button id="btn-start-video-call" class="btn btn-primary btn-sm rounded-circle" title="Gọi Video">📹</button>`;
         }
         if (roomType === 'GROUP') {
-            // Lưu ý: onclick ở đây gọi hàm openGroupMembersModal
-            // Hàm này cần được expose ra window ở file main.js
             headerContent += `
                 <button class="btn btn-light btn-sm rounded-circle ms-2" onclick="openGroupMembersModal(${roomId})" title="Thành viên nhóm">⚙️</button>
                 <button class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#leaveGroupModal" title="Rời nhóm">🚪 Rời nhóm</button>
