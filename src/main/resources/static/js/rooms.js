@@ -23,8 +23,10 @@ export async function loadChatRooms() {
             roomElement.href = '#';
             roomElement.classList.add('user-list-item');
 
-            // Thêm ID để tìm kiếm khi có tin nhắn đến
+            // --- [SỬA LỖI TẠI ĐÂY] ---
+            // Gán ID để messaging.js tìm được thẻ này
             roomElement.id = `room-item-${room.id}`;
+            // --------------------------
 
             roomElement.setAttribute('data-room-id', room.id);
             roomElement.setAttribute('data-room-name', roomName);
@@ -32,8 +34,6 @@ export async function loadChatRooms() {
             if(avatarUrl) roomElement.setAttribute('data-avatar-url', avatarUrl);
 
             const avatarHtml = getAvatarHtml(avatarUrl, roomName, 'user-avatar');
-
-            // [ĐÃ SỬA] Chỉ hiển thị Status, xóa class 'room-last-msg'
             roomElement.innerHTML = `
                 ${avatarHtml}
                 <div class="user-info" data-username="${partnerUsername}">
@@ -67,11 +67,11 @@ export async function selectRoom(roomId, roomName, avatarUrl, roomType) {
     if (state.currentRoomId === roomId) return;
     state.currentRoomId = roomId;
 
-    // --- XÓA DẤU CHẤM ĐỎ KHI CLICK VÀO PHÒNG ---
+    // --- [SỬA LỖI] Xóa chấm đỏ khi bấm vào ---
     const roomElement = document.getElementById(`room-item-${roomId}`);
     if (roomElement) {
         const dot = roomElement.querySelector('.unread-dot');
-        if (dot) dot.remove(); // Xóa dấu chấm bên cạnh tên
+        if (dot) dot.remove();
 
         const anyDot = document.querySelector('.unread-dot');
         if (!anyDot) {
@@ -79,7 +79,7 @@ export async function selectRoom(roomId, roomName, avatarUrl, roomType) {
             if (navBadge) navBadge.style.display = 'none';
         }
     }
-    // ------------------------------------------------------
+    // -----------------------------------------
 
     state.subscriptions.forEach(sub => sub.unsubscribe());
     state.subscriptions.clear();

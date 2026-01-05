@@ -212,34 +212,28 @@ export function onMessageReceived(payload) {
     // [ĐÃ XÓA] Không gọi updateSidebarPreview nữa để giữ nguyên Online/Offline
 }
 
-// --- CHỈ HIỆN CHẤM ĐỎ CẠNH TÊN ---
+// Trích đoạn hàm showUnreadDot trong messaging.js (Kiểm tra xem giống chưa)
 function showUnreadDot(roomId) {
-    // 1. Badge trên Navbar
     const navBadge = document.getElementById('nav-chat-badge');
     if (navBadge) {
         navBadge.style.display = 'block';
         playNotificationSound();
     }
 
-    // 2. Tìm dòng chat trong sidebar
+    // Ở đây cần ID mà chúng ta vừa thêm vào rooms.js
     const roomElement = document.getElementById(`room-item-${roomId}`);
     if (roomElement) {
-        // Tìm thẻ chứa tên (class .user-name)
         const nameElement = roomElement.querySelector('.user-name');
-
-        // Nếu tìm thấy tên và CHƯA có dấu chấm thì thêm vào
         if (nameElement && !nameElement.querySelector('.unread-dot')) {
             const dot = document.createElement('span');
-            dot.className = 'unread-dot'; // Class CSS lấy từ chat.css
-            nameElement.appendChild(dot); // Thêm chấm vào ngay sau tên
+            dot.className = 'unread-dot';
+            nameElement.appendChild(dot);
         }
-
-        // Đẩy phòng này lên đầu danh sách để dễ thấy
+        // Đẩy lên đầu danh sách
         const parentList = roomElement.parentNode;
         if(parentList) parentList.prepend(roomElement);
     }
 }
-
 function playNotificationSound() {
     const audio = new Audio('/sounds/notification.mp3');
     audio.play().catch(e => {});
