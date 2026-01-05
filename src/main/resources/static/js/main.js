@@ -1,7 +1,6 @@
 // main.js
 import { state, dom, currentUser } from './state.js';
 import { connect } from './socket.js';
-// Đảm bảo import initMessagingFeatures từ messaging.js
 import { onMessageSubmit, onTypingInput, executeRecall, initMessagingFeatures } from './messaging.js';
 import { handleFileSelect, cancelFileUpload } from './upload.js';
 import { loadFriendList, unfriendUser, startChatWithFriend } from './friends.js';
@@ -9,13 +8,14 @@ import { loadUsersForNewChat, loadChatRooms } from './rooms.js';
 import { loadUsersForGroupCreation, handleCreateGroup, filterGroupUserList, handleConfirmLeaveGroup, handleAddMemberToGroup, openGroupMembersModal, kickMember } from './groups.js';
 import { scrollToBottom } from './utils.js';
 
-// --- ĐÃ XÓA DÒNG IMPORT TỪ recorder.js VÌ FILE NÀY KHÔNG TỒN TẠI ---
-
-// --- Expose functions to Global Scope (for HTML onclick attributes) ---
+// --- Expose functions to Global Scope ---
 window.openGroupMembersModal = openGroupMembersModal;
 window.kickMember = kickMember;
 window.unfriendUser = unfriendUser;
 window.startChatWithFriend = startChatWithFriend;
+
+// Expose hàm này để upload.js hoặc messaging.js có thể gọi cập nhật nút gửi
+window.toggleSendButton = toggleSendButton;
 
 // --- DOMContentLoaded ---
 document.addEventListener('DOMContentLoaded', () => {
@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // Kích hoạt tính năng Emoji và Audio (Logic nằm bên messaging.js)
+    // Kích hoạt tính năng Emoji và Audio
     initMessagingFeatures();
 
     if (document.querySelector('.messenger-container')) {
@@ -61,14 +61,35 @@ function setupEventListeners() {
 
     // Message Input Events
     if (dom.messageForm) dom.messageForm.addEventListener('submit', onMessageSubmit, true);
-    if (dom.messageInput) dom.messageInput.addEventListener('input', onTypingInput);
+
+    // --- [FIX LỖI ICON] ---
+    // Lắng nghe sự kiện input (khi gõ phím hoặc chọn Emoji) để bật nút gửi
+    if (dom.messageInput) {
+        dom.messageInput.addEventListener('input', () => {
+            onTypingInput();    // Báo trạng thái đang gõ
+            toggleSendButton(); // Bật/tắt nút gửi
+        });
+    }
+
     if (dom.newChatBtn) dom.newChatBtn.addEventListener('click', loadUsersForNewChat);
 
     // File Upload Events
     if (dom.fileBtn) dom.fileBtn.addEventListener('click', () => { dom.fileInput.setAttribute('accept', '*/*'); dom.fileInput.click(); });
     if (dom.imageBtn) dom.imageBtn.addEventListener('click', () => { dom.fileInput.setAttribute('accept', 'image/*'); dom.fileInput.click(); });
-    if (dom.fileInput) dom.fileInput.addEventListener('change', handleFileSelect);
-    if (dom.cancelFileBtn) dom.cancelFileBtn.addEventListener('click', cancelFileUpload);
+
+    if (dom.fileInput) {
+        dom.fileInput.addEventListener('change', (e) => {
+            handleFileSelect(e);
+            toggleSendButton(); // Bật nút gửi khi có file
+        });
+    }
+
+    if (dom.cancelFileBtn) {
+        dom.cancelFileBtn.addEventListener('click', () => {
+            cancelFileUpload();
+            setTimeout(toggleSendButton, 100); // Tắt nút gửi nếu không còn text/file
+        });
+    }
 
     // Close popups
     document.addEventListener('click', () => {
@@ -86,7 +107,29 @@ function handleScroll() {
     }
 }
 
-// Hàm forceScroll cho nút "Tin nhắn mới" (cần expose ra window nếu nút này gọi onclick)
+// --- [HÀM MỚI] Bật/tắt nút gửi ---
+function toggleSendButton() {
+    const sendBtn = document.getElementById('btn-send');
+    const messageInput = document.getElementById('message');
+
+    if (!sendBtn || !messageInput) return;
+
+    const content = messageInput.value.trim();
+    // Kiểm tra: Có text HOẶC đang có file chờ upload (state.uploadedFilePath lấy từ state.js)
+    const hasFile = state.uploadedFilePath ? true : false;
+
+    if (content.length > 0 || hasFile) {
+        sendBtn.removeAttribute('disabled'); // Bật nút
+        sendBtn.style.opacity = '1';
+        sendBtn.style.cursor = 'pointer';
+    } else {
+        sendBtn.setAttribute('disabled', 'true'); // Tắt nút
+        sendBtn.style.opacity = '0.5';
+        sendBtn.style.cursor = 'not-allowed';
+    }
+}
+
+// Hàm forceScroll cho nút "Tin nhắn mới"
 window.forceScrollBottom = function() {
     scrollToBottom(true);
 };

@@ -129,19 +129,27 @@ function stopTimer() {
 async function uploadAndSendAudio(file) {
     const formData = new FormData();
     formData.append('file', file);
+    // Lấy CSRF Token từ thẻ meta đã thêm ở Bước 1
+    const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+    const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
 
     try {
         const response = await fetch('/api/chat/upload', {
             method: 'POST',
+            headers: {
+                [csrfHeader]: csrfToken // Thêm header này vào
+            },
             body: formData
         });
 
         if (response.ok) {
             const data = await response.json();
-            // Gửi qua WebSocket (giống như gửi file thường, nhưng type là AUDIO)
+            // Gửi qua WebSocket
             sendWebSocketMessage(null, 'AUDIO', data);
         } else {
-            alert('Lỗi khi gửi ghi âm');
+            // Log lỗi chi tiết hơn để debug
+            console.error("Lỗi upload audio:", response.status, response.statusText);
+            alert('Lỗi khi gửi ghi âm. Mã lỗi: ' + response.status);
         }
     } catch (error) {
         console.error("Upload error:", error);
