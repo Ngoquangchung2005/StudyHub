@@ -3,24 +3,29 @@ import { state, dom, currentUser } from './state.js';
 import { getAvatarHtml, getFileIcon, scrollToBottom } from './utils.js';
 import { cancelFileUpload } from './upload.js';
 
+// --- [THÊM MỚI] IMPORT TRỰC TIẾP THƯ VIỆN EMOJI TỪ CDN ---
+import { EmojiButton } from 'https://cdn.jsdelivr.net/npm/@joeattardi/emoji-button@4.6.4/dist/index.min.js';
+
 // --- BIẾN TOÀN CỤC CHO GHI ÂM ---
 let mediaRecorder = null;
 let audioChunks = [];
 let recordingInterval = null;
 let recordingStartTime = null;
 
-// --- KHỞI TẠO (Được gọi từ main.js hoặc chạy khi load) ---
+// --- KHỞI TẠO ---
 export function initMessagingFeatures() {
     initEmojiPicker();
     initVoiceRecording();
 }
 
-// 1. CHỨC NĂNG EMOJI
+// 1. CHỨC NĂNG EMOJI (Đã sửa để dùng EmojiButton được import)
 function initEmojiPicker() {
-    if (typeof EmojiButton !== 'undefined') {
+    // Không cần check typeof EmojiButton nữa vì đã import cứng
+    try {
         const picker = new EmojiButton({
             position: 'top-start',
-            zIndex: 1000
+            zIndex: 1000,
+            autoHide: false // Giữ picker mở nếu click nhầm ra ngoài (tùy chọn)
         });
         const trigger = document.getElementById('emoji-btn');
 
@@ -29,12 +34,15 @@ function initEmojiPicker() {
                 const input = document.getElementById('message');
                 input.value += selection.emoji;
                 input.focus();
-                // Kích hoạt event input để xử lý logic typing nếu cần
+
+                // [FIX LỖI NÚT GỬI] Kích hoạt sự kiện input để bật nút gửi
                 input.dispatchEvent(new Event('input'));
             });
 
             trigger.addEventListener('click', () => picker.togglePicker(trigger));
         }
+    } catch (e) {
+        console.error("Lỗi khởi tạo Emoji Picker:", e);
     }
 }
 
@@ -72,23 +80,21 @@ async function startRecording() {
 function cancelRecording() {
     if (mediaRecorder) {
         mediaRecorder.stop();
-        mediaRecorder.stream.getTracks().forEach(track => track.stop()); // Tắt mic
+        mediaRecorder.stream.getTracks().forEach(track => track.stop());
     }
     toggleRecordingUI(false);
     stopTimer();
-    audioChunks = []; // Xóa dữ liệu
+    audioChunks = [];
 }
 
 function stopAndSendRecording() {
     if (mediaRecorder && mediaRecorder.state !== 'inactive') {
         mediaRecorder.onstop = async () => {
-            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' }); // Hoặc 'audio/mp3' tùy trình duyệt
+            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
             const audioFile = new File([audioBlob], "voice-message.webm", { type: 'audio/webm' });
 
-            // Upload file ghi âm
             await uploadAndSendAudio(audioFile);
 
-            // Dọn dẹp
             mediaRecorder.stream.getTracks().forEach(track => track.stop());
             toggleRecordingUI(false);
             stopTimer();
@@ -99,14 +105,14 @@ function stopAndSendRecording() {
 
 function toggleRecordingUI(isRecording) {
     const recordingUI = document.getElementById('recording-ui');
-    const messageForm = document.getElementById('messageForm'); // Form chứa input text
+    const messageForm = document.getElementById('messageForm');
 
     if (isRecording) {
         recordingUI.style.display = 'flex';
         messageForm.style.display = 'none';
     } else {
         recordingUI.style.display = 'none';
-        messageForm.style.display = 'flex'; // Trả lại dạng flex như trong HTML
+        messageForm.style.display = 'flex';
     }
 }
 
@@ -126,10 +132,11 @@ function stopTimer() {
     document.getElementById('recording-timer').textContent = "00:00";
 }
 
+// Upload Audio có CSRF Token
 async function uploadAndSendAudio(file) {
     const formData = new FormData();
     formData.append('file', file);
-    // Lấy CSRF Token từ thẻ meta đã thêm ở Bước 1
+
     const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
     const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
 
@@ -137,27 +144,24 @@ async function uploadAndSendAudio(file) {
         const response = await fetch('/api/chat/upload', {
             method: 'POST',
             headers: {
-                [csrfHeader]: csrfToken // Thêm header này vào
+                [csrfHeader]: csrfToken
             },
             body: formData
         });
 
         if (response.ok) {
             const data = await response.json();
-            // Gửi qua WebSocket
             sendWebSocketMessage(null, 'AUDIO', data);
         } else {
-            // Log lỗi chi tiết hơn để debug
-            console.error("Lỗi upload audio:", response.status, response.statusText);
-            alert('Lỗi khi gửi ghi âm. Mã lỗi: ' + response.status);
+            console.error("Lỗi upload audio:", response.status);
+            alert('Lỗi khi gửi ghi âm.');
         }
     } catch (error) {
         console.error("Upload error:", error);
     }
 }
 
-
-// --- HÀM GỬI WEBSOCKET CHUNG ---
+// Hàm gửi WebSocket
 function sendWebSocketMessage(content, type, fileData = null) {
     if (state.stompClient && state.currentRoomId && state.isConnected) {
         const sendMessageDto = {
@@ -175,12 +179,11 @@ function sendWebSocketMessage(content, type, fileData = null) {
     }
 }
 
-// --- LOGIC GỬI TIN NHẮN (Submit Form) ---
+// Xử lý gửi tin nhắn
 export function onMessageSubmit(event) {
     event.preventDefault();
     const messageContent = dom.messageInput.value.trim();
 
-    // Nếu có file đang chờ upload (ảnh/file thường)
     if (state.uploadedFilePath) {
         const type = state.selectedFile.type.startsWith('image/') ? 'IMAGE' : 'FILE';
         const fileData = {
@@ -189,28 +192,27 @@ export function onMessageSubmit(event) {
             fileSize: state.selectedFile.size,
             mimeType: state.selectedFile.type
         };
-        sendWebSocketMessage(messageContent, type, fileData); // Gửi kèm caption nếu có
+        sendWebSocketMessage(messageContent, type, fileData);
     }
-    // Nếu chỉ là text
     else if (messageContent) {
         sendWebSocketMessage(messageContent, 'TEXT', null);
     }
 
-    // Reset Input
     dom.messageInput.value = '';
     cancelFileUpload();
     sendTypingEvent(false);
+
+    // Cập nhật lại nút gửi
+    if(window.toggleSendButton) window.toggleSendButton();
 }
 
-// --- XỬ LÝ TIN NHẮN ĐẾN ---
+// Xử lý tin nhắn nhận được
 export function onMessageReceived(payload) {
     const messageDto = JSON.parse(payload.body);
     if (state.currentRoomId && String(messageDto.roomId) === String(state.currentRoomId)) {
-        // ... (Logic xử lý tin nhắn cũ/thu hồi giữ nguyên) ...
         const existingElement = document.querySelector(`.msg-row[data-message-id="${messageDto.id}"]`);
         if (existingElement) {
             if (messageDto.isRecalled) {
-                // ... (Logic thu hồi giữ nguyên) ...
                 const contentDiv = existingElement.querySelector('.msg-content');
                 if (contentDiv) {
                     contentDiv.className = 'msg-content recalled';
@@ -227,7 +229,7 @@ export function onMessageReceived(payload) {
     }
 }
 
-// --- HIỂN THỊ TIN NHẮN (Render HTML) ---
+// Hiển thị tin nhắn
 export function displayMessage(messageDto) {
     const messageRow = document.createElement('div');
     messageRow.classList.add('msg-row');
@@ -243,16 +245,13 @@ export function displayMessage(messageDto) {
     } else {
         let innerContent = '';
 
-        // XỬ LÝ CÁC LOẠI TIN NHẮN
         if (messageDto.type === 'IMAGE') {
             innerContent = `<img src="/view-file/${messageDto.filePath}" class="msg-image" onclick="window.open(this.src)" title="Xem ảnh gốc">`;
         } else if (messageDto.type === 'AUDIO') {
-            // ---> RENDER AUDIO PLAYER <---
             innerContent = `
                 <div class="msg-audio">
                     <audio controls controlsList="nodownload">
                         <source src="/view-file/${messageDto.filePath}" type="${messageDto.mimeType || 'audio/webm'}">
-                        Trình duyệt của bạn không hỗ trợ phát âm thanh.
                     </audio>
                 </div>`;
         } else if (messageDto.type === 'FILE') {
@@ -267,7 +266,6 @@ export function displayMessage(messageDto) {
                     <a href="/download/${messageDto.filePath}" target="_blank" class="ms-auto text-dark">⬇</a>
                 </div>`;
         } else {
-            // TEXT Message
             if (messageDto.content.includes("đã rời khỏi nhóm") || messageDto.content.includes("đã thêm") || messageDto.content.includes("đã mời")) {
                 innerContent = `<em class="text-muted small">${messageDto.content}</em>`;
             } else {
@@ -275,13 +273,15 @@ export function displayMessage(messageDto) {
             }
         }
 
-        // Nếu có text kèm theo (caption cho ảnh/file)
         if (messageDto.content && messageDto.type !== 'TEXT' && !innerContent.includes("em class") && messageDto.type !== 'AUDIO') {
             innerContent += `<div class="mt-1 small">${messageDto.content}</div>`;
         }
 
+        // Format thời gian an toàn
         let formattedTime = '';
-        try { formattedTime = new Date(messageDto.timestamp).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'}); } catch(e){}
+        try {
+            formattedTime = new Date(messageDto.timestamp).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'});
+        } catch(e) {}
 
         contentHtml = `<div class="msg-content" title="${formattedTime}">${innerContent}</div>`;
     }
@@ -291,7 +291,6 @@ export function displayMessage(messageDto) {
         avatarHtml = getAvatarHtml(messageDto.senderAvatarUrl, messageDto.senderName, 'msg-avatar-small');
     }
 
-    // Nút 3 chấm (Menu)
     let actionsHtml = '';
     if (isSent && !messageDto.isRecalled) {
         actionsHtml = `<div class="msg-actions"><button type="button" class="btn-option">⋮</button><div class="action-popup"><div class="action-item btn-confirm-recall">Thu hồi</div></div></div>`;
@@ -299,7 +298,6 @@ export function displayMessage(messageDto) {
 
     messageRow.innerHTML = `${avatarHtml}${contentHtml}${actionsHtml}`;
 
-    // ... (Giữ nguyên logic gán sự kiện click cho menu/recall như cũ) ...
     if (isSent && !messageDto.isRecalled) {
         const btnOption = messageRow.querySelector('.btn-option');
         const popup = messageRow.querySelector('.action-popup');
@@ -321,8 +319,6 @@ export function displayMessage(messageDto) {
     dom.messageArea.appendChild(messageRow);
 }
 
-// ... (Giữ nguyên các hàm Typing, Recall, v.v.) ...
-// Typing
 export function onTypingInput() {
     sendTypingEvent(true);
     clearTimeout(state.typingTimeout);
@@ -352,7 +348,6 @@ function updateTypingIndicator() {
     else dom.typingIndicator.textContent = "Nhiều người đang gõ...";
 }
 
-// Recall
 export function recallMessage(messageId) {
     state.messageIdToRecall = messageId;
     const modalElement = document.getElementById('recallConfirmationModal');

@@ -8,13 +8,13 @@ import { loadUsersForNewChat, loadChatRooms } from './rooms.js';
 import { loadUsersForGroupCreation, handleCreateGroup, filterGroupUserList, handleConfirmLeaveGroup, handleAddMemberToGroup, openGroupMembersModal, kickMember } from './groups.js';
 import { scrollToBottom } from './utils.js';
 
-// --- Expose functions to Global Scope ---
+// --- Expose functions to Global Scope (for HTML onclick attributes) ---
 window.openGroupMembersModal = openGroupMembersModal;
 window.kickMember = kickMember;
 window.unfriendUser = unfriendUser;
 window.startChatWithFriend = startChatWithFriend;
 
-// Expose hàm này để upload.js hoặc messaging.js có thể gọi cập nhật nút gửi
+// [QUAN TRỌNG] Expose hàm này để upload.js hoặc messaging.js có thể gọi cập nhật nút gửi
 window.toggleSendButton = toggleSendButton;
 
 // --- DOMContentLoaded ---
@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // Kích hoạt tính năng Emoji và Audio
+    // Kích hoạt tính năng Emoji và Audio (Logic nằm bên messaging.js)
     initMessagingFeatures();
 
     if (document.querySelector('.messenger-container')) {
@@ -62,12 +62,11 @@ function setupEventListeners() {
     // Message Input Events
     if (dom.messageForm) dom.messageForm.addEventListener('submit', onMessageSubmit, true);
 
-    // --- [FIX LỖI ICON] ---
-    // Lắng nghe sự kiện input (khi gõ phím hoặc chọn Emoji) để bật nút gửi
+    // [ĐÃ SỬA] Thêm logic toggleSendButton vào sự kiện input
     if (dom.messageInput) {
         dom.messageInput.addEventListener('input', () => {
-            onTypingInput();    // Báo trạng thái đang gõ
-            toggleSendButton(); // Bật/tắt nút gửi
+            onTypingInput();     // Giữ nguyên logic typing indicator cũ
+            toggleSendButton();  // Thêm logic bật nút gửi khi có text (hoặc emoji)
         });
     }
 
@@ -80,14 +79,14 @@ function setupEventListeners() {
     if (dom.fileInput) {
         dom.fileInput.addEventListener('change', (e) => {
             handleFileSelect(e);
-            toggleSendButton(); // Bật nút gửi khi có file
+            toggleSendButton(); // Cập nhật nút gửi khi chọn file xong
         });
     }
 
     if (dom.cancelFileBtn) {
         dom.cancelFileBtn.addEventListener('click', () => {
             cancelFileUpload();
-            setTimeout(toggleSendButton, 100); // Tắt nút gửi nếu không còn text/file
+            setTimeout(toggleSendButton, 100); // Đợi state cập nhật rồi check lại nút gửi
         });
     }
 
@@ -107,23 +106,25 @@ function handleScroll() {
     }
 }
 
-// --- [HÀM MỚI] Bật/tắt nút gửi ---
+// [THÊM MỚI] Hàm bật/tắt nút gửi dựa trên nội dung input hoặc file upload
 function toggleSendButton() {
+    // Lấy nút gửi (đảm bảo id đúng như trong HTML)
     const sendBtn = document.getElementById('btn-send');
     const messageInput = document.getElementById('message');
 
     if (!sendBtn || !messageInput) return;
 
     const content = messageInput.value.trim();
-    // Kiểm tra: Có text HOẶC đang có file chờ upload (state.uploadedFilePath lấy từ state.js)
+    // Kiểm tra xem có text HOẶC có file trong state đang chờ upload không
+    // (state.uploadedFilePath import từ state.js)
     const hasFile = state.uploadedFilePath ? true : false;
 
     if (content.length > 0 || hasFile) {
-        sendBtn.removeAttribute('disabled'); // Bật nút
+        sendBtn.removeAttribute('disabled');
         sendBtn.style.opacity = '1';
         sendBtn.style.cursor = 'pointer';
     } else {
-        sendBtn.setAttribute('disabled', 'true'); // Tắt nút
+        sendBtn.setAttribute('disabled', 'true');
         sendBtn.style.opacity = '0.5';
         sendBtn.style.cursor = 'not-allowed';
     }

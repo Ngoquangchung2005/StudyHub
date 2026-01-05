@@ -425,3 +425,14 @@
 .sent .msg-audio audio::-webkit-media-controls-panel {
     background-color: #eef2ff; /* Màu hơi tím nhạt cho tin nhắn gửi đi */
 }
+/* Dấu chấm đỏ báo tin nhắn mới nằm cạnh tên */
+.unread-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background-color: #ff3b30; /* Màu đỏ */
+    border-radius: 50%;
+    margin-left: 6px; /* Cách tên một chút */
+    vertical-align: middle;
+    box-shadow: 0 0 2px rgba(255, 59, 48, 0.5);
+}

@@ -5,8 +5,6 @@
       layout:decorate="~{layout.html}">
 <head>
     <title>Chat - StudyHub</title>
-    <meta name="_csrf" th:content="${_csrf.token}"/>
-    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
 </head>
 <body>
 
@@ -16,7 +14,6 @@
     <input type="hidden" id="current-username" th:value="${currentUsername}" />
 
     <div class="messenger-container">
-
         <aside class="messenger-sidebar">
             <div class="sidebar-header">
                 <h2 class="fw-bold mb-3">Chat</h2>
@@ -115,9 +112,7 @@
 
                         <div class="input-wrapper">
                             <input type="text" id="message" autocomplete="off" class="msg-input" placeholder="Nhập tin nhắn..." disabled />
-
                             <button type="submit" class="send-btn" id="btn-send" disabled>➤</button>
-
                             <button type="button" class="action-btn ms-2" id="mic-btn" title="Ghi âm">🎤</button>
                         </div>
                     </form>
@@ -288,15 +283,9 @@
         </div>
     </div>
 
-    <style>
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
-            70% { box-shadow: 0 0 0 15px rgba(40, 167, 69, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
-        }
-    </style>
-
 </div>
-<script src="https://cdn.jsdelivr.net/npm/@joeattardi/emoji-button@4.6.4/dist/index.min.js"></script>
+
+
+
 </body>
 </html>
