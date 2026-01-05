@@ -102,15 +102,21 @@ public class ChatServiceImpl implements ChatService {
         // 3. Lưu nhóm vào Database
         ChatRoom savedRoom = chatRoomRepository.save(room);
 
-        // 4. Gửi thông báo Realtime cho các thành viên
+        // 4. Gửi sự kiện realtime để các thành viên tự cập nhật danh sách phòng chat (không cần reload trang)
+        // Lưu ý: WebSocket user-destination đang định tuyến theo Email (principal.getName())
         for (User member : members) {
-            if (!member.getId().equals(creator.getId())) {
-                messagingTemplate.convertAndSendToUser(
-                        member.getUsername(),
-                        "/queue/notify",
-                        "NEW_ROOM"
-                );
-            }
+            if (member.getEmail() == null) continue;
+            ChatDTOs.RoomEventDto evt = new ChatDTOs.RoomEventDto();
+            evt.setEventType("ROOM_ADDED");
+            evt.setRoomId(savedRoom.getId());
+            evt.setActorId(creator.getId());
+            evt.setActorName(creator.getName());
+            evt.setRoom(new ChatDTOs.ChatRoomDto(savedRoom, member));
+            messagingTemplate.convertAndSendToUser(
+                    member.getEmail(),
+                    "/queue/room-events",
+                    evt
+            );
         }
 
         return new ChatRoomDto(savedRoom, creator);
@@ -140,7 +146,23 @@ public class ChatServiceImpl implements ChatService {
 
         if (room.getMembers().add(newMember)) {
             chatRoomRepository.save(room);
-            sendSystemMessage(room, adder.getName() + " đã thêm " + newMember.getName() + " vào nhóm.");
+            sendSystemMessage(room, adder, adder.getName() + " đã thêm " + newMember.getName() + " vào nhóm.");
+
+            // 1) Người mới được thêm -> nhận phòng mới
+            if (newMember.getEmail() != null) {
+                ChatDTOs.RoomEventDto evt = new ChatDTOs.RoomEventDto();
+                evt.setEventType("ROOM_ADDED");
+                evt.setRoomId(room.getId());
+                evt.setActorId(adder.getId());
+                evt.setActorName(adder.getName());
+                evt.setAffectedUserId(newMember.getId());
+                evt.setAffectedUsername(newMember.getUsername());
+                evt.setRoom(new ChatDTOs.ChatRoomDto(room, newMember));
+                messagingTemplate.convertAndSendToUser(newMember.getEmail(), "/queue/room-events", evt);
+            }
+
+            // 2) Tất cả thành viên (gồm cả newMember) -> cập nhật số thành viên / modal thành viên
+            broadcastMembersChanged(room, adder, newMember);
         }
     }
 
@@ -158,15 +180,47 @@ public class ChatServiceImpl implements ChatService {
 
         if (room.getMembers().remove(memberToRemove)) {
             chatRoomRepository.save(room);
-            sendSystemMessage(room, remover.getName() + " đã mời " + memberToRemove.getName() + " ra khỏi nhóm.");
+            sendSystemMessage(room, remover, remover.getName() + " đã mời " + memberToRemove.getName() + " ra khỏi nhóm.");
+
+            // 1) Người bị kick -> xóa phòng khỏi sidebar
+            if (memberToRemove.getEmail() != null) {
+                ChatDTOs.RoomEventDto evt = new ChatDTOs.RoomEventDto();
+                evt.setEventType("ROOM_REMOVED");
+                evt.setRoomId(room.getId());
+                evt.setActorId(remover.getId());
+                evt.setActorName(remover.getName());
+                evt.setAffectedUserId(memberToRemove.getId());
+                evt.setAffectedUsername(memberToRemove.getUsername());
+                messagingTemplate.convertAndSendToUser(memberToRemove.getEmail(), "/queue/room-events", evt);
+            }
+
+            // 2) Thành viên còn lại -> cập nhật danh sách
+            broadcastMembersChanged(room, remover, memberToRemove);
         }
     }
 
-    private void sendSystemMessage(ChatRoom room, String text) {
+    private void broadcastMembersChanged(ChatRoom room, User actor, User affectedUser) {
+        // Gửi MEMBERS_CHANGED đến các thành viên còn lại + người mới (nếu còn trong set)
+        for (User m : room.getMembers()) {
+            if (m.getEmail() == null) continue;
+            ChatDTOs.RoomEventDto evt = new ChatDTOs.RoomEventDto();
+            evt.setEventType("MEMBERS_CHANGED");
+            evt.setRoomId(room.getId());
+            evt.setActorId(actor.getId());
+            evt.setActorName(actor.getName());
+            if (affectedUser != null) {
+                evt.setAffectedUserId(affectedUser.getId());
+                evt.setAffectedUsername(affectedUser.getUsername());
+            }
+            messagingTemplate.convertAndSendToUser(m.getEmail(), "/queue/room-events", evt);
+        }
+    }
+
+    private void sendSystemMessage(ChatRoom room, User sender, String text) {
         Message systemMsg = new Message();
         systemMsg.setContent(text);
         systemMsg.setRoom(room);
-        systemMsg.setSender(room.getMembers().iterator().next()); // Lấy tạm 1 người làm sender để tránh null
+        systemMsg.setSender(sender);
         systemMsg.setType(Message.MessageType.TEXT);
         systemMsg.setTimestamp(LocalDateTime.now());
 
@@ -188,6 +242,18 @@ public class ChatServiceImpl implements ChatService {
         boolean removed = room.getMembers().removeIf(member -> member.getId().equals(user.getId()));
         if (!removed) throw new RuntimeException("Bạn không phải là thành viên nhóm này.");
 
+        // Gửi event cho người rời nhóm -> xóa room khỏi sidebar
+        if (user.getEmail() != null) {
+            ChatDTOs.RoomEventDto evt = new ChatDTOs.RoomEventDto();
+            evt.setEventType("ROOM_REMOVED");
+            evt.setRoomId(roomId);
+            evt.setActorId(user.getId());
+            evt.setActorName(user.getName());
+            evt.setAffectedUserId(user.getId());
+            evt.setAffectedUsername(user.getUsername());
+            messagingTemplate.convertAndSendToUser(user.getEmail(), "/queue/room-events", evt);
+        }
+
         if (room.getMembers().isEmpty()) {
             chatRoomRepository.delete(room);
         } else {
@@ -203,6 +269,9 @@ public class ChatServiceImpl implements ChatService {
 
             ChatDTOs.MessageDto msgDto = new ChatDTOs.MessageDto(savedMsg);
             messagingTemplate.convertAndSend("/topic/room/" + roomId, msgDto);
+
+            // Thành viên còn lại -> cập nhật số thành viên/modal
+            broadcastMembersChanged(room, user, user);
         }
     }
 }

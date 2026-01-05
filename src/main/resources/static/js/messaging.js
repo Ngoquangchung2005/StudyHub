@@ -212,8 +212,14 @@ export function onMessageReceived(payload) {
     // [ĐÃ XÓA] Không gọi updateSidebarPreview nữa để giữ nguyên Online/Offline
 }
 
-// Trích đoạn hàm showUnreadDot trong messaging.js (Kiểm tra xem giống chưa)
-function showUnreadDot(roomId) {
+// Hiện dấu chấm đỏ (unread) cho 1 room + badge ở navbar
+// Export để socket.js có thể gọi khi nhận được sự kiện /user/queue/chat.
+export function showUnreadDot(roomId) {
+    // Lưu trạng thái unread để không bị mất khi sidebar bị re-render (ví dụ do realtime events)
+    try {
+        state.unreadRooms.add(String(roomId));
+    } catch (e) {}
+
     const navBadge = document.getElementById('nav-chat-badge');
     if (navBadge) {
         navBadge.style.display = 'block';

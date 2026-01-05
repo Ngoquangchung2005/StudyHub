@@ -2,7 +2,6 @@
 import { state, dom, currentUser } from './state.js';
 import { getAvatarHtml, scrollToBottom } from './utils.js';
 import { onMessageReceived, onTypingReceived, displayMessage } from './messaging.js';
-import { openGroupMembersModal } from './groups.js';
 
 export async function loadChatRooms() {
     try {
@@ -10,14 +9,27 @@ export async function loadChatRooms() {
         if (!response.ok) throw new Error('Không thể tải phòng chat');
         const rooms = await response.json();
 
+        // Giữ lại room đang active để set lại sau khi render
+        const activeRoomId = state.currentRoomId ? String(state.currentRoomId) : null;
+
         dom.chatRoomList.innerHTML = '';
         rooms.forEach(room => {
             const roomName = room.type === 'ONE_TO_ONE' ? room.oneToOnePartnerName : room.name;
             const avatarUrl = room.type === 'ONE_TO_ONE' ? room.oneToOnePartnerAvatarUrl : null;
-            const partner = room.members.find(m => m.id != currentUser.id);
-            const partnerUsername = partner ? partner.username : '';
-            const status = (partner && state.presenceStatus.get(partnerUsername) === 'ONLINE') ? 'online' : '';
-            const statusText = status ? 'Online' : 'Offline';
+
+            // Với GROUP: hiển thị số thành viên thay vì Online/Offline
+            let partnerUsername = '';
+            let status = '';
+            let statusText = '';
+            if (room.type === 'ONE_TO_ONE') {
+                const partner = room.members.find(m => String(m.id) !== String(currentUser.id));
+                partnerUsername = partner ? (partner.username || '') : '';
+                status = (partner && state.presenceStatus.get(partnerUsername) === 'ONLINE') ? 'online' : '';
+                statusText = status ? 'Online' : 'Offline';
+            } else {
+                const memberCount = Array.isArray(room.members) ? room.members.length : (room.members ? room.members.size : 0);
+                statusText = `${memberCount} thành viên`;
+            }
 
             const roomElement = document.createElement('a');
             roomElement.href = '#';
@@ -34,15 +46,40 @@ export async function loadChatRooms() {
             if(avatarUrl) roomElement.setAttribute('data-avatar-url', avatarUrl);
 
             const avatarHtml = getAvatarHtml(avatarUrl, roomName, 'user-avatar');
+            const statusDotHtml = (room.type === 'ONE_TO_ONE')
+                ? `<span class="status-dot ${status}"></span>`
+                : `<span class="status-dot" style="visibility:hidden;"></span>`;
+
             roomElement.innerHTML = `
-                ${avatarHtml}
-                <div class="user-info" data-username="${partnerUsername}">
-                    <span class="user-name room-name">${roomName}</span>
-                    <span class="user-status-text">
-                        <span class="status-dot ${status}"></span>
-                        <span class="status-text">${statusText}</span>
-                    </span>
-                </div>`;
+    ${avatarHtml}
+    <div class="user-info" data-username="${partnerUsername}">
+        <div class="user-name-row">
+            <span class="user-name room-name">${roomName}</span>
+            <!-- unread-dot sẽ append vào đây -->
+        </div>
+        <div class="user-status-text">
+            ${statusDotHtml}
+            <span class="status-text">${statusText}</span>
+        </div>
+    </div>`;
+
+            // Khôi phục chấm đỏ nếu room đang unread
+            if (state.unreadRooms && state.unreadRooms.has(String(room.id))) {
+                const nameEl = roomElement.querySelector('.user-name');
+                if (nameEl && !nameEl.querySelector('.unread-dot')) {
+                    const dot = document.createElement('span');
+                    dot.className = 'unread-dot';
+                    nameEl.appendChild(dot);
+                }
+                const navBadge = document.getElementById('nav-chat-badge');
+                if (navBadge) navBadge.style.display = 'block';
+            }
+
+            // Set active lại nếu đang mở room này
+            if (activeRoomId && String(room.id) === activeRoomId) {
+                roomElement.classList.add('active');
+            }
+
             roomElement.addEventListener('click', onRoomSelected);
             dom.chatRoomList.appendChild(roomElement);
         });
@@ -73,7 +110,12 @@ export async function selectRoom(roomId, roomName, avatarUrl, roomType) {
         const dot = roomElement.querySelector('.unread-dot');
         if (dot) dot.remove();
 
-        const anyDot = document.querySelector('.unread-dot');
+        // Xóa khỏi danh sách unread
+        if (state.unreadRooms) state.unreadRooms.delete(String(roomId));
+
+        const anyDot = (state.unreadRooms && state.unreadRooms.size > 0)
+            ? true
+            : !!document.querySelector('.unread-dot');
         if (!anyDot) {
             const navBadge = document.getElementById('nav-chat-badge');
             if (navBadge) navBadge.style.display = 'none';
@@ -208,5 +250,81 @@ export async function checkUrlForRedirect() {
             console.error(error);
             history.replaceState(null, '', window.location.pathname);
         }
+    }
+}
+
+// === REALTIME EVENTS: TẠO NHÓM / QUẢN LÝ NHÓM (không cần reload trang) ===
+// Server sẽ gửi các sự kiện vào /user/queue/room-events
+export async function onRoomEventReceived(payload) {
+    let event = null;
+    try {
+        event = JSON.parse(payload.body);
+    } catch (e) {
+        console.error('Lỗi parse room-event:', e, payload);
+        return;
+    }
+
+    const eventType = event.eventType || event.type; // dự phòng
+    const roomId = event.roomId ? String(event.roomId) : null;
+
+    if (!eventType || !roomId) return;
+
+    // Helper: nếu modal Thành viên nhóm đang mở đúng room thì refresh list
+    const maybeRefreshGroupMembersModal = async () => {
+        const modalEl = document.getElementById('groupMembersModal');
+        if (!modalEl) return;
+        const isOpen = modalEl.classList.contains('show');
+        const currentSettingsId = window.currentGroupSettingsId ? String(window.currentGroupSettingsId) : null;
+        if (isOpen && currentSettingsId === roomId && typeof window.refreshGroupMembersList === 'function') {
+            await window.refreshGroupMembersList(roomId);
+        }
+    };
+
+    if (eventType === 'ROOM_ADDED' || eventType === 'ROOM_UPDATED' || eventType === 'MEMBERS_CHANGED') {
+        // Cách đơn giản & ổn định: re-fetch rooms và render lại sidebar.
+        // Không reload trang, vẫn realtime.
+        await loadChatRooms();
+        await maybeRefreshGroupMembersModal();
+        return;
+    }
+
+    if (eventType === 'ROOM_REMOVED' || eventType === 'ROOM_DELETED') {
+        // Xóa khỏi unread set
+        if (state.unreadRooms) state.unreadRooms.delete(roomId);
+
+        // Xóa room khỏi sidebar
+        const roomEl = document.getElementById(`room-item-${roomId}`);
+        if (roomEl) roomEl.remove();
+
+        // Nếu đang mở phòng này -> đóng cửa sổ chat
+        if (state.currentRoomId && String(state.currentRoomId) === roomId) {
+            try {
+                state.subscriptions.forEach(sub => sub.unsubscribe());
+                state.subscriptions.clear();
+            } catch (e) {}
+
+            state.currentRoomId = null;
+
+            if (dom.chatMainWindow) dom.chatMainWindow.style.display = 'none';
+            if (dom.chatWelcomeScreen) dom.chatWelcomeScreen.style.display = 'flex';
+        }
+
+        // Nếu đang mở modal thành viên của room này -> đóng modal (tránh thao tác vào room đã bị kick)
+        try {
+            const modalEl = document.getElementById('groupMembersModal');
+            const currentSettingsId = window.currentGroupSettingsId ? String(window.currentGroupSettingsId) : null;
+            if (modalEl && modalEl.classList.contains('show') && currentSettingsId === roomId) {
+                const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                modal.hide();
+            }
+        } catch (e) {}
+
+        // Ẩn badge nếu không còn unread
+        if (state.unreadRooms && state.unreadRooms.size === 0) {
+            const navBadge = document.getElementById('nav-chat-badge');
+            if (navBadge) navBadge.style.display = 'none';
+        }
+
+        await maybeRefreshGroupMembersModal();
     }
 }

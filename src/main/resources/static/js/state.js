@@ -9,6 +9,8 @@ export const state = {
     messageIdToRecall: null,
     selectedFile: null,
     uploadedFilePath: null,
+    // Lưu các room đang có tin nhắn chưa đọc để không bị mất khi sidebar re-render
+    unreadRooms: new Set(),
     isConnected: false,
     reconnectInterval: null
 };

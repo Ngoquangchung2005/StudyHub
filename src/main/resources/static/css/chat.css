@@ -80,9 +80,59 @@
     flex-shrink: 0;
 }
 
-.user-info { flex: 1; min-width: 0; }
-.user-name { font-weight: 600; display: block; color: #050505; margin-bottom: 2px;}
+.user-info {
+    flex: 1;
+    min-width: 0;
+}
+
+/*
+ * FIX UI (Chat sidebar): Đưa trạng thái Online/Offline xuống dòng dưới tên.
+ * Ảnh hiện tại (bug) đang hiển thị tên + trạng thái trên cùng 1 dòng.
+ * Ép các phần tử con trong .user-info hiển thị theo cột để luôn xuống dòng.
+ */
+.messenger-sidebar .user-list-item .user-info,
+.user-list-modal .user-list-item .user-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.messenger-sidebar .user-list-item .user-status-text,
+.user-list-modal .user-list-item .user-status-text {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Tăng độ ổn định khoảng cách giữa tên và trạng thái (đặc biệt khi tên có thêm class .room-name) */
+.messenger-sidebar .user-name-row,
+.user-list-modal .user-name-row {
+    margin-bottom: 6px;
+}
+
+.user-name-row .user-name {
+    margin-bottom: 0;
+}
+.user-name { font-weight: 600; display: block; color: #050505; margin-bottom: 6px;}
 .user-status-text { font-size: 13px; color: #65676b; }
+/* Dot trước Online/Offline */
+.user-status-text .status-dot{
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ccc;
+    display: inline-block;
+}
+
+.user-status-text .status-dot.online{
+    background: #28a745;
+}
+
+/* Tên phòng chat cần position:relative để .unread-dot (position:absolute) bám đúng vị trí */
+.room-name {
+    position: relative;
+    display: inline-block;
+}
 
 /* --- MAIN CHAT WINDOW --- */
 .messenger-main {

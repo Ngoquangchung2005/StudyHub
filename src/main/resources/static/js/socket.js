@@ -2,7 +2,8 @@
 import { state, dom } from './state.js';
 import { toggleInputState } from './utils.js';
 import { onPresenceMessageReceived, onNotificationReceived, loadFriendList } from './friends.js';
-import { loadChatRooms, checkUrlForRedirect } from './rooms.js';
+import { loadChatRooms, checkUrlForRedirect, onRoomEventReceived } from './rooms.js';
+import { showUnreadDot } from './messaging.js';
 
 export function connect() {
     const socket = new SockJS('/ws');
@@ -28,6 +29,24 @@ async function onConnected() {
     // Subscribe
     state.stompClient.subscribe('/topic/presence', onPresenceMessageReceived);
     state.stompClient.subscribe('/user/queue/notifications', onNotificationReceived);
+
+    // Realtime: tạo nhóm / thêm-kick thành viên / rời nhóm -> cập nhật sidebar không cần reload trang
+    state.stompClient.subscribe('/user/queue/room-events', onRoomEventReceived);
+
+    // Lắng nghe tin nhắn mới ở BẤT KỲ phòng nào (server sẽ gửi /queue/chat cho từng user)
+    // -> dùng để hiện chấm đỏ ở sidebar (và badge navbar) khi user KHÔNG mở phòng đó.
+    state.stompClient.subscribe('/user/queue/chat', function(payload) {
+        try {
+            const messageDto = JSON.parse(payload.body);
+            const incomingRoomId = String(messageDto.roomId);
+            const currentRoomId = state.currentRoomId ? String(state.currentRoomId) : null;
+            if (currentRoomId !== incomingRoomId) {
+                showUnreadDot(incomingRoomId);
+            }
+        } catch (e) {
+            console.error('Lỗi parse chat queue payload:', e);
+        }
+    });
     state.stompClient.subscribe('/user/queue/video-call', function(payload) {
         if (typeof handleVideoSignal === "function") {
             handleVideoSignal(payload);

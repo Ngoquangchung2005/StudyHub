@@ -141,6 +141,25 @@ public class ChatDTOs {
         private String groupName;
         private List<Long> memberIds;
     }
+
+    // === REALTIME EVENT DTO CHO SIDEBAR ROOMS (create group / manage members) ===
+    @Data
+    public static class RoomEventDto {
+        // ROOM_ADDED, ROOM_REMOVED, MEMBERS_CHANGED, ROOM_UPDATED, ROOM_DELETED
+        private String eventType;
+        private Long roomId;
+
+        // Với ROOM_ADDED/ROOM_UPDATED server có thể đính kèm room DTO để client không cần fetch
+        private ChatRoomDto room;
+
+        // Thông tin người thực hiện (tùy chọn)
+        private Long actorId;
+        private String actorName;
+
+        // Thông tin user bị tác động (tùy chọn)
+        private Long affectedUserId;
+        private String affectedUsername;
+    }
     @Data
     public static class WebRTCMessage {
         private String type;      // "offer", "answer", "candidate", "leave"

@@ -64,6 +64,21 @@ public class ChatController {
         // Gửi tin nhắn đến tất cả mọi người trong phòng
         messagingTemplate.convertAndSend("/topic/room/" + room.getId(), messageDto);
 
+        // === THÊM: GỬI SỰ KIỆN RIÊNG TỚI TỪNG USER ĐỂ HIỆN "CHẤM ĐỎ" Ở CÁC PHÒNG KHÁC ===
+        // Lý do: Client chỉ subscribe topic của phòng đang mở, nên sẽ KHÔNG nhận được message
+        // ở các phòng khác => không thể hiện dấu chấm đỏ.
+        // Gửi thêm qua /user/queue/chat để client biết có tin nhắn mới ở roomId nào.
+        for (User member : room.getMembers()) {
+            if (member.getId().equals(sender.getId())) continue;
+            // Security/principal hiện định danh bằng Email -> phải dùng Email để định tuyến.
+            if (member.getEmail() == null) continue;
+            messagingTemplate.convertAndSendToUser(
+                    member.getEmail(),
+                    "/queue/chat",
+                    messageDto
+            );
+        }
+
         System.out.println("✅ Đã gửi tin nhắn mới qua WebSocket - ID: " + savedMessage.getId());
     }
 

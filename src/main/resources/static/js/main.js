@@ -5,12 +5,13 @@ import { onMessageSubmit, onTypingInput, executeRecall, initMessagingFeatures } 
 import { handleFileSelect, cancelFileUpload } from './upload.js';
 import { loadFriendList, unfriendUser, startChatWithFriend } from './friends.js';
 import { loadUsersForNewChat, loadChatRooms } from './rooms.js';
-import { loadUsersForGroupCreation, handleCreateGroup, filterGroupUserList, handleConfirmLeaveGroup, handleAddMemberToGroup, openGroupMembersModal, kickMember } from './groups.js';
+import { loadUsersForGroupCreation, handleCreateGroup, filterGroupUserList, handleConfirmLeaveGroup, handleAddMemberToGroup, openGroupMembersModal, kickMember, refreshGroupMembersList } from './groups.js';
 import { scrollToBottom } from './utils.js';
 
 // --- Expose functions to Global Scope (for HTML onclick attributes) ---
 window.openGroupMembersModal = openGroupMembersModal;
 window.kickMember = kickMember;
+window.refreshGroupMembersList = refreshGroupMembersList;
 window.unfriendUser = unfriendUser;
 window.startChatWithFriend = startChatWithFriend;
 

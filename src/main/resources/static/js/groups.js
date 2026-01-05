@@ -113,7 +113,11 @@ export async function handleConfirmLeaveGroup() {
             if (roomItem) roomItem.remove();
             dom.chatMainWindow.style.display = 'none';
             dom.chatWelcomeScreen.style.display = 'flex';
-            if (state.stompClient) state.stompClient.unsubscribe(`/topic/room/${state.currentRoomId}`);
+            // Hủy subscribe đúng cách (không dùng topic string)
+            try {
+                state.subscriptions.forEach(sub => sub.unsubscribe());
+                state.subscriptions.clear();
+            } catch (e) {}
             state.currentRoomId = null;
         } else { const text = await response.text(); alert("Lỗi: " + text); }
     } catch (error) { console.error(error); alert("Có lỗi xảy ra khi rời nhóm."); } finally { btn.disabled = false; btn.textContent = originalText; }
@@ -147,6 +151,25 @@ function renderGroupMembers(members) {
     });
 }
 
+// Refresh danh sách thành viên (không mở lại modal) - dùng cho realtime
+export async function refreshGroupMembersList(roomId) {
+    const listEl = document.getElementById('group-members-list');
+    if (!listEl) return;
+    listEl.innerHTML = '<p class="text-center text-muted">Đang tải...</p>';
+    try {
+        const response = await fetch(`/api/chat/room/${roomId}/members`);
+        if (response.ok) {
+            const members = await response.json();
+            renderGroupMembers(members);
+        } else {
+            listEl.innerHTML = '<p class="text-danger text-center">Lỗi tải danh sách</p>';
+        }
+    } catch (e) {
+        console.error(e);
+        listEl.innerHTML = '<p class="text-danger text-center">Lỗi tải danh sách</p>';
+    }
+}
+
 export async function handleAddMemberToGroup() {
     const input = document.getElementById('input-add-member');
     const username = input.value.trim();
@@ -161,7 +184,15 @@ export async function handleAddMemberToGroup() {
         const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
         const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
         const addRes = await fetch(`/api/chat/room/${roomId}/add/${foundUser.id}`, { method: 'POST', headers: { [csrfHeader]: csrfToken } });
-        if (addRes.ok) { input.value = ''; errorDiv.style.display = 'none'; alert("Đã thêm thành viên!"); openGroupMembersModal(roomId); } else { errorDiv.textContent = "Lỗi: Có thể người này đã ở trong nhóm."; errorDiv.style.display = 'block'; }
+        if (addRes.ok) {
+            input.value = '';
+            errorDiv.style.display = 'none';
+            // Realtime sẽ tự cập nhật sidebar cho mọi người; ở modal thì chỉ refresh list
+            await refreshGroupMembersList(roomId);
+        } else {
+            errorDiv.textContent = "Lỗi: Có thể người này đã ở trong nhóm.";
+            errorDiv.style.display = 'block';
+        }
     } catch (e) { console.error(e); errorDiv.textContent = "Lỗi hệ thống"; errorDiv.style.display = 'block'; }
 }
 
@@ -172,6 +203,10 @@ export async function kickMember(userId) {
     const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
     try {
         const res = await fetch(`/api/chat/room/${roomId}/kick/${userId}`, { method: 'POST', headers: { [csrfHeader]: csrfToken } });
-        if(res.ok) openGroupMembersModal(roomId); else alert("Lỗi khi xóa thành viên.");
+        if(res.ok) {
+            await refreshGroupMembersList(roomId);
+        } else {
+            alert("Lỗi khi xóa thành viên.");
+        }
     } catch (e) { console.error(e); }
 }
