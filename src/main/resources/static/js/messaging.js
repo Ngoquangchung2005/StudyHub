@@ -241,7 +241,8 @@ export function showUnreadDot(roomId) {
     }
 }
 function playNotificationSound() {
-    const audio = new Audio('/sounds/notification.mp3');
+    // Project only ships notification.wav
+    const audio = new Audio('/sounds/notification.wav');
     audio.play().catch(e => {});
 }
 

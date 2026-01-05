@@ -113,7 +113,7 @@ public class ChatRoomController {
 
     // 1. Lấy danh sách thành viên
     @GetMapping("/room/{roomId}/members")
-    public ResponseEntity<List<ChatDTOs.UserDto>> getRoomMembers(@PathVariable Long roomId) {
+    public ResponseEntity<List<ChatDTOs.GroupMemberDto>> getRoomMembers(@PathVariable Long roomId) {
         return ResponseEntity.ok(chatService.getGroupMembers(roomId));
     }
 
@@ -131,6 +131,44 @@ public class ChatRoomController {
         User currentUser = getCurrentUser(principal);
         chatService.removeMemberFromGroup(roomId, userId, currentUser);
         return ResponseEntity.ok().build();
+    }
+
+
+
+    // 4. Đổi tên nhóm (realtime)
+    @PostMapping("/room/{roomId}/rename")
+    public ResponseEntity<?> renameGroup(@PathVariable Long roomId, @RequestBody ChatDTOs.RenameGroupRequest req, Principal principal) {
+        try {
+            User currentUser = getCurrentUser(principal);
+            chatService.renameGroup(roomId, req.getName(), currentUser);
+            return ResponseEntity.ok().build();
+        } catch (RuntimeException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        }
+    }
+
+    // 5. Phân quyền admin nhóm (realtime) - chỉ chủ nhóm
+    @PostMapping("/room/{roomId}/admin/{userId}")
+    public ResponseEntity<?> setAdmin(@PathVariable Long roomId, @PathVariable Long userId, @RequestBody ChatDTOs.SetAdminRequest req, Principal principal) {
+        try {
+            User currentUser = getCurrentUser(principal);
+            chatService.setGroupAdmin(roomId, userId, req.isAdmin(), currentUser);
+            return ResponseEntity.ok().build();
+        } catch (RuntimeException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        }
+    }
+
+    // 6. Xóa nhóm (realtime) - chỉ chủ nhóm
+    @PostMapping("/room/{roomId}/delete")
+    public ResponseEntity<?> deleteGroup(@PathVariable Long roomId, Principal principal) {
+        try {
+            User currentUser = getCurrentUser(principal);
+            chatService.deleteGroup(roomId, currentUser);
+            return ResponseEntity.ok().build();
+        } catch (RuntimeException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        }
     }
 
 }

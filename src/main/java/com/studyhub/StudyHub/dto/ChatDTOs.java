@@ -27,6 +27,18 @@ public class ChatDTOs {
     }
 
     @Data
+    public static class GroupMemberDto extends UserDto {
+        private boolean owner;
+        private boolean admin;
+
+        public GroupMemberDto(User user, boolean owner, boolean admin) {
+            super(user);
+            this.owner = owner;
+            this.admin = admin;
+        }
+    }
+
+    @Data
     public static class ChatRoomDto {
         private Long id;
         private String name;
@@ -37,6 +49,10 @@ public class ChatDTOs {
         private String oneToOnePartnerUsername;
         private String oneToOnePartnerAvatarUrl;
 
+        // (GROUP) phân quyền
+        private Long ownerId;
+        private Set<Long> adminIds;
+
         public ChatRoomDto(ChatRoom room, User currentUser) {
             this.id = room.getId();
             this.name = room.getName();
@@ -44,6 +60,10 @@ public class ChatDTOs {
             this.members = room.getMembers().stream()
                     .map(UserDto::new)
                     .collect(Collectors.toSet());
+
+            // GROUP meta
+            this.ownerId = room.getOwner() != null ? room.getOwner().getId() : null;
+            this.adminIds = room.getAdmins() != null ? room.getAdmins().stream().map(User::getId).collect(Collectors.toSet()) : Set.of();
 
             if (this.type == ChatRoom.RoomType.ONE_TO_ONE) {
                 room.getMembers().stream()
@@ -140,6 +160,20 @@ public class ChatDTOs {
     public static class CreateGroupRequest {
         private String groupName;
         private List<Long> memberIds;
+    }
+
+    // === Đổi tên nhóm ===
+    @Data
+    public static class RenameGroupRequest {
+        private String name;
+    }
+
+    // === Phân quyền admin nhóm ===
+    @Data
+    public static class SetAdminRequest {
+        // true = cấp quyền admin, false = gỡ quyền
+        @JsonProperty("isAdmin")
+        private boolean isAdmin;
     }
 
     // === REALTIME EVENT DTO CHO SIDEBAR ROOMS (create group / manage members) ===

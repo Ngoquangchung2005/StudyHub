@@ -13,7 +13,7 @@ export async function loadUsersForGroupCreation() {
     selectedUserIdsForGroup.clear();
     groupUserListEl.innerHTML = '<p class="text-center text-muted">Đang tải...</p>';
     try {
-        const response = await fetch('/api/chat/users');
+        const response = await fetch('/api/friends/list');
         if (!response.ok) throw new Error('Lỗi tải danh sách user');
         const users = await response.json();
         groupUserListEl.innerHTML = '';
@@ -131,22 +131,131 @@ export async function openGroupMembersModal(roomId) {
     modal.show();
     try {
         const response = await fetch(`/api/chat/room/${roomId}/members`);
-        if (response.ok) { const members = await response.json(); renderGroupMembers(members); }
+        if (response.ok) { const members = await response.json(); renderGroupMembers(members, roomId); }
     } catch (e) { console.error(e); modalList.innerHTML = '<p class="text-danger text-center">Lỗi tải danh sách</p>'; }
 }
 
-function renderGroupMembers(members) {
+function getRoomNameFromSidebar(roomId) {
+    const el = document.getElementById(`room-item-${roomId}`);
+    if (!el) return '';
+    return el.getAttribute('data-room-name') || (el.querySelector('.room-name') ? el.querySelector('.room-name').textContent.trim() : '');
+}
+
+function ensureGroupActionsContainer() {
+    const modalEl = document.getElementById('groupMembersModal');
+    if (!modalEl) return null;
+    const header = modalEl.querySelector('.modal-header');
+    if (!header) return null;
+
+    let actions = header.querySelector('#group-settings-actions');
+    if (!actions) {
+        actions = document.createElement('div');
+        actions.id = 'group-settings-actions';
+        actions.className = 'ms-auto d-flex gap-2';
+        // chèn trước nút close
+        const closeBtn = header.querySelector('.btn-close');
+        if (closeBtn) header.insertBefore(actions, closeBtn);
+        else header.appendChild(actions);
+    }
+    return actions;
+}
+
+function renderGroupActions(roomId, iAmOwner, iAmAdmin) {
+    const actions = ensureGroupActionsContainer();
+    if (!actions) return;
+
+    actions.innerHTML = '';
+    if (!iAmAdmin) return;
+
+    const renameBtn = document.createElement('button');
+    renameBtn.className = 'btn btn-sm btn-outline-primary';
+    renameBtn.textContent = 'Đổi tên';
+    renameBtn.onclick = () => renameGroup(roomId);
+
+    actions.appendChild(renameBtn);
+
+    if (iAmOwner) {
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'btn btn-sm btn-outline-danger';
+        deleteBtn.textContent = 'Xóa nhóm';
+        deleteBtn.onclick = () => deleteGroup(roomId);
+        actions.appendChild(deleteBtn);
+    }
+}
+
+function renderGroupMembers(members, roomId) {
     const listEl = document.getElementById('group-members-list');
     listEl.innerHTML = '';
+
     const myId = currentUser.id;
-    members.forEach(m => {
+    const me = members.find(u => String(u.id) === String(myId));
+    const iAmOwner = !!(me && me.owner);
+    const iAmAdmin = !!(me && (me.owner || me.admin));
+
+    // Title: thêm tên nhóm
+    try {
+        const titleEl = document.querySelector('#groupMembersModal .modal-title');
+        const roomName = getRoomNameFromSidebar(roomId);
+        if (titleEl) titleEl.textContent = roomName ? `Thành viên nhóm: ${roomName}` : 'Thành viên nhóm';
+    } catch (e) {}
+
+    // Action buttons trên header
+    renderGroupActions(roomId, iAmOwner, iAmAdmin);
+
+    // Quyền thêm thành viên: chỉ admin/owner
+    const addInput = document.getElementById('input-add-member');
+    const addBtn = document.getElementById('btn-add-member-confirm');
+    if (addInput && addBtn) {
+        addInput.disabled = !iAmAdmin;
+        addBtn.disabled = !iAmAdmin;
+        if (!iAmAdmin) addInput.placeholder = 'Chỉ admin mới có thể thêm thành viên...';
+        else addInput.placeholder = 'Nhập username để thêm...';
+    }
+
+    // Sắp xếp: owner -> admin -> thường
+    const sorted = [...members].sort((a, b) => {
+        const ra = (a.owner ? 2 : (a.admin ? 1 : 0));
+        const rb = (b.owner ? 2 : (b.admin ? 1 : 0));
+        return rb - ra;
+    });
+
+    sorted.forEach(m => {
         const isMe = String(m.id) === String(myId);
+
         const avatarHtml = getAvatarHtml(m.avatarUrl, m.name, 'user-avatar-small');
-        // Lưu ý: kickMember cần được expose ra window
-        const kickBtn = isMe ? '<span class="badge bg-secondary">Bạn</span>' : `<button class="btn btn-sm btn-outline-danger py-0" onclick="kickMember(${m.id})">Đuổi</button>`;
+
+        let roleBadge = '';
+        if (m.owner) roleBadge = '<span class="badge bg-warning text-dark ms-2">Chủ nhóm</span>';
+        else if (m.admin) roleBadge = '<span class="badge bg-info text-dark ms-2">Admin</span>';
+
+        let actionsHtml = '';
+
+        // Owner có quyền cấp/gỡ admin
+        if (iAmOwner && !m.owner && !isMe) {
+            const btnText = m.admin ? 'Gỡ admin' : 'Đặt admin';
+            const btnClass = m.admin ? 'btn-outline-secondary' : 'btn-outline-success';
+            actionsHtml += `<button class="btn btn-sm ${btnClass} me-1 py-0" onclick="setAdminInGroup(${m.id}, ${m.admin ? 'false' : 'true'})">${btnText}</button>`;
+        }
+
+        // Admin/Owner có quyền đuổi (không đuổi owner, không đuổi chính mình)
+        if (iAmAdmin && !m.owner && !isMe) {
+            actionsHtml += `<button class="btn btn-sm btn-outline-danger py-0" onclick="kickMember(${m.id})">Đuổi</button>`;
+        }
+
+        if (!actionsHtml) actionsHtml = isMe ? '<span class="badge bg-secondary">Bạn</span>' : '';
+
         const item = document.createElement('div');
         item.className = 'd-flex align-items-center justify-content-between p-2 border-bottom';
-        item.innerHTML = `<div class="d-flex align-items-center">${avatarHtml}<div class="ms-2"><div class="fw-bold" style="font-size: 0.9rem;">${m.name}</div><div class="text-muted small">@${m.username}</div></div></div><div>${kickBtn}</div>`;
+        item.innerHTML = `
+            <div class="d-flex align-items-center">
+                ${avatarHtml}
+                <div class="ms-2">
+                    <div class="fw-semibold">${m.name}${roleBadge}</div>
+                    <div class="text-muted small">@${m.username}</div>
+                </div>
+            </div>
+            <div class="text-end">${actionsHtml}</div>
+        `;
         listEl.appendChild(item);
     });
 }
@@ -160,7 +269,7 @@ export async function refreshGroupMembersList(roomId) {
         const response = await fetch(`/api/chat/room/${roomId}/members`);
         if (response.ok) {
             const members = await response.json();
-            renderGroupMembers(members);
+            renderGroupMembers(members, roomId);
         } else {
             listEl.innerHTML = '<p class="text-danger text-center">Lỗi tải danh sách</p>';
         }
@@ -177,7 +286,7 @@ export async function handleAddMemberToGroup() {
     const errorDiv = document.getElementById('add-member-error');
     if(!username) return;
     try {
-        const res = await fetch('/api/chat/users');
+        const res = await fetch('/api/friends/list');
         const users = await res.json();
         const foundUser = users.find(u => u.username === username);
         if (!foundUser) { errorDiv.textContent = "Không tìm thấy username này!"; errorDiv.style.display = 'block'; return; }
@@ -194,6 +303,101 @@ export async function handleAddMemberToGroup() {
             errorDiv.style.display = 'block';
         }
     } catch (e) { console.error(e); errorDiv.textContent = "Lỗi hệ thống"; errorDiv.style.display = 'block'; }
+}
+
+
+export async function renameGroup(roomId) {
+    const currentName = getRoomNameFromSidebar(roomId);
+    const newName = prompt('Nhập tên nhóm mới:', currentName || '');
+    if (newName === null) return;
+    const trimmed = newName.trim();
+    if (!trimmed) return alert('Tên nhóm không được để trống.');
+
+    const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+    const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+
+    try {
+        const res = await fetch(`/api/chat/room/${roomId}/rename`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                [csrfHeader]: csrfToken
+            },
+            body: JSON.stringify({ name: trimmed })
+        });
+
+        if (!res.ok) {
+            const msg = await res.text();
+            alert(msg || 'Lỗi khi đổi tên nhóm.');
+            return;
+        }
+
+        // Realtime event ROOM_UPDATED sẽ tự refresh sidebar; modal sẽ được refresh nếu đang mở
+        await refreshGroupMembersList(roomId);
+    } catch (e) {
+        console.error(e);
+        alert('Lỗi khi đổi tên nhóm.');
+    }
+}
+
+export async function setAdminInGroup(userId, isAdmin) {
+    const roomId = window.currentGroupSettingsId;
+    if (!roomId) return;
+
+    const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+    const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+
+    try {
+        const res = await fetch(`/api/chat/room/${roomId}/admin/${userId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                [csrfHeader]: csrfToken
+            },
+            body: JSON.stringify({ isAdmin: !!isAdmin })
+        });
+
+        if (!res.ok) {
+            const msg = await res.text();
+            alert(msg || 'Lỗi khi phân quyền admin.');
+            return;
+        }
+
+        await refreshGroupMembersList(roomId);
+    } catch (e) {
+        console.error(e);
+        alert('Lỗi khi phân quyền admin.');
+    }
+}
+
+export async function deleteGroup(roomId) {
+    if (!confirm('Bạn có chắc chắn muốn xóa nhóm này? Hành động này không thể hoàn tác.')) return;
+
+    const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+    const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+
+    try {
+        const res = await fetch(`/api/chat/room/${roomId}/delete`, {
+            method: 'POST',
+            headers: { [csrfHeader]: csrfToken }
+        });
+
+        if (!res.ok) {
+            const msg = await res.text();
+            alert(msg || 'Lỗi khi xóa nhóm.');
+            return;
+        }
+
+        // Server sẽ bắn ROOM_DELETED -> rooms.js sẽ đóng phòng + remove sidebar
+        const modalEl = document.getElementById('groupMembersModal');
+        if (modalEl && modalEl.classList.contains('show')) {
+            const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+            modal.hide();
+        }
+    } catch (e) {
+        console.error(e);
+        alert('Lỗi khi xóa nhóm.');
+    }
 }
 
 export async function kickMember(userId) {

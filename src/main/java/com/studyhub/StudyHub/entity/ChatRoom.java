@@ -27,6 +27,21 @@ public class ChatRoom {
     @Column(nullable = false, length = 20)
     private RoomType type;
 
+
+    // Chủ nhóm (chỉ áp dụng cho GROUP)
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "owner_id")
+    private User owner;
+
+    // Danh sách admin của nhóm (chỉ áp dụng cho GROUP)
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+            name = "chat_room_admins",
+            joinColumns = @JoinColumn(name = "room_id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id")
+    )
+    private Set<User> admins = new HashSet<>();
+
     // Thành viên trong phòng
     @ManyToMany(fetch = FetchType.EAGER) // EAGER để lấy thành viên
     @JoinTable(

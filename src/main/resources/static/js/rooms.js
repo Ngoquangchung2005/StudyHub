@@ -5,7 +5,7 @@ import { onMessageReceived, onTypingReceived, displayMessage } from './messaging
 
 export async function loadChatRooms() {
     try {
-        const response = await fetch('/api/chat/rooms');
+        const response = await fetch('/api/chat/rooms',{ cache: 'no-store' });
         if (!response.ok) throw new Error('Không thể tải phòng chat');
         const rooms = await response.json();
 

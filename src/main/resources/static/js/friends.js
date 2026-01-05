@@ -1,5 +1,5 @@
 // friends.js
-import { state, dom } from './state.js';
+import { state } from './state.js';
 import { getAvatarHtml } from './utils.js';
 import { loadChatRooms, selectRoom } from './rooms.js';
 

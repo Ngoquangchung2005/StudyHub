@@ -4,14 +4,17 @@ import { connect } from './socket.js';
 import { onMessageSubmit, onTypingInput, executeRecall, initMessagingFeatures } from './messaging.js';
 import { handleFileSelect, cancelFileUpload } from './upload.js';
 import { loadFriendList, unfriendUser, startChatWithFriend } from './friends.js';
-import { loadUsersForNewChat, loadChatRooms } from './rooms.js';
-import { loadUsersForGroupCreation, handleCreateGroup, filterGroupUserList, handleConfirmLeaveGroup, handleAddMemberToGroup, openGroupMembersModal, kickMember, refreshGroupMembersList } from './groups.js';
+import { loadUsersForNewChat } from './rooms.js';
+import { loadUsersForGroupCreation, handleCreateGroup, filterGroupUserList, handleConfirmLeaveGroup, handleAddMemberToGroup, openGroupMembersModal, kickMember, refreshGroupMembersList, renameGroup, setAdminInGroup, deleteGroup } from './groups.js';
 import { scrollToBottom } from './utils.js';
 
 // --- Expose functions to Global Scope (for HTML onclick attributes) ---
 window.openGroupMembersModal = openGroupMembersModal;
 window.kickMember = kickMember;
 window.refreshGroupMembersList = refreshGroupMembersList;
+window.renameGroup = renameGroup;
+window.setAdminInGroup = setAdminInGroup;
+window.deleteGroup = deleteGroup;
 window.unfriendUser = unfriendUser;
 window.startChatWithFriend = startChatWithFriend;
 

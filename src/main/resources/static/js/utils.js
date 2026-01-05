@@ -1,5 +1,5 @@
 // utils.js
-import { dom, currentUser } from './state.js';
+import { dom } from './state.js';
 
 export function getAvatarHtml(avatarUrl, name, sizeClass = 'user-avatar') {
     if (avatarUrl) {

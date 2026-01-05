@@ -26,5 +26,15 @@ public interface ChatService {
     // Quản lý thành viên nhóm
     void addMemberToGroup(Long roomId, Long userId, User adder);
     void removeMemberFromGroup(Long roomId, Long userId, User remover);
-    List<ChatDTOs.UserDto> getGroupMembers(Long roomId);
+    List<ChatDTOs.GroupMemberDto> getGroupMembers(Long roomId);
+
+    // Đổi tên nhóm (realtime)
+    void renameGroup(Long roomId, String newName, User actor);
+
+    // Cấp/gỡ quyền admin (realtime)
+    void setGroupAdmin(Long roomId, Long userId, boolean isAdmin, User actor);
+
+    // Xóa nhóm (realtime)
+    void deleteGroup(Long roomId, User actor);
+
 }
