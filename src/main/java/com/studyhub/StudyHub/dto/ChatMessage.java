@@ -2,7 +2,7 @@ package com.studyhub.StudyHub.dto;
 
 import lombok.Data;
 
-@Data // Lombok: Tự tạo Getter, Setter...
+@Data
 public class ChatMessage {
     private String content; // Nội dung tin nhắn
     private String senderUsername; // Tên người gửi

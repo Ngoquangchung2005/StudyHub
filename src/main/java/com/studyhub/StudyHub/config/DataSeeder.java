@@ -28,7 +28,7 @@ public class DataSeeder implements ApplicationListener<ContextRefreshedEvent> {
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
 
-        // ===== 1. Tạo ROLE_ADMIN nếu chưa tồn tại =====
+        // Tạo role Admin
         Role adminRole = roleRepository.findByName("ROLE_ADMIN")
                 .orElseGet(() -> {
                     Role role = new Role();
@@ -36,7 +36,7 @@ public class DataSeeder implements ApplicationListener<ContextRefreshedEvent> {
                     return roleRepository.save(role);
                 });
 
-        // ===== 2. Tạo ROLE_USER nếu chưa tồn tại =====
+        // Tạo role User
         Role userRole = roleRepository.findByName("ROLE_USER")
                 .orElseGet(() -> {
                     Role role = new Role();
@@ -44,7 +44,7 @@ public class DataSeeder implements ApplicationListener<ContextRefreshedEvent> {
                     return roleRepository.save(role);
                 });
 
-        // ===== 3. Tạo tài khoản ADMIN nếu chưa tồn tại =====
+        // Tạo tài khoản Admin
         if (userRepository.findByUsername("admin").isEmpty()) {
 
             User admin = new User();

@@ -24,9 +24,7 @@ public class ChatController {
     @Autowired private UserRepository userRepository;
     @Autowired private ChatRoomRepository chatRoomRepository;
 
-    /**
-     * Xử lý gửi tin nhắn (TEXT, IMAGE, FILE)
-     */
+
     @MessageMapping("/chat.sendMessage")
     @Transactional
     public void sendMessage(@Payload ChatDTOs.SendMessageDto dto, Principal principal) {
@@ -64,13 +62,11 @@ public class ChatController {
         // Gửi tin nhắn đến tất cả mọi người trong phòng
         messagingTemplate.convertAndSend("/topic/room/" + room.getId(), messageDto);
 
-        // === THÊM: GỬI SỰ KIỆN RIÊNG TỚI TỪNG USER ĐỂ HIỆN "CHẤM ĐỎ" Ở CÁC PHÒNG KHÁC ===
-        // Lý do: Client chỉ subscribe topic của phòng đang mở, nên sẽ KHÔNG nhận được message
-        // ở các phòng khác => không thể hiện dấu chấm đỏ.
-        // Gửi thêm qua /user/queue/chat để client biết có tin nhắn mới ở roomId nào.
+
+
         for (User member : room.getMembers()) {
             if (member.getId().equals(sender.getId())) continue;
-            // Security/principal hiện định danh bằng Email -> phải dùng Email để định tuyến.
+            // Security/principal hiện định danh bằng Email
             if (member.getEmail() == null) continue;
             messagingTemplate.convertAndSendToUser(
                     member.getEmail(),
@@ -83,7 +79,7 @@ public class ChatController {
     }
 
     /**
-     * Xử lý thu hồi tin nhắn - QUAN TRỌNG: PHẢI BROADCAST ĐẾN TẤT CẢ NGƯỜI DÙNG
+     * Xử lý thu hồi tin nhắn
      */
     @MessageMapping("/chat.recallMessage")
     @Transactional
@@ -111,7 +107,7 @@ public class ChatController {
 
         System.out.println("💾 Đã lưu tin nhắn thu hồi vào database");
 
-        // === QUAN TRỌNG: GỬI TIN NHẮN ĐÃ THU HỒI ĐẾN TẤT CẢ NGƯỜI TRONG PHÒNG ===
+
         ChatDTOs.MessageDto messageDto = new ChatDTOs.MessageDto(updatedMessage);
 
         String topic = "/topic/room/" + dto.getRoomId();
@@ -123,44 +119,37 @@ public class ChatController {
         System.out.println("   - Content: " + messageDto.getContent());
     }
 
-    /**
-     * Xử lý sự kiện "đang gõ"
-     */
+
     @MessageMapping("/chat.typing")
     public void handleTyping(@Payload ChatDTOs.TypingDto dto, Principal principal) {
         User user = userRepository.findByUsernameOrEmail(principal.getName(), principal.getName()).orElseThrow();
         dto.setUsername(user.getUsername());
         messagingTemplate.convertAndSend("/topic/room/" + dto.getRoomId() + "/typing", dto);
     }
-    // ... các import giữ nguyên
 
-    // === SỬA LẠI HÀM NÀY ===
+
+
     @MessageMapping("/chat.videoCall")
     public void handleVideoCallSignal(@Payload ChatDTOs.WebRTCMessage message, Principal principal) {
 
-        // 1. XỬ LÝ NGƯỜI GỬI (SENDER)
-        // principal.getName() hiện tại là Email (do CustomUserDetailsService quy định)
-        // Nhưng Client cần Username để hiển thị ai đang gọi.
+
         User senderUser = userRepository.findByEmail(principal.getName()).orElse(null);
         if (senderUser != null) {
-            message.setSender(senderUser.getUsername()); // Gửi Username (VD: "chung")
+            message.setSender(senderUser.getUsername()); // Gửi Username
         } else {
             message.setSender(principal.getName()); // Fallback
         }
 
         System.out.println("📹 Video Signal [" + message.getType() + "] from " + message.getSender() + " to " + message.getRecipient());
 
-        // 2. XỬ LÝ NGƯỜI NHẬN (RECIPIENT)
-        // Client gửi lên Username (VD: "azin"), nhưng WebSocket cần Email (VD: "azin@gmail.com") để định tuyến.
+
         String recipientUsername = message.getRecipient();
 
         User recipientUser = userRepository.findByUsername(recipientUsername)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy user có username: " + recipientUsername));
 
-        // 3. GỬI TÍN HIỆU
-        // Dùng Email của người nhận để gửi tin nhắn
         messagingTemplate.convertAndSendToUser(
-                recipientUser.getEmail(), // <--- QUAN TRỌNG: Phải dùng Email
+                recipientUser.getEmail(),
                 "/queue/video-call",
                 message
         );

@@ -21,8 +21,8 @@ public class Category {
     private String description;
 
     @Column(length = 50)
-    private String icon; // Emoji: 💻, 📚, etc.
+    private String icon;
 
     @Column(length = 20)
-    private String color; // Màu: #667eea
+    private String color;
 }

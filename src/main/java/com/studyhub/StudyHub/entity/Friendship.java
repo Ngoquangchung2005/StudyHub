@@ -20,14 +20,14 @@ public class Friendship {
 
     @ManyToOne
     @JoinColumn(name = "requester_id", nullable = false)
-    private User requester; // Người gửi lời mời
+    private User requester;
 
     @ManyToOne
     @JoinColumn(name = "addressee_id", nullable = false)
-    private User addressee; // Người nhận lời mời
+    private User addressee;
 
     @Enumerated(EnumType.STRING)
-    private FriendshipStatus status; // PENDING (Chờ), ACCEPTED (Đã kết bạn)
+    private FriendshipStatus status;
 
     private LocalDateTime createdAt = LocalDateTime.now();
 

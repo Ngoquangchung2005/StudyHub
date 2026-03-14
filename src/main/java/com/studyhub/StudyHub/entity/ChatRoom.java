@@ -18,22 +18,22 @@ public class ChatRoom {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Tên phòng (cho chat 1-1 có thể là null, cho chat nhóm là tên nhóm)
+
     @Column(length = 100)
     private String name;
 
-    // Phân biệt chat 1-1 và chat nhóm
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private RoomType type;
 
 
-    // Chủ nhóm (chỉ áp dụng cho GROUP)
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "owner_id")
     private User owner;
 
-    // Danh sách admin của nhóm (chỉ áp dụng cho GROUP)
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "chat_room_admins",

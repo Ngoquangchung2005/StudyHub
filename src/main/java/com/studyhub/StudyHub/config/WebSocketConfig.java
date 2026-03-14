@@ -19,17 +19,17 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
-        // 1. Dùng cho Server gửi tin nhắn ĐẾN Client
+        // Dùng cho Server gửi tin nhắn ĐẾN Client
         // /topic: Dùng cho kênh công cộng (presence, chat nhóm)
         // /queue: Dùng cho kênh cá nhân (thông báo)
         registry.enableSimpleBroker("/topic", "/queue");
 
-        // 2. Dùng cho Client gửi tin nhắn ĐẾN Server
-        // (VD: Client gửi đến /app/chat.sendMessage)
+        // Dùng cho Client gửi tin nhắn ĐẾN Server
+
         registry.setApplicationDestinationPrefixes("/app");
 
-        // 3. (Quan trọng) Dùng để gửi tin nhắn 1-1
-        // (VD: /user/chung/queue/notifications)
+        // Dùng để gửi tin nhắn 1-1
+
         registry.setUserDestinationPrefix("/user");
     }
 }

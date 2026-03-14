@@ -36,7 +36,7 @@ public class NotificationController {
         notificationService.markAllAsRead(user.getId());
         return ResponseEntity.ok().build();
     }
-    // === THÊM API NÀY: Xóa tất cả thông báo ===
+    //  Xóa tất cả thông báo ===
     @DeleteMapping("/delete-all")
     public ResponseEntity<Void> deleteAllNotifications(Principal principal) {
         User user = userRepository.findByUsernameOrEmail(principal.getName(), principal.getName()).orElseThrow();

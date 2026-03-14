@@ -20,12 +20,12 @@ import com.studyhub.StudyHub.security.CustomAuthenticationFailureHandler; // <--
 @EnableWebSecurity
 public class SecurityConfig {
     @Autowired
-    private CustomAuthenticationFailureHandler customAuthenticationFailureHandler; // <-- Inject vào đây
+    private CustomAuthenticationFailureHandler customAuthenticationFailureHandler;
 
     @Autowired
     private CustomUserDetailsService customUserDetailsService;
     @Autowired
-    private CustomAuthenticationSuccessHandler customAuthenticationSuccessHandler; // <-- Inject
+    private CustomAuthenticationSuccessHandler customAuthenticationSuccessHandler;
 
     @Bean
     public static PasswordEncoder passwordEncoder() {
@@ -46,18 +46,18 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         // Cho phép tất cả mọi người truy cập trang chủ, login, register, file tĩnh
                         .requestMatchers("/", "/login", "/register", "/forgot-password", "/reset-password", "/js/**", "/css/**", "/ws/**").permitAll()
-                        // Cho phép API tải lịch sử chat (sẽ dùng ở Phần 3)
-                        .requestMatchers("/admin/**").hasRole("ADMIN") // <-- THÊM DÒNG NÀY
+                        // Cho phép API tải lịch sử chat
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/messages/**").authenticated()
-                        .requestMatchers("/api/chat/**").authenticated() // THÊM DÒNG NÀY
+                        .requestMatchers("/api/chat/**").authenticated()
                         // Tất cả các yêu cầu khác đều cần đăng nhập
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
                         .loginPage("/login")
                         .loginProcessingUrl("/login")
-                        .successHandler(customAuthenticationSuccessHandler) // <-- THÊM DÒNG NÀY
-                        .failureHandler(customAuthenticationFailureHandler) // <-- THÊM DÒNG NÀY VÀO
+                        .successHandler(customAuthenticationSuccessHandler) //
+                        .failureHandler(customAuthenticationFailureHandler) //
                         .permitAll()
                 )
                 .logout(logout -> logout
@@ -75,7 +75,7 @@ public class SecurityConfig {
                                                 "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; " +
                                                 // Cho phép Script
                                                 "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; " +
-                                                // === SỬA DÒNG NÀY: Thêm https://cdn.jsdelivr.net ===
+                                                // Thêm https://cdn.jsdelivr.net ===
                                                 "font-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; " +
                                                 "img-src 'self' data:; " +
                                                 "connect-src 'self' ws: wss: http: https:;"

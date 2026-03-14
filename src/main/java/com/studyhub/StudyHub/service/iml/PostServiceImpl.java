@@ -11,9 +11,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.security.access.AccessDeniedException; // Thêm import này
-import com.studyhub.StudyHub.service.NotificationService; // <-- THÊM
-import org.springframework.messaging.simp.SimpMessagingTemplate; // <-- Import WebSocket
+import org.springframework.security.access.AccessDeniedException;
+import com.studyhub.StudyHub.service.NotificationService;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.security.Principal;
 import java.util.HashSet;
@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 // ... imports
-import com.studyhub.StudyHub.entity.Comment; // Đảm bảo import này
+import com.studyhub.StudyHub.entity.Comment;
 @Service
 public class PostServiceImpl implements PostService {
 
@@ -33,7 +33,7 @@ public class PostServiceImpl implements PostService {
     @Autowired private NotificationService notificationService;
 
     @Autowired private CategoryRepository categoryRepository;
-    @Autowired private SimpMessagingTemplate messagingTemplate; // <-- Inject thêm cái này
+    @Autowired private SimpMessagingTemplate messagingTemplate;
 
     private User getCurrentUser(Principal principal) {
         String username = principal.getName();
@@ -55,28 +55,25 @@ public class PostServiceImpl implements PostService {
         Post post = new Post();
         post.setContent(postDto.getContent());
         post.setUser(user);
-        // === THÊM DÒNG NÀY ===
+
         // Lưu trạng thái công khai/riêng tư cho bài đăng
         post.setPublic(postDto.getIsPublic() != null ? postDto.getIsPublic() : true);
-        // =====================
-        // --- BỔ SUNG LOGIC ---
-        // Nếu content trống (đăng từ trang /upload),
-        // thì tự động dùng Description hoặc Title của tài liệu làm content chính
+
+        // dùng Description hoặc Title của tài liệu làm content chính
         if (post.getContent() == null || post.getContent().trim().isEmpty()) {
             if (postDto.getDescription() != null && !postDto.getDescription().trim().isEmpty()) {
-                // Ưu tiên 1: Dùng Description
+                // Dùng Description
                 post.setContent(postDto.getDescription());
             } else if (postDto.getTitle() != null && !postDto.getTitle().trim().isEmpty()) {
-                // Ưu tiên 2: Dùng Title (nếu Description cũng trống)
+                // Dùng Title (nếu Description cũng trống)
                 post.setContent("Đã đăng tải tài liệu: " + postDto.getTitle());
             } else if (postDto.getFiles() != null && postDto.getFiles().length > 0 && !postDto.getFiles()[0].isEmpty()) {
-                // Ưu tiên 3: Dùng tên file (nếu cả Title và Description đều trống)
+                //  Dùng tên file (nếu cả Title và Description đều trống)
                 post.setContent("Đã đăng tải: " + postDto.getFiles()[0].getOriginalFilename());
             }
         }
-        // --- KẾT THÚC BỔ SUNG ---
 
-        // === THÊM ĐOẠN NÀY: Xử lý upload file ===
+
         Set<Document> documents = new HashSet<>();
         if (postDto.getFiles() != null && postDto.getFiles().length > 0) {
             for (MultipartFile file : postDto.getFiles()) {
@@ -88,16 +85,16 @@ public class PostServiceImpl implements PostService {
                     doc.setFileType(file.getContentType());
                     doc.setStoragePath(storagePath);
                     doc.setPost(post);
-                    doc.setUser(user); // THÊM: Lưu user upload
+                    doc.setUser(user);
 
-                    // === THÊM: Lưu thông tin mới ===
+
                     doc.setTitle(postDto.getTitle() != null ? postDto.getTitle() : file.getOriginalFilename());
                     doc.setDescription(postDto.getDescription());
                     doc.setTags(postDto.getTags());
                     doc.setFileSize(file.getSize());
                     doc.setIsPublic(postDto.getIsPublic() != null ? postDto.getIsPublic() : true);
 
-                    // === THÊM: Gán category nếu có ===
+
                     if (postDto.getCategoryId() != null) {
                         Category category = categoryRepository.findById(postDto.getCategoryId())
                                 .orElse(null);
@@ -113,7 +110,7 @@ public class PostServiceImpl implements PostService {
         postRepository.save(post);
     }
 
-    // === CÁC METHOD CŨ (GIỮ NGUYÊN) ===
+
     @Override
     @Transactional
     public void addComment(Long postId, CommentDto commentDto, Principal principal) {
@@ -126,14 +123,14 @@ public class PostServiceImpl implements PostService {
         comment.setUser(user);
         comment.setPost(post);
 
-        // 1. Lưu vào DB
-        Comment savedComment = commentRepository.save(comment); // <-- Hứng lấy kết quả đã lưu
-        // === THÊM ĐOẠN NÀY: GỬI THÔNG BÁO ===
+
+        Comment savedComment = commentRepository.save(comment);
+
         // Gửi cho chủ bài viết
         String notiContent = user.getName() + " đã bình luận về bài viết của bạn.";
-        String link = "/?keyword=" + post.getId(); // Hoặc link chi tiết bài viết nếu có
+        String link = "/?keyword=" + post.getId();
         notificationService.sendNotification(user, post.getUser(), notiContent, link);
-        // 3. === REAL-TIME: Gửi Comment mới ra kênh chung ===
+
         try {
             CommentDto responseDto = new CommentDto(savedComment);
             // Gửi đến topic chung cho các comment: /topic/comments
@@ -164,9 +161,9 @@ public class PostServiceImpl implements PostService {
             reaction.setPost(post);
             reactionRepository.save(reaction);
             String notiContent = user.getName() + " đã thích bài viết của bạn.";
-            // Mới: "/?keyword=" + postId (Để redirect về trang chủ và load đúng bài viết đó)
+
             String link = "/?keyword=" + postId;
-            // Chú ý: post.getUser() là chủ bài viết
+
             notificationService.sendNotification(user, post.getUser(), notiContent, link);
         }
     }
@@ -176,14 +173,14 @@ public class PostServiceImpl implements PostService {
         Sort sort = Sort.by(Sort.Direction.DESC, "createdAt");
 
         if (isOwner) {
-            // Nếu là chính chủ: Xem được HẾT (gọi hàm cũ)
+            // Nếu là chính chủ xem đc
             return postRepository.findAllByUserWithDetails(user, sort);
         } else {
-            // Nếu là người khác: Chỉ xem bài CÔNG KHAI (gọi hàm mới vừa thêm ở Bước 1)
+            // Nếu là người khác xem bai cong khai
             return postRepository.findPublicByUserWithDetails(user, sort);
         }
     }
-    // === THÊM MỚI: Triển khai hàm tìm kiếm ===
+
     @Override
     @Transactional(readOnly = true)
     public List<Post> searchPosts(String keyword) {
@@ -192,7 +189,7 @@ public class PostServiceImpl implements PostService {
         }
         return postRepository.searchPosts(keyword.trim(), Sort.by(Sort.Direction.DESC, "createdAt"));
     }
-    // === TRIỂN KHAI CÁC HÀM MỚI ===
+
 
     @Override
     @Transactional(readOnly = true)
@@ -207,13 +204,13 @@ public class PostServiceImpl implements PostService {
         User user = getCurrentUser(principal);
         Post post = getPostById(postId);
 
-        // 1. Kiểm tra quyền sở hữu
+        //  Kiểm tra quyền sở hữu
         if (!post.getUser().getId().equals(user.getId())) {
             throw new AccessDeniedException("Bạn không có quyền sửa bài viết này");
         }
 
-        // 2. Cập nhật thông tin chung
-        // Nếu content rỗng (do form upload chỉ nhập description), ta giữ logic cũ hoặc cập nhật
+        // Cập nhật thông tin chung
+
         if (postDto.getContent() != null && !postDto.getContent().trim().isEmpty()) {
             post.setContent(postDto.getContent());
         }
@@ -222,8 +219,7 @@ public class PostServiceImpl implements PostService {
             post.setPublic(postDto.getIsPublic());
         }
 
-        // 3. Cập nhật thông tin Tài liệu (nếu có)
-        // Ở đây ta giả định sửa bài là sửa thông tin của tài liệu đầu tiên (nếu đăng dạng tài liệu)
+
         if (!post.getDocuments().isEmpty()) {
             Document doc = post.getDocuments().iterator().next();
             if (postDto.getTitle() != null) doc.setTitle(postDto.getTitle());
@@ -242,8 +238,8 @@ public class PostServiceImpl implements PostService {
             }
         }
 
-        // 4. Xử lý file mới (nếu người dùng upload thêm/thay thế)
-        // (Phần này tùy chọn: nếu bạn muốn upload thêm file vào bài cũ)
+        //  Xử lý file mới (nếu người dùng upload thêm/thay thế)
+
         if (postDto.getFiles() != null && postDto.getFiles().length > 0) {
             for (MultipartFile file : postDto.getFiles()) {
                 if (!file.isEmpty()) {
@@ -279,14 +275,13 @@ public class PostServiceImpl implements PostService {
         User user = getCurrentUser(principal);
         Post post = getPostById(postId);
 
-        // 1. Kiểm tra quyền sở hữu
+        // Kiểm tra quyền sở hữu
         if (!post.getUser().getId().equals(user.getId())) {
             throw new AccessDeniedException("Bạn không có quyền xóa bài viết này");
         }
 
-        // 2. Xóa (Cascade ALL trong Entity Post sẽ tự xóa Documents, Comments, Reactions)
-        // Lưu ý: File vật lý trên ổ cứng chưa được xóa ở đây (để đơn giản hóa),
-        // bạn có thể thêm logic xóa file trong StorageService nếu muốn.
+
+
         postRepository.delete(post);
     }
     @Override
@@ -296,7 +291,7 @@ public class PostServiceImpl implements PostService {
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy bình luận"));
 
-        // Kiểm tra quyền: Chỉ (Chủ comment) HOẶC (Chủ bài viết) mới được xóa
+        // Kiểm tra quyền
         boolean isCommentOwner = comment.getUser().getId().equals(currentUser.getId());
         boolean isPostOwner = comment.getPost().getUser().getId().equals(currentUser.getId());
 

@@ -30,12 +30,12 @@ public class DocumentLibraryController {
         // 1. Lấy danh sách Categories
         List<Category> categories = categoryRepository.findAll();
 
-        // === THÊM ĐOẠN NÀY ===
+
         // Làm sạch keyword trước khi xử lý
         if (keyword != null && keyword.trim().isEmpty()) {
             keyword = null;
         }
-        // =====================
+
 
         // 2. Tìm kiếm documents (Lúc này keyword đã được xử lý chuẩn)
         List<Document> documents = documentService.searchDocuments(keyword, categoryId);

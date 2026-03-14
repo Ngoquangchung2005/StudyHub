@@ -33,7 +33,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         return new org.springframework.security.core.userdetails.User(
                 user.getEmail(),
                 user.getPassword(),
-                user.isEnabled(), // <-- SỬA: Dùng giá trị từ DB
+                user.isEnabled(), // <-- Dùng giá trị từ DB
                 true, true, true,
                 authorities
         );

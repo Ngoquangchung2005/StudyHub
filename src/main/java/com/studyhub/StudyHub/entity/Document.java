@@ -19,25 +19,25 @@ public class Document {
 
 
     @Column(length = 255)
-    private String title; // Tiêu đề tài liệu
+    private String title;
 
     @Column(columnDefinition = "TEXT")
-    private String description; // Mô tả
+    private String description;
 
     @Column(length = 500)
-    private String tags; // Tags: "java,spring,backend"
+    private String tags;
 
     @Column(nullable = false)
-    private Long fileSize = 0L; // Kích thước file (bytes)
+    private Long fileSize = 0L;
 
     @Column(nullable = false)
-    private Integer views = 0; // Lượt xem
+    private Integer views = 0;
 
     @Column(nullable = false)
-    private Integer downloads = 0; // Lượt tải
+    private Integer downloads = 0;
 
     @Column(nullable = false)
-    private Boolean isPublic = true; // Công khai/Riêng tư
+    private Boolean isPublic = true;
 
     @CreationTimestamp
     @Column(updatable = false)

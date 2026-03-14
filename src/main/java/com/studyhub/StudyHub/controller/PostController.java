@@ -35,17 +35,17 @@ public class PostController {
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
-    // === THÊM METHOD MỚI: HIỂN thị TRANG UPLOAD TÀI LIỆU ===
+
     @GetMapping("/upload")
     public String showUploadPage(Model model) {
         model.addAttribute("pageTitle", "Đăng tải tài liệu");
         model.addAttribute("postDto", new PostDto());
         // Gửi danh sách categories sang view
         model.addAttribute("categories", categoryRepository.findAll());
-        return "upload"; // Trả về file upload.html
+        return "upload";
     }
 
-    // === CÁC METHOD CŨ (GIỮ NGUYÊN) ===
+
     @PostMapping("/posts/create")
     public String handleCreatePost(@ModelAttribute("postDto") PostDto postDto,
                                    Principal principal,
@@ -82,24 +82,23 @@ public class PostController {
         return "redirect:/";
     }
 
-    // === SỬA HÀM showEditPage ===
+
     @GetMapping("/posts/edit/{id}")
     public String showEditPage(@PathVariable Long id, Model model, Principal principal, RedirectAttributes redirectAttributes) {
         try {
             Post post = postService.getPostById(id);
 
-            // === SỬA LOGIC KIỂM TRA QUYỀN ===
-            // Lấy thông tin người dùng hiện tại từ database dựa trên principal (Email hoặc Username)
+
             String usernameOrEmail = principal.getName();
             User currentUser = userRepository.findByUsernameOrEmail(usernameOrEmail, usernameOrEmail)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy user đang đăng nhập"));
 
-            // So sánh ID của tác giả bài viết với ID người đang login
+
             if (!post.getUser().getId().equals(currentUser.getId())) {
                 redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền sửa bài này");
                 return "redirect:/";
             }
-            // ================================
+
 
             // Đổ dữ liệu cũ vào DTO
             PostDto postDto = new PostDto();
@@ -124,7 +123,7 @@ public class PostController {
 
             model.addAttribute("existingDocuments", post.getDocuments());
 
-            return "post-edit"; // Bạn cần đảm bảo đã có file post-edit.html (tương tự upload.html)
+            return "post-edit";
 
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
@@ -132,7 +131,7 @@ public class PostController {
         }
     }
 
-    // === 2. XỬ LÝ SUBMIT FORM SỬA ===
+
     @PostMapping("/posts/edit/{id}")
     public String handleUpdatePost(@PathVariable Long id,
                                    @ModelAttribute("postDto") PostDto postDto,
@@ -148,7 +147,7 @@ public class PostController {
         }
     }
 
-    // === 3. XỬ LÝ XÓA BÀI ===
+    //  XỬ LÝ XÓA BÀI
     @PostMapping("/posts/delete/{id}")
     public String handleDeletePost(@PathVariable Long id,
                                    Principal principal,
@@ -162,7 +161,7 @@ public class PostController {
         // Trả về trang trước đó (Referer) hoặc trang chủ
         return "redirect:/";
     }
-    // 2. Thêm API xóa comment (Trả về JSON để JS xử lý, không Redirect)
+
     @PostMapping("/api/comments/{commentId}/delete")
     @ResponseBody // Quan trọng: Trả về dữ liệu, không trả về View
     public ResponseEntity<?> deleteCommentRealtime(@PathVariable Long commentId, Principal principal) {

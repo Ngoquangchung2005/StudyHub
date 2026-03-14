@@ -10,7 +10,7 @@ import java.util.List;
 
 public interface MessageRepository extends JpaRepository<Message, Long> {
 
-    // Sửa lỗi 500 (LazyInitializationException) bằng JOIN FETCH
+    //Tai 50 đến 100 tin nhắn gần nhất
     @Query("SELECT m FROM Message m JOIN FETCH m.sender WHERE m.room.id = :roomId")
     List<Message> findByRoomIdWithSender(Long roomId, Sort sort);
 }

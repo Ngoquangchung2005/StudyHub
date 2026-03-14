@@ -16,20 +16,19 @@ public class Notification {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String content; // Nội dung: "A đã bình luận...", "B đã thích..."
+    private String content;
 
-    private String link; // Đường dẫn khi click vào (VD: /posts/123)
+    private String link;
 
-    private boolean isRead = false; // Đã xem chưa
-
+    private boolean isRead = false;
     @CreationTimestamp
     private LocalDateTime createdAt;
 
     @ManyToOne
     @JoinColumn(name = "recipient_id")
-    private User recipient; // Người nhận thông báo
+    private User recipient;
 
     @ManyToOne
     @JoinColumn(name = "sender_id")
-    private User sender; // Người tạo ra thông báo
+    private User sender;
 }

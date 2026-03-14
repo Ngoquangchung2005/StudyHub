@@ -28,15 +28,15 @@ public class HomeController {
 
     @Autowired private PostService postService;
     @Autowired private UserRepository userRepository;
-    @Autowired private ChatService chatService; // <-- THÊM
-    @Autowired private PresenceService presenceService; // <-- THÊM
+    @Autowired private ChatService chatService;
+    @Autowired private PresenceService presenceService;
 
     @GetMapping("/")
     public String home(Model model,
                        Principal principal,
-                       @RequestParam(name = "keyword", required = false) String keyword) { // <-- Thêm tham số keyword
+                       @RequestParam(name = "keyword", required = false) String keyword) {
 
-        // 1. Xử lý User login (Giữ nguyên logic cũ)
+
         List<ChatDTOs.ChatRoomDto> contacts = new ArrayList<>();
         Set<String> onlineUsers = new HashSet<>();
 
@@ -49,11 +49,11 @@ public class HomeController {
             model.addAttribute("currentUserId", 0L);
         }
 
-        // 2. Xử lý danh sách bài đăng (CÓ SỬA ĐỔI)
+        // Xử lý danh sách bài đăng
         List<Post> posts;
         if (keyword != null && !keyword.isEmpty()) {
             posts = postService.searchPosts(keyword);
-            model.addAttribute("keyword", keyword); // Để hiển thị lại keyword trên thanh tìm kiếm
+            model.addAttribute("keyword", keyword);
             model.addAttribute("pageTitle", "Tìm kiếm: " + keyword);
         } else {
             posts = postService.getAllPostsSortedByDate();
@@ -70,15 +70,15 @@ public class HomeController {
         return "index";
     }
 
-    // === (Giữ nguyên hàm chatPage) ===
+
     @GetMapping("/chat")
     public String chatPage(Model model, Principal principal) {
         model.addAttribute("pageTitle", "Chat Realtime");
 
-        // Lấy email (hoặc username) từ principal
+
         String usernameOrEmail = principal.getName();
 
-        // SỬA LỖI: Tìm bằng findByUsernameOrEmail
+
         User currentUser = userRepository.findByUsernameOrEmail(usernameOrEmail, usernameOrEmail)
                 .orElseThrow(() -> new RuntimeException("Lỗi nghiêm trọng: Không tìm thấy user đã đăng nhập"));
 
@@ -86,6 +86,6 @@ public class HomeController {
         model.addAttribute("currentUserId", currentUser.getId());
         model.addAttribute("currentUsername", currentUser.getUsername());
 
-        return "chat"; // Trả về file chat.html
+        return "chat";
     }
 }

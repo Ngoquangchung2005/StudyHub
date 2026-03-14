@@ -156,7 +156,7 @@ function sendWebSocketMessage(content, type, fileData = null) {
         scrollToBottom(true);
     }
 }
-
+//a
 export function onMessageSubmit(event) {
     event.preventDefault();
     const messageContent = dom.messageInput.value.trim();

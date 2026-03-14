@@ -23,8 +23,7 @@ public class AdminPostController {
 
     @Autowired private PostRepository postRepository;
     @Autowired private PostService postService;
-    @Autowired private CategoryRepository categoryRepository; // <-- Inject thêm cái này
-
+    @Autowired private CategoryRepository categoryRepository; //
     @GetMapping
     public String listPosts(Model model,
                             @RequestParam(name = "keyword", required = false) String keyword,
@@ -33,7 +32,7 @@ public class AdminPostController {
         List<Post> posts;
         Sort sort = Sort.by(Sort.Direction.DESC, "createdAt");
 
-        // Logic tìm kiếm
+
         if ((keyword != null && !keyword.isEmpty()) || categoryId != null) {
             posts = postRepository.searchPostsForAdmin(keyword, categoryId, sort);
         } else {
@@ -54,8 +53,7 @@ public class AdminPostController {
     @PostMapping("/{id}/delete")
     public String deletePost(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
-            // Admin xóa thì principal null cũng được, hoặc ta cần sửa Service để bỏ qua check owner nếu là Admin
-            // Cách nhanh nhất ở đây: Dùng Repository xóa trực tiếp hoặc ép kiểu
+
             postRepository.deleteById(id);
             redirectAttributes.addFlashAttribute("successMessage", "Đã xóa bài viết/tài liệu vi phạm.");
         } catch (Exception e) {

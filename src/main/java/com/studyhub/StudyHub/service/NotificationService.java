@@ -22,7 +22,7 @@ public class NotificationService {
     public void sendNotification(User sender, User recipient, String content, String link) {
         if (sender.getId().equals(recipient.getId())) return;
 
-        // 1. Lưu vào Database (Giữ nguyên)
+        // 1. Lưu vào Database
         Notification notification = new Notification();
         notification.setSender(sender);
         notification.setRecipient(recipient);
@@ -31,13 +31,13 @@ public class NotificationService {
         notification.setRead(false);
         Notification savedNotification = notificationRepository.save(notification);
 
-        // 2. Chuyển sang DTO (Giữ nguyên)
+        // 2. Chuyển sang DTO
         NotificationDto dto = new NotificationDto(savedNotification);
 
-        // 3. Gửi DTO qua WebSocket - SỬA DÒNG NÀY
-        // Đổi recipient.getUsername() thành recipient.getEmail()
+        // 3. Gửi DTO qua WebSocket
+
         messagingTemplate.convertAndSendToUser(
-                recipient.getEmail(), // <--- QUAN TRỌNG: Phải dùng Email để khớp với Security
+                recipient.getEmail(),
                 "/queue/notifications",
                 dto
         );
@@ -54,7 +54,6 @@ public class NotificationService {
         return notificationRepository.findByRecipientIdOrderByCreatedAtDesc(userId)
                 .stream().map(NotificationDto::new).collect(Collectors.toList());
     }
-    // === THÊM HÀM NÀY ===
     @Transactional
     public void deleteAllNotifications(Long userId) {
         notificationRepository.deleteAllByRecipientId(userId);

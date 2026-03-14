@@ -16,9 +16,7 @@ public class ChatFileController {
     @Autowired
     private StorageService storageService;
 
-    /**
-     * API upload file cho chat (ảnh hoặc file)
-     */
+
     @PostMapping("/upload")
     public ResponseEntity<Map<String, Object>> uploadChatFile(@RequestParam("file") MultipartFile file) {
         try {

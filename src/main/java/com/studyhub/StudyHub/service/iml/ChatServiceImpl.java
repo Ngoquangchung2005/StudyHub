@@ -33,7 +33,6 @@ public class ChatServiceImpl implements ChatService {
     @Autowired private MessageRepository messageRepository;
     @Autowired private UserRepository userRepository;
 
-    // === THÊM: Inject Repository bạn bè để kiểm tra quan hệ ===
     @Autowired private FriendshipRepository friendshipRepository;
 
     @Autowired private SimpMessagingTemplate messagingTemplate;
@@ -50,7 +49,7 @@ public class ChatServiceImpl implements ChatService {
     @Override
     @Transactional
     public ChatRoomDto getOrCreateOneToOneRoom(User user1, User user2) {
-        // === LOGIC MỚI: CHẶN NGƯỜI LẠ NHẮN TIN ===
+
         // Nếu 2 người khác nhau, kiểm tra xem có phải bạn bè không
         if (!user1.getId().equals(user2.getId())) {
             boolean isFriend = friendshipRepository.findRelationship(user1, user2)
@@ -90,14 +89,14 @@ public class ChatServiceImpl implements ChatService {
         room.setName(groupName);
         room.setType(ChatRoom.RoomType.GROUP);
 
-        // 1. Tìm các thành viên từ list ID
+        // Tìm các thành viên từ list ID
         Set<User> members = new HashSet<>();
         if (memberIds != null && !memberIds.isEmpty()) {
             List<User> users = userRepository.findAllById(memberIds);
             members.addAll(users);
         }
 
-        // 2. Luôn thêm người tạo vào nhóm
+        // Luôn thêm người tạo vào nhóm
         members.add(creator);
         // Chỉ cho phép thêm bạn bè khi tạo nhóm
         for (User u : new HashSet<>(members)) {
@@ -111,14 +110,13 @@ public class ChatServiceImpl implements ChatService {
         room.setOwner(creator);
         room.getAdmins().add(creator);
 
-        // 3. Lưu nhóm vào Database
+
         ChatRoom savedRoom = chatRoomRepository.save(room);
 
-        // 4. Gửi sự kiện realtime để các thành viên tự cập nhật danh sách phòng chat (không cần reload trang)
-        // QUAN TRỌNG: gửi SAU KHI COMMIT để tránh trường hợp client fetch /api/chat/rooms quá sớm
-        // (dẫn tới phải reload mới thấy nhóm)
+        //  Gửi sự kiện realtime để các thành viên tự cập nhật danh sách phòng chat
+
         runAfterCommit(() -> {
-            // Lưu ý: WebSocket user-destination đang định tuyến theo Email (principal.getName())
+
             for (User member : members) {
                 if (member.getEmail() == null) continue;
                 ChatDTOs.RoomEventDto evt = new ChatDTOs.RoomEventDto();
@@ -167,7 +165,7 @@ public class ChatServiceImpl implements ChatService {
             chatRoomRepository.save(room);
             sendSystemMessage(room, adder, adder.getName() + " đã thêm " + newMember.getName() + " vào nhóm.");
 
-            // 1) Người mới được thêm -> nhận phòng mới
+            // Người mới được thêm -> nhận phòng mới
             if (newMember.getEmail() != null) {
                 ChatDTOs.RoomEventDto evt = new ChatDTOs.RoomEventDto();
                 evt.setEventType("ROOM_ADDED");
@@ -180,7 +178,7 @@ public class ChatServiceImpl implements ChatService {
                 runAfterCommit(() -> messagingTemplate.convertAndSendToUser(newMember.getEmail(), "/queue/room-events", evt));
             }
 
-            // 2) Tất cả thành viên (gồm cả newMember) -> cập nhật số thành viên / modal thành viên
+            // cập nhật số thành viên
             broadcastMembersChanged(room, adder, newMember);
         }
     }
@@ -207,7 +205,7 @@ public class ChatServiceImpl implements ChatService {
             chatRoomRepository.save(room);
             sendSystemMessage(room, remover, remover.getName() + " đã mời " + memberToRemove.getName() + " ra khỏi nhóm.");
 
-            // 1) Người bị kick -> xóa phòng khỏi sidebar
+            //  Người bị kick -> xóa phòng khỏi sidebar
             if (memberToRemove.getEmail() != null) {
                 ChatDTOs.RoomEventDto evt = new ChatDTOs.RoomEventDto();
                 evt.setEventType("ROOM_REMOVED");
@@ -219,7 +217,7 @@ public class ChatServiceImpl implements ChatService {
                 runAfterCommit(() -> messagingTemplate.convertAndSendToUser(memberToRemove.getEmail(), "/queue/room-events", evt));
             }
 
-            // 2) Thành viên còn lại -> cập nhật danh sách
+            //  Thành viên còn lại -> cập nhật danh sách
             broadcastMembersChanged(room, remover, memberToRemove);
         }
     }

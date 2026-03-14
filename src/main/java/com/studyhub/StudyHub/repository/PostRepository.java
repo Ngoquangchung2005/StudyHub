@@ -18,7 +18,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             "LEFT JOIN FETCH p.comments c " +
             "LEFT JOIN FETCH c.user " +
             "LEFT JOIN FETCH p.reactions " +
-            "WHERE p.isPublic = true") // <-- CHỈ LẤY BÀI CÔNG KHAI
+            "WHERE p.isPublic = true") // Chi lay bai cong khai
     List<Post> findAllWithDetails(Sort sort);
 
 
@@ -29,7 +29,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             "LEFT JOIN FETCH p.comments c " +
             "LEFT JOIN FETCH c.user " +
             "LEFT JOIN FETCH p.reactions " +
-            "WHERE p.isPublic = true AND " + // <-- CHỈ TÌM BÀI CÔNG KHAI
+            "WHERE p.isPublic = true AND " + // chi tim bai cong khai
             "(:keyword IS NULL OR :keyword = '' OR " +
             "LOWER(p.content) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
             "LOWER(d.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
@@ -55,7 +55,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             "LEFT JOIN FETCH p.comments c " +
             "LEFT JOIN FETCH c.user " +
             "LEFT JOIN FETCH p.reactions " +
-            "WHERE p.user = :user AND p.isPublic = true") // <-- Thêm điều kiện isPublic = true
+            "WHERE p.user = :user AND p.isPublic = true")
     List<Post> findPublicByUserWithDetails(@Param("user") User user, Sort sort);
 
 

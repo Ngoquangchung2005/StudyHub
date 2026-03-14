@@ -70,7 +70,7 @@ public class ProfileController {
             model.addAttribute("currentUserId", 0L);
         }
 
-        // 3. Lấy danh sách bài đăng (Nếu isOwner = true -> Lấy hết. Nếu false -> Chỉ lấy public)
+        // 3. Lấy danh sách bài đăng
         List<Post> posts = postService.getPostsByUser(profileUser, isOwner);
 
         // 4. Gửi thông tin sang view
@@ -87,9 +87,7 @@ public class ProfileController {
         return "profile-view";
     }
 
-    /**
-     * Hiển thị form "Cài đặt" (để edit profile và upload avatar)
-     */
+
     @GetMapping("/profile/edit")
     public String showEditProfileForm(Model model, Principal principal) {
         User user = getCurrentUser(principal);
@@ -121,9 +119,7 @@ public class ProfileController {
         return "profile-edit";
     }
 
-    /**
-     * Xử lý việc cập nhật profile và upload avatar
-     */
+
     @PostMapping("/profile/edit")
     public String handleEditProfile(
             @ModelAttribute("profileDto") ProfileUpdateDto profileDto,
@@ -174,9 +170,7 @@ public class ProfileController {
         return "redirect:/profile/" + user.getUsername();
     }
 
-    /**
-     * Hiển thị trang Đổi mật khẩu
-     */
+
     @GetMapping("/profile/change-password")
     public String showChangePasswordForm(Model model) {
         model.addAttribute("passwordDto", new ChangePasswordDto());
@@ -184,9 +178,6 @@ public class ProfileController {
         return "change-password";
     }
 
-    /**
-     * Xử lý logic Đổi mật khẩu
-     */
     @PostMapping("/profile/change-password")
     public String handleChangePassword(@ModelAttribute("passwordDto") ChangePasswordDto passwordDto,
                                        Principal principal,

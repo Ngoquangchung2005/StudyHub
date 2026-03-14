@@ -14,7 +14,7 @@ public class ProfileUpdateDto {
     // Dùng để nhận file avatar từ form
     private MultipartFile avatarFile;
 
-    // === THÊM CÁC TRƯỜNG MỚI ===
+
     private MultipartFile coverPhotoFile; // Ảnh bìa
     private UserType userType;
     private String school;

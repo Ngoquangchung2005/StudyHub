@@ -17,9 +17,9 @@ import java.util.List;
 public class AdminCategoryController {
 
     @Autowired private CategoryRepository categoryRepository;
-    @Autowired private DocumentRepository documentRepository; // <-- Inject thêm
+    @Autowired private DocumentRepository documentRepository;
 
-    // 1. Hiển thị danh sách (Giữ nguyên)
+    // 1. Hiển thị danh sách
     @GetMapping
     public String listCategories(Model model) {
         model.addAttribute("categories", categoryRepository.findAll());
@@ -28,10 +28,10 @@ public class AdminCategoryController {
         return "admin/categories";
     }
 
-    // 2. Thêm mới HOẶC Cập nhật (Sửa lại logic save)
+    // 2. Thêm mới HOẶC Cập nhật
     @PostMapping("/save")
     public String saveCategory(@ModelAttribute Category category, RedirectAttributes redirectAttributes) {
-        // Nếu category có ID -> Hibernate tự hiểu là Update. Nếu không có ID -> Insert.
+
         categoryRepository.save(category);
 
         String msg = (category.getId() != null) ? "Cập nhật thành công!" : "Tạo mới thành công!";
@@ -39,20 +39,20 @@ public class AdminCategoryController {
         return "redirect:/admin/categories";
     }
 
-    // 3. Xóa danh mục (ĐÃ SỬA LOGIC XÓA ĐƯỢC KHI CÓ TÀI LIỆU)
+    // 3. Xóa danh mục
     @PostMapping("/{id}/delete")
     public String deleteCategory(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
-            // Bước 1: Tìm tất cả tài liệu đang thuộc danh mục này
+            //  Tìm tất cả tài liệu đang thuộc danh mục này
             List<Document> docs = documentRepository.findByCategoryId(id);
 
-            // Bước 2: Gỡ bỏ danh mục khỏi tài liệu (Set null)
+            // Gỡ bỏ danh mục khỏi tài liệu (Set null)
             for (Document doc : docs) {
                 doc.setCategory(null);
                 documentRepository.save(doc);
             }
 
-            // Bước 3: Xóa danh mục (Lúc này danh mục đã trống, xóa thoải mái)
+            // Xóa danh mục (Lúc này danh mục đã trống, xóa thoải mái)
             categoryRepository.deleteById(id);
 
             redirectAttributes.addFlashAttribute("successMessage", "Đã xóa danh mục. Các tài liệu cũ đã chuyển sang trạng thái 'Chưa phân loại'.");
@@ -62,7 +62,7 @@ public class AdminCategoryController {
         return "redirect:/admin/categories";
     }
 
-    // 4. Xem chi tiết danh mục (THÊM MỚI)
+    // 4. Xem chi tiết danh mục
     @GetMapping("/{id}")
     public String viewCategoryDetails(@PathVariable Long id, Model model) {
         Category category = categoryRepository.findById(id)
@@ -74,6 +74,6 @@ public class AdminCategoryController {
         model.addAttribute("documents", documents);
         model.addAttribute("pageTitle", "Chi tiết: " + category.getName());
 
-        return "admin/category-details"; // Trả về file html mới
+        return "admin/category-details";
     }
 }

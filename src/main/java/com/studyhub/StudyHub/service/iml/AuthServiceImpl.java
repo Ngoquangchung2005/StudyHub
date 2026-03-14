@@ -25,33 +25,33 @@ public class AuthServiceImpl implements AuthService {
     private RoleRepository roleRepository;
 
     @Autowired
-    private PasswordEncoder passwordEncoder; // Bean ta đã tạo ở SecurityConfig
+    private PasswordEncoder passwordEncoder;
 
     @Override
     public String registerUser(RegisterDto registerDto) {
 
-        // --- KIỂM TRA "XỊN" ---
-        // 1. Kiểm tra xem username đã tồn tại trong CSDL chưa
+
+        // kiểm tra xem username đã tồn tại trong CSDL chưa
         if(userRepository.findByUsername(registerDto.getUsername()).isPresent()) {
             // isPresent() trả về true nếu tìm thấy (Optional không rỗng)
             return "Username đã tồn tại!";
         }
 
-        // 2. Kiểm tra xem email đã tồn tại trong CSDL chưa
+        //  kiểm tra xem email đã tồn tại trong CSDL chưa
         if(userRepository.findByEmail(registerDto.getEmail()).isPresent()) {
             return "Email đã tồn tại!";
         }
 
-        // --- Nếu không trùng, tạo User mới ---
+        // nếu không trùng, tạo User mới ---
         User user = new User();
         user.setName(registerDto.getName());
         user.setUsername(registerDto.getUsername());
         user.setEmail(registerDto.getEmail());
 
-        // 3. Mã hóa mật khẩu trước khi lưu
+        //  Mã hóa mật khẩu trước khi lưu
         user.setPassword(passwordEncoder.encode(registerDto.getPassword()));
 
-        // 4. Gán vai trò (Role) cho user
+        // Gán vai trò (Role) cho user
         // Tìm Role "ROLE_USER" trong CSDL
         Role userRole = roleRepository.findByName("ROLE_USER")
                 .orElseGet(() -> {
@@ -65,7 +65,7 @@ public class AuthServiceImpl implements AuthService {
         roles.add(userRole);
         user.setRoles(roles);
 
-        // 5. Lưu User mới vào CSDL
+
         userRepository.save(user);
 
         return "Đăng ký thành công!";

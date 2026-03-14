@@ -25,10 +25,9 @@ public class FriendService {
 
     @Autowired private NotificationService notificationService;
 
-    // Inject thêm cái này để gửi tin nhắn Realtime
     @Autowired private SimpMessagingTemplate messagingTemplate;
 
-    // Gửi lời mời kết bạn
+
     @Transactional
     public void sendFriendRequest(Long requesterId, Long addresseeId) {
         if (requesterId.equals(addresseeId)) throw new RuntimeException("Không thể kết bạn với chính mình");
@@ -46,7 +45,7 @@ public class FriendService {
         friendship.setStatus(Friendship.FriendshipStatus.PENDING);
         friendshipRepository.save(friendship);
 
-        // 1. Gửi thông báo như cũ
+        // Gửi thông báo
         notificationService.sendNotification(
                 requester,
                 addressee,
@@ -54,7 +53,7 @@ public class FriendService {
                 "/friends"
         );
 
-        // 2. Gửi sự kiện Realtime để bên kia hiện ngay lời mời (MỚI THÊM)
+        // Gửi sự kiện Realtime để bên kia hiện ngay lời mời
         Map<String, Object> payload = new HashMap<>();
         payload.put("type", "NEW_REQUEST");
         payload.put("id", friendship.getId()); // ID của friendship để nút chấp nhận hoạt động
@@ -82,7 +81,7 @@ public class FriendService {
         friendship.setStatus(Friendship.FriendshipStatus.ACCEPTED);
         friendshipRepository.save(friendship);
 
-        // 1. Gửi thông báo như cũ
+        //  Gửi thông báo như cũ
         notificationService.sendNotification(
                 friendship.getAddressee(),
                 friendship.getRequester(),
@@ -90,7 +89,7 @@ public class FriendService {
                 "/profile/" + friendship.getAddressee().getUsername()
         );
 
-        // 2. Gửi sự kiện Realtime để người gửi thấy mình đã được chấp nhận (MỚI THÊM)
+        //  Gửi sự kiện Realtime để người gửi thấy mình đã được chấp nhận
         Map<String, Object> payload = new HashMap<>();
         payload.put("type", "REQUEST_ACCEPTED");
 
@@ -106,7 +105,7 @@ public class FriendService {
         messagingTemplate.convertAndSendToUser(friendship.getRequester().getEmail(), "/queue/friends", payload);
     }
 
-    // === BỔ SUNG HÀM TỪ CHỐI KẾT BẠN ===
+
     @Transactional
     public void declineFriendRequest(Long friendshipId) {
         friendshipRepository.deleteById(friendshipId);

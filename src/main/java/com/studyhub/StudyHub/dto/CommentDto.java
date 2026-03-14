@@ -12,7 +12,7 @@ public class CommentDto {
     // Dùng để nhận dữ liệu từ Form
     private String content;
 
-    // === THÊM CÁC TRƯỜNG ĐỂ TRẢ VỀ REALTIME ===
+
     private Long id;
     private Long postId;
     private String senderName;

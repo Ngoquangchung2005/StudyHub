@@ -29,17 +29,17 @@ public class FriendController {
         // 1. Lấy danh sách lời mời
         List<Friendship> requests = friendService.getPendingRequests(user.getId());
 
-        // 2. Lấy danh sách bạn bè hiện tại (MỚI THÊM)
+        // 2. Lấy danh sách bạn bè hiện tại
         List<User> friends = friendService.getFriendList(user.getId());
 
         model.addAttribute("requests", requests);
-        model.addAttribute("friends", friends); // Truyền sang view
+        model.addAttribute("friends", friends);
         model.addAttribute("currentUserId", user.getId());
 
         return "friends";
     }
 
-    // --- API: Lấy danh sách bạn bè (cho Chat Sidebar) ---
+    // Lấy danh sách bạn bè (cho Chat Sidebar) ---
     @GetMapping("/api/friends/list")
     @ResponseBody
     public ResponseEntity<List<Map<String, Object>>> getMyFriends(Principal principal) {
@@ -59,14 +59,14 @@ public class FriendController {
         return ResponseEntity.ok(response);
     }
 
-    // --- API: Tìm kiếm bạn bè (MỚI THÊM) ---
+    //  Tìm kiếm bạn bè
     @GetMapping("/api/friends/search")
     @ResponseBody
     public ResponseEntity<List<Map<String, Object>>> searchUsers(@RequestParam("keyword") String keyword, Principal principal) {
         User currentUser = userRepository.findByUsernameOrEmail(principal.getName(), principal.getName()).orElseThrow();
 
-        // 1. Tìm kiếm user (Gọi service hoặc repo)
-        // Lưu ý: Đảm bảo bạn đã thêm hàm searchUsers vào UserRepository như hướng dẫn trước
+        // 1. Tìm kiếm user
+
         List<User> users = userRepository.searchUsers(keyword, currentUser.getId());
 
         // 2. Map sang JSON và kiểm tra trạng thái bạn bè
@@ -87,7 +87,7 @@ public class FriendController {
         return ResponseEntity.ok(response);
     }
 
-    // --- API: Gửi lời mời ---
+    //  Gửi lời mời
     @PostMapping("/api/friends/request/{userId}")
     @ResponseBody
     public ResponseEntity<?> sendRequest(@PathVariable Long userId, Principal principal) {
@@ -96,7 +96,7 @@ public class FriendController {
         return ResponseEntity.ok("Đã gửi lời mời");
     }
 
-    // --- API: Chấp nhận lời mời ---
+    // Chấp nhận lời mời
     @PostMapping("/api/friends/accept/{friendshipId}")
     @ResponseBody
     public ResponseEntity<?> acceptRequest(@PathVariable Long friendshipId, Principal principal) {
@@ -105,7 +105,7 @@ public class FriendController {
         return ResponseEntity.ok("Đã chấp nhận");
     }
 
-    // --- API: Hủy kết bạn ---
+    // Hủy kết bạn
     @PostMapping("/api/friends/unfriend/{friendId}")
     @ResponseBody
     public ResponseEntity<?> unfriendUser(@PathVariable Long friendId, Principal principal) {

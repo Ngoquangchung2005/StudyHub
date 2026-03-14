@@ -8,7 +8,7 @@ public class PostDto {
     private String content;
     private MultipartFile[] files;
 
-    // === THÊM CÁC TRƯỜNG MỚI ===
+
     private String title; // Tiêu đề tài liệu
     private String description; // Mô tả
     private Long categoryId; // ID của category

@@ -10,7 +10,7 @@ import lombok.Setter;
 @Entity
 @Table(name = "reactions",
         uniqueConstraints = {
-                // Mỗi user chỉ "like" 1 post 1 lần
+                // Mỗi user chỉ like 1 post 1 lần
                 @UniqueConstraint(columnNames = {"user_id", "post_id"})
         }
 )
@@ -19,7 +19,7 @@ public class Reaction {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // "LIKE", "HEART", "WOW"
+
     @Column(nullable = false, length = 20)
     private String type;
 

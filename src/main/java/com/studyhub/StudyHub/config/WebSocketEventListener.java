@@ -20,7 +20,7 @@ public class WebSocketEventListener {
     @Autowired private SimpMessageSendingOperations messagingTemplate;
     @Autowired private UserRepository userRepository;
 
-    // === THÊM DÒNG NÀY ===
+
     @Autowired private PresenceService presenceService;
 
     @EventListener
@@ -33,11 +33,11 @@ public class WebSocketEventListener {
 
             String username = user.getUsername();
 
-            // === THÊM DÒNG NÀY ===
-            // 1. Thêm user vào "bộ nhớ"
+
+            // Thêm user vào bộ nhớ
             presenceService.userConnected(username);
 
-            // 2. Gửi thông báo (như cũ)
+            //Gửi thông báo như cũ
             PresenceDto presenceMsg = new PresenceDto();
             presenceMsg.setUsername(username);
             presenceMsg.setStatus("ONLINE");
@@ -57,11 +57,11 @@ public class WebSocketEventListener {
             if (user != null) {
                 String username = user.getUsername();
 
-                // === THÊM DÒNG NÀY ===
-                // 1. Xóa user khỏi "bộ nhớ"
+
+                //  Xóa user khỏi bộ nhớ
                 presenceService.userDisconnected(username);
 
-                // 2. Gửi thông báo (như cũ)
+                // Gửi thông báo như cũ
                 PresenceDto presenceMsg = new PresenceDto();
                 presenceMsg.setUsername(username);
                 presenceMsg.setStatus("OFFLINE");

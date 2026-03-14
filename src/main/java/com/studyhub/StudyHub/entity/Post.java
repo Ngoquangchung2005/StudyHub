@@ -24,7 +24,7 @@ public class Post {
 
 
     @Column(nullable = false)
-    private boolean isPublic = true; // Mặc định là công khai
+    private boolean isPublic = true;
     // =====================
 
     @CreationTimestamp
@@ -39,7 +39,7 @@ public class Post {
     private Set<Document> documents = new HashSet<>();
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
-    @OrderBy("createdAt DESC") // <--- THÊM DÒNG NÀY (Sắp xếp giảm dần theo ngày tạo)
+    @OrderBy("createdAt DESC")
     private Set<Comment> comments = new HashSet<>();
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)

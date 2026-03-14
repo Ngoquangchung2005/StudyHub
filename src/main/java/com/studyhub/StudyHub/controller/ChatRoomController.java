@@ -28,24 +28,24 @@ public class ChatRoomController {
 
     @Autowired private PresenceService presenceService;
 
-    // Helper
+
     private User getCurrentUser(Principal principal) {
         // Lấy email (hoặc username) từ principal
         String usernameOrEmail = principal.getName();
 
-        // SỬA LỖI: Tìm bằng findByUsernameOrEmail
+
         return userRepository.findByUsernameOrEmail(usernameOrEmail, usernameOrEmail)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy user đã đăng nhập: " + usernameOrEmail));
     }
 
-    // API 1: Lấy tất cả phòng chat của user
+
     @GetMapping("/rooms")
     public ResponseEntity<List<ChatDTOs.ChatRoomDto>> getMyChatRooms(Principal principal) {
         User currentUser = getCurrentUser(principal);
         return ResponseEntity.ok(chatService.getChatRooms(currentUser));
     }
 
-    // API 2: Lấy tất cả user (để bắt đầu chat)
+    // Lấy tất cả user
     @GetMapping("/users")
     public ResponseEntity<List<ChatDTOs.UserDto>> getAllUsers(Principal principal) {
         User currentUser = getCurrentUser(principal);
@@ -56,7 +56,7 @@ public class ChatRoomController {
         return ResponseEntity.ok(users);
     }
 
-    // API 3: Lấy/Tạo phòng 1-1
+    //  Lấy/Tạo phòng 1-1
     @GetMapping("/room/with/{otherUserId}")
     public ResponseEntity<ChatDTOs.ChatRoomDto> getOneToOneRoom(
             @PathVariable Long otherUserId, Principal principal) {
@@ -65,14 +65,14 @@ public class ChatRoomController {
         return ResponseEntity.ok(chatService.getOrCreateOneToOneRoom(currentUser, otherUser));
     }
 
-    // API 4: Lấy lịch sử tin nhắn của 1 phòng
+    //  Lấy lịch sử tin nhắn của 1 phòng
     @GetMapping("/room/{roomId}/messages")
     public ResponseEntity<List<ChatDTOs.MessageDto>> getMessageHistory(
             @PathVariable Long roomId, Principal principal) {
-        // (Cần thêm logic bảo mật để check user có ở trong phòng này không)
+
         return ResponseEntity.ok(chatService.getMessageHistory(roomId));
     }
-    // API 5: Lấy danh sách tất cả user đang online
+    // Lấy danh sách tất cả user đang online
     @GetMapping("/online-users")
     public ResponseEntity<Set<String>> getOnlineUsers() {
         return ResponseEntity.ok(presenceService.getOnlineUsers());
@@ -98,7 +98,7 @@ public class ChatRoomController {
 
         return ResponseEntity.ok(newRoom);
     }
-    // === THÊM API MỚI ===
+
     @PostMapping("/room/{roomId}/leave")
     public ResponseEntity<String> leaveGroup(@PathVariable Long roomId, Principal principal) {
         User currentUser = getCurrentUser(principal);
@@ -109,7 +109,7 @@ public class ChatRoomController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
-    // ... các API cũ
+
 
     // 1. Lấy danh sách thành viên
     @GetMapping("/room/{roomId}/members")
