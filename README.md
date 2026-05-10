@@ -334,6 +334,132 @@ Lớp này xử lý việc hiển thị giao diện người dùng và phản h�
 ```
 
 ---
+## 📑 PHẦN 3: PHÂN TÍCH CHI TIẾT TỪNG FILE TRONG 8 THƯ MỤC TÍNH NĂNG
+
+Dưới đây là mô tả chi tiết, cụ thể hóa từng file Dart của từng thư mục tính năng trong hệ thống E-Commerce Shareco để bạn hiểu rõ luồng chạy thực tế:
+
+---
+
+### 1. 🏷️ Thư mục `shop` (Quản lý Gian hàng & Nhãn hiệu)
+* **Mục đích:** Xử lý toàn bộ thông tin liên quan đến các đối tác thương hiệu trên sàn.
+
+#### 📂 Các file bên trong lớp Data:
+* **`shop_remote_datasource.dart`:**
+  * *Chức năng:* Chứa hàm `fetchShopDetails(String shopId)`. Hàm này gọi `Supabase.instance.client.from('shops').select().eq('id', shopId).single()` để lấy dữ liệu thô của nhãn hàng từ database.
+* **`shop_model.dart`:**
+  * *Chức năng:* Định nghĩa lớp `ShopModel` kế thừa từ `Shop`. Chứa hàm `factory ShopModel.fromJson(Map<String, dynamic> json)` để ánh xạ các cột dữ liệu từ bảng `shops` (như `shop_name`, `logo_path`, `cover_path`, `rating_avg`) vào các thuộc tính của Dart.
+* **`shop_repository_impl.dart`:**
+  * *Chức năng:* Kế thừa `ShopRepository`. Triển khai hàm `getShopDetails(String shopId)`. Gọi hàm từ `RemoteDataSource`, nhận về `ShopModel`, trả về kiểu thực thể `Shop` thuần túy.
+
+#### 📂 Các file bên trong lớp Domain:
+* **`shop.dart` (Entity):**
+  * *Chức năng:* Khai báo lớp `Shop` với các thuộc tính cần hiển thị trên giao diện: tên thương hiệu, mô tả, ảnh đại diện, ảnh bìa, xếp hạng sao, trạng thái hoạt động.
+* **`shop_repository.dart` (Interface):**
+  * *Chức năng:* Khai báo giao diện trừu tượng `abstract class ShopRepository` định nghĩa chữ ký hàm `Future<Shop> getShopDetails(String shopId);`.
+* **`get_shop_details_usecase.dart`:**
+  * *Chức năng:* Chứa lớp `GetShopDetails` có phương thức `call(String shopId)`. Nó nhận yêu cầu lấy thông tin và chuyển tiếp yêu cầu đó đến `ShopRepository`.
+
+#### 📂 Các file bên trong lớp Presentation:
+* **`shop_bloc.dart` / `shop_event.dart` / `shop_state.dart`:**
+  * *Chức năng:* Nhận sự kiện yêu cầu nạp thông tin gian hàng (`FetchShopDetails`), kích hoạt UseCase lấy dữ liệu, phát ra trạng thái `ShopLoaded` chứa thực thể `Shop`.
+* **`shop_detail_screen.dart`:**
+  * *Chức năng:* Giao diện hiển thị trang cá nhân của nhãn hàng. Hiển thị ảnh bìa lớn, logo hình tròn bo góc, mô tả thương hiệu, điểm đánh giá trung bình cùng danh sách các sản phẩm thuộc thương hiệu đó.
+
+---
+
+### 📦 2. Thư mục `product` (Quản lý Sản phẩm & Biến thể)
+* **Mục đích:** Tìm kiếm, lọc sản phẩm theo danh mục/thương hiệu và hiển thị chi tiết sản phẩm cùng các biến thể đi kèm.
+
+#### 📂 Các file bên trong lớp Data:
+* **`product_remote_datasource.dart`:**
+  * *Chức năng:* Thực hiện các câu lệnh select nâng cao đến bảng `products` của Supabase. Hỗ trợ gom nhóm biến thể bằng cách join bảng: `.select('*, product_variants(*)')`.
+* **`product_model.dart` & `product_variant_model.dart`:**
+  * *Chức năng:* Phân tích cú pháp các cột dữ liệu thô từ bảng `products` và `product_variants` (như `price_min`, `compare_at_price`, `stock_qty`, `weight_grams`).
+* **`product_repository_impl.dart`:**
+  * *Chức năng:* Hiện thực hóa việc lấy sản phẩm từ dữ liệu mạng, lọc theo loại sản phẩm hoặc nhãn hàng rồi chuyển đổi thành danh sách thực thể `Product` trả về cho hệ thống.
+
+#### 📂 Các file bên trong lớp Domain:
+* **`product.dart` & `product_variant.dart` (Entities):**
+  * *Chức năng:* Khai báo cấu trúc dữ liệu sạch của Sản phẩm và Biến thể của sản phẩm. Đặc biệt chứa thuộc tính động: `bool get isActive => status == 'active';` để xác định sản phẩm có đang được phép bán hay không.
+* **`get_products_usecase.dart` & `get_product_detail_usecase.dart`:**
+  * *Chức năng:* Các kịch bản nghiệp vụ lấy danh sách sản phẩm theo bộ lọc hoặc lấy chi tiết một sản phẩm cụ thể kèm theo toàn bộ biến thể của nó.
+
+#### 📂 Các file bên trong lớp Presentation:
+* **`product_list_screen.dart`:**
+  * *Chức năng:* Hiển thị lưới sản phẩm thời trang, mỹ phẩm đẹp mắt. Tích hợp thanh tìm kiếm và bộ lọc nhanh theo thương hiệu.
+* **`product_detail_screen.dart`:**
+  * *Chức năng:* Màn hình chi tiết sản phẩm. Cho phép người dùng chọn phân loại biến thể (ví dụ: Dung tích `50ml` hoặc `100ml`), tự động thay đổi giá tiền và hiển thị cảnh báo hết hàng nếu số lượng tồn kho `stock_qty` của biến thể đó bằng `0`.
+
+---
+
+### 🛒 3. Thư mục `cart` (Quản lý Giỏ hàng)
+* **Mục đích:** Lưu trữ, đồng bộ các mặt hàng mà người mua dự định đặt hàng lên Supabase.
+
+#### 📂 Các file bên trong lớp Data:
+* **`cart_remote_datasource.dart`:**
+  * *Chức năng:* Thực thi các câu lệnh thêm, sửa số lượng, và xóa bản ghi trong bảng `cart_items` của Supabase. Khi thêm sản phẩm mới vào giỏ hàng, hàm này sẽ kiểm tra xem sản phẩm đó đã tồn tại trong giỏ chưa để tự động cộng dồn số lượng.
+* **`cart_item_model.dart`:**
+  * *Chức năng:* Ánh xạ dữ liệu giỏ hàng nhận về từ bảng `cart_items` kết hợp thông tin sản phẩm liên kết từ bảng `products`.
+
+#### 📂 Các file bên trong lớp Presentation:
+* **`cart_screen.dart`:**
+  * *Chức năng:* Giao diện giỏ hàng của người dùng. Cho phép tăng/giảm số lượng bằng nút `+` / `-`, hiển thị giá tiền tạm tính, và gom nhóm các sản phẩm theo từng Nhãn hàng chủ quản để người dùng dễ dàng theo dõi phí giao hàng.
+
+---
+
+### 💳 4. Thư mục `checkout` (Quy trình Đặt hàng & Trừ kho)
+* **Mục đích:** Thực hiện tính toán giảm giá của voucher khuyến mãi, thu thập thông tin người nhận, tạo đơn hàng và trừ tồn kho tự động.
+
+#### 📂 Các file bên trong lớp Data:
+* **`checkout_remote_datasource.dart`:**
+  * *Chức năng:* Đây là **trọng tâm xử lý giao dịch** đặt hàng.
+    * Hàm `placeCartOrder` thực hiện thêm đơn hàng mới vào bảng `orders`, thêm các dòng chi tiết vào bảng `order_items`, **sau đó thực hiện trừ kho tự động**: cập nhật giảm cột `stock_qty` của bảng `product_variants` và giảm cột `stock_total` của bảng `products` tương ứng với số lượng đã mua. Cuối cùng xóa sạch giỏ hàng.
+    * Hàm `placeDirectOrder` xử lý tương tự dành riêng cho luồng khách hàng bấm nút "Mua ngay" trực tiếp tại trang chi tiết sản phẩm.
+
+#### 📂 Các file bên trong lớp Presentation:
+* **`checkout_screen.dart`:**
+  * *Chức năng:* Màn hình thanh toán cực kỳ cao cấp. Cho phép chọn địa chỉ giao hàng mặc định, hiển thị danh sách sản phẩm đặt mua, nhập ghi chú đơn hàng, tích chọn Voucher ưu đãi từ nhãn hàng, tự động tính toán số tiền được giảm giá thời gian thực và hiển thị tổng tiền thanh toán cuối cùng.
+
+---
+
+### 📋 5. Thư mục `order` (Quản lý Đơn hàng của khách)
+* **Mục đích:** Hiển thị lịch sử mua sắm của khách hàng và cho phép khách hàng hủy đơn hàng chờ xử lý.
+
+#### 📂 Các tệp quan trọng:
+* **`order_remote_datasource.dart`:** Truy vấn danh sách đơn hàng từ bảng `orders` của người dùng hiện tại, sắp xếp theo thời gian đặt hàng mới nhất. Cho phép khách hàng gửi lệnh update cột `status` thành `'cancelled'` để hủy đơn hàng.
+* **`order_list_screen.dart`:** Giao diện Shopee-style hiển thị danh sách đơn hàng được phân loại thành các tab trạng thái: `Chờ xác nhận`, `Đã đóng gói`, `Đang giao`, `Đã hoàn thành`, `Đã hủy`.
+
+---
+
+### 📍 6. Thư mục `address` (Quản lý Địa chỉ nhận hàng)
+* **Mục đích:** Cho phép khách hàng thiết lập danh sách địa chỉ nhận hàng cá nhân.
+
+#### 📂 Các tệp quan trọng:
+* **`address_remote_datasource.dart`:** Thực hiện thêm địa chỉ mới, cập nhật thông tin địa chỉ cũ, và đặt địa chỉ mặc định bằng cách cập nhật cột `is_default` trong bảng `user_addresses`.
+* **`address_list_screen.dart` & `address_form_screen.dart`:** Giao diện hiển thị danh sách địa chỉ giao hàng và form điền thông tin người nhận chuyên nghiệp.
+
+---
+
+### 🌟 7. Thư mục `review` (Đánh giá sản phẩm)
+* **Mục đích:** Thu thập phản hồi từ người dùng sau khi nhận hàng để cải thiện chất lượng sản phẩm.
+
+#### 📂 Các tệp quan trọng:
+* **`review_remote_datasource.dart`:** Chèn bản ghi đánh giá sao và mô tả nhận xét của người dùng vào bảng `product_reviews`.
+* **`product_reviews_widget` (Hiển thị ở trang chi tiết sản phẩm):** Lấy danh sách các nhận xét của sản phẩm đó hiển thị ra giao diện giúp khách hàng mới tham khảo trước khi mua.
+
+---
+
+### 👑 8. Thư mục `admin` (Cổng Quản trị Tối cao & Nhãn Hàng)
+* **Mục đích:** Portal quản lý toàn bộ hoạt động thương mại điện tử dành cho Super Admin (Quản trị sàn) và Brand Owner (Chủ nhãn hàng).
+
+#### 📂 Các tệp quan trọng:
+* **`admin_login_screen.dart`:** Màn hình đăng nhập cổng admin. Đã được lược bỏ hoàn toàn các trường điền sẵn tự động để nâng cao bảo mật. Hướng dẫn chi tiết tài khoản kiểm thử được mô tả rõ trong file `admin_accounts_info.md`.
+* **`admin_shops_screen.dart`:** Trang quản lý thương hiệu dành riêng cho Super Admin. Chỉ hiển thị danh sách thương hiệu, số lượng người theo dõi, đánh giá trung bình. Có nút "Cấp tích xanh uy tín", nút "Khóa/Mở khóa hoạt động của nhãn hàng" và hộp thoại chỉnh sửa mô tả/ảnh logo/ảnh bìa nhãn hàng.
+* **`admin_products_screen.dart`:** Kho quản lý sản phẩm. Hiển thị danh sách sản phẩm cùng giá bán và số lượng tồn kho. **Tích hợp tính năng đảo nhanh trạng thái trực tiếp (Đang bán <--> Ẩn/Ngừng)** bằng cách bấm trực tiếp lên nhãn trạng thái (Status Badge) vô cùng trực quan và mượt mà.
+* **`admin_product_form_screen.dart`:** Form đăng bán sản phẩm mới/Cập nhật sản phẩm cũ đa năng. Tự động chuyển đổi file ảnh từ máy tính tải lên Supabase Storage lấy link liên kết trực tiếp, tự động tạo mã SKU tiêu chuẩn theo định dạng `SKU-<Tên_Nhãn_Hàng>-STANDARD` và điền sẵn giá vốn, cân nặng mặc định.
+* **`admin_orders_screen.dart`:** Danh sách đơn hàng cần xử lý. Tích hợp kênh lắng nghe thời gian thực của Supabase để tự động tải lại danh sách khi có đơn mới phát sinh. Cung cấp nút "Xác nhận đóng gói" để chuyển trạng thái đơn hàng sang `'packed'` cực kỳ nhanh chóng.
+
+---
 
 ## ⚡ PHẦN 4: CÁCH GỌI VÀ TƯƠNG TÁC VỚI SUPABASE CHI TIẾT
 
