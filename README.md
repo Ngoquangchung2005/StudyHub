@@ -30,7 +30,7 @@ graph TD
         Model[Models / Định dạng dữ liệu] --> Entity
     end
 
-    %% Luồng phụ phục vụ và luồng dữ liệu
+    %% Luồng phụ thuộc và luồng dữ liệu
     BLoC --> UseCase
     UseCase --> RepoInterface
     RepoImpl -- Hiện thực hóa --> RepoInterface
@@ -98,180 +98,244 @@ Lớp này xử lý việc hiển thị giao diện người dùng và phản h�
 
 ---
 
-## 📑 PHẦN 3: PHÂN TÍCH CHI TIẾT TỪNG FILE TRONG 8 THƯ MỤC TÍNH NĂNG
+## 🔄 PHẦN 3: LUỒNG CHẠY CHI TIẾT TỪNG TÍNH NĂNG (FILE TO FILE CALL WALKTHROUGH)
 
-Dưới đây là mô tả chi tiết, cụ thể hóa từng file Dart của từng thư mục tính năng trong hệ thống E-Commerce Shareco để bạn hiểu rõ luồng chạy thực tế:
-
----
-
-### 1. 🏷️ Thư mục `shop` (Quản lý Gian hàng & Nhãn hiệu)
-* **Mục đích:** Xử lý toàn bộ thông tin liên quan đến các đối tác thương hiệu trên sàn.
-
-#### 📂 Các file bên trong lớp Data:
-* **`shop_remote_datasource.dart`:**
-  * *Chức năng:* Chứa hàm `fetchShopDetails(String shopId)`. Hàm này gọi `Supabase.instance.client.from('shops').select().eq('id', shopId).single()` để lấy dữ liệu thô của nhãn hàng từ database.
-* **`shop_model.dart`:**
-  * *Chức năng:* Định nghĩa lớp `ShopModel` kế thừa từ `Shop`. Chứa hàm `factory ShopModel.fromJson(Map<String, dynamic> json)` để ánh xạ các cột dữ liệu từ bảng `shops` (như `shop_name`, `logo_path`, `cover_path`, `rating_avg`) vào các thuộc tính của Dart.
-* **`shop_repository_impl.dart`:**
-  * *Chức năng:* Kế thừa `ShopRepository`. Triển khai hàm `getShopDetails(String shopId)`. Gọi hàm từ `RemoteDataSource`, nhận về `ShopModel`, trả về kiểu thực thể `Shop` thuần túy.
-
-#### 📂 Các file bên trong lớp Domain:
-* **`shop.dart` (Entity):**
-  * *Chức năng:* Khai báo lớp `Shop` với các thuộc tính cần hiển thị trên giao diện: tên thương hiệu, mô tả, ảnh đại diện, ảnh bìa, xếp hạng sao, trạng thái hoạt động.
-* **`shop_repository.dart` (Interface):**
-  * *Chức năng:* Khai báo giao diện trừu tượng `abstract class ShopRepository` định nghĩa chữ ký hàm `Future<Shop> getShopDetails(String shopId);`.
-* **`get_shop_details_usecase.dart`:**
-  * *Chức năng:* Chứa lớp `GetShopDetails` có phương thức `call(String shopId)`. Nó nhận yêu cầu lấy thông tin và chuyển tiếp yêu cầu đó đến `ShopRepository`.
-
-#### 📂 Các file bên trong lớp Presentation:
-* **`shop_bloc.dart` / `shop_event.dart` / `shop_state.dart`:**
-  * *Chức năng:* Nhận sự kiện yêu cầu nạp thông tin gian hàng (`FetchShopDetails`), kích hoạt UseCase lấy dữ liệu, phát ra trạng thái `ShopLoaded` chứa thực thể `Shop`.
-* **`shop_detail_screen.dart`:**
-  * *Chức năng:* Giao diện hiển thị trang cá nhân của nhãn hàng. Hiển thị ảnh bìa lớn, logo hình tròn bo góc, mô tả thương hiệu, điểm đánh giá trung bình cùng danh sách các sản phẩm thuộc thương hiệu đó.
+Để giúp bạn hiểu thật rõ "khi người dùng bấm một cái nút thì chuyện gì xảy ra trong code, file nào gọi file nào", dưới đây là sơ đồ chi tiết từng chuỗi liên kết gọi tệp (Call chain) của các tính năng nổi bật:
 
 ---
 
-### 📦 2. Thư mục `product` (Quản lý Sản phẩm & Biến thể)
-* **Mục đích:** Tìm kiếm, lọc sản phẩm theo danh mục/thương hiệu và hiển thị chi tiết sản phẩm cùng các biến thể đi kèm.
+### 1. 🏷️ Tính năng "SHOP" - Luồng Xem Chi Tiết Nhãn Hàng
+**Kịch bản:** Khách hàng bấm chọn nhãn hàng "L'Oreal" để vào xem trang thông tin chi tiết nhãn hàng.
 
-#### 📂 Các file bên trong lớp Data:
-* **`product_remote_datasource.dart`:**
-  * *Chức năng:* Thực hiện các câu lệnh select nâng cao đến bảng `products` của Supabase. Hỗ trợ gom nhóm biến thể bằng cách join bảng: `.select('*, product_variants(*)')`.
-* **`product_model.dart` & `product_variant_model.dart`:**
-  * *Chức năng:* Phân tích cú pháp các cột dữ liệu thô từ bảng `products` và `product_variants` (như `price_min`, `compare_at_price`, `stock_qty`, `weight_grams`).
-* **`product_repository_impl.dart`:**
-  * *Chức năng:* Hiện thực hóa việc lấy sản phẩm từ dữ liệu mạng, lọc theo loại sản phẩm hoặc nhãn hàng rồi chuyển đổi thành danh sách thực thể `Product` trả về cho hệ thống.
-
-#### 📂 Các file bên trong lớp Domain:
-* **`product.dart` & `product_variant.dart` (Entities):**
-  * *Chức năng:* Khai báo cấu trúc dữ liệu sạch của Sản phẩm và Biến thể của sản phẩm. Đặc biệt chứa thuộc tính động: `bool get isActive => status == 'active';` để xác định sản phẩm có đang được phép bán hay không.
-* **`get_products_usecase.dart` & `get_product_detail_usecase.dart`:**
-  * *Chức năng:* Các kịch bản nghiệp vụ lấy danh sách sản phẩm theo bộ lọc hoặc lấy chi tiết một sản phẩm cụ thể kèm theo toàn bộ biến thể của nó.
-
-#### 📂 Các file bên trong lớp Presentation:
-* **`product_list_screen.dart`:**
-  * *Chức năng:* Hiển thị lưới sản phẩm thời trang, mỹ phẩm đẹp mắt. Tích hợp thanh tìm kiếm và bộ lọc nhanh theo thương hiệu.
-* **`product_detail_screen.dart`:**
-  * *Chức năng:* Màn hình chi tiết sản phẩm. Cho phép người dùng chọn phân loại biến thể (ví dụ: Dung tích `50ml` hoặc `100ml`), tự động thay đổi giá tiền và hiển thị cảnh báo hết hàng nếu số lượng tồn kho `stock_qty` của biến thể đó bằng `0`.
-
----
-
-### 🛒 3. Thư mục `cart` (Quản lý Giỏ hàng)
-* **Mục đích:** Lưu trữ, đồng bộ các mặt hàng mà người mua dự định đặt hàng lên Supabase.
-
-#### 📂 Các file bên trong lớp Data:
-* **`cart_remote_datasource.dart`:**
-  * *Chức năng:* Thực thi các câu lệnh thêm, sửa số lượng, và xóa bản ghi trong bảng `cart_items` của Supabase. Khi thêm sản phẩm mới vào giỏ hàng, hàm này sẽ kiểm tra xem sản phẩm đó đã tồn tại trong giỏ chưa để tự động cộng dồn số lượng.
-* **`cart_item_model.dart`:**
-  * *Chức năng:* Ánh xạ dữ liệu giỏ hàng nhận về từ bảng `cart_items` kết hợp thông tin sản phẩm liên kết từ bảng `products`.
-
-#### 📂 Các file bên trong lớp Presentation:
-* **`cart_screen.dart`:**
-  * *Chức năng:* Giao diện giỏ hàng của người dùng. Cho phép tăng/giảm số lượng bằng nút `+` / `-`, hiển thị giá tiền tạm tính, và gom nhóm các sản phẩm theo từng Nhãn hàng chủ quản để người dùng dễ dàng theo dõi phí giao hàng.
-
----
-
-### 💳 4. Thư mục `checkout` (Quy trình Đặt hàng & Trừ kho)
-* **Mục đích:** Thực hiện tính toán giảm giá của voucher khuyến mãi, thu thập thông tin người nhận, tạo đơn hàng và trừ tồn kho tự động.
-
-#### 📂 Các file bên trong lớp Data:
-* **`checkout_remote_datasource.dart`:**
-  * *Chức năng:* Đây là **trọng tâm xử lý giao dịch** đặt hàng.
-    * Hàm `placeCartOrder` thực hiện thêm đơn hàng mới vào bảng `orders`, thêm các dòng chi tiết vào bảng `order_items`, **sau đó thực hiện trừ kho tự động**: cập nhật giảm cột `stock_qty` của bảng `product_variants` và giảm cột `stock_total` của bảng `products` tương ứng với số lượng đã mua. Cuối cùng xóa sạch giỏ hàng.
-    * Hàm `placeDirectOrder` xử lý tương tự dành riêng cho luồng khách hàng bấm nút "Mua ngay" trực tiếp tại trang chi tiết sản phẩm.
-
-#### 📂 Các file bên trong lớp Presentation:
-* **`checkout_screen.dart`:**
-  * *Chức năng:* Màn hình thanh toán cực kỳ cao cấp. Cho phép chọn địa chỉ giao hàng mặc định, hiển thị danh sách sản phẩm đặt mua, nhập ghi chú đơn hàng, tích chọn Voucher ưu đãi từ nhãn hàng, tự động tính toán số tiền được giảm giá thời gian thực và hiển thị tổng tiền thanh toán cuối cùng.
-
----
-
-### 📋 5. Thư mục `order` (Quản lý Đơn hàng của khách)
-* **Mục đích:** Hiển thị lịch sử mua sắm của khách hàng và cho phép khách hàng hủy đơn hàng chờ xử lý.
-
-#### 📂 Các tệp quan trọng:
-* **`order_remote_datasource.dart`:** Truy vấn danh sách đơn hàng từ bảng `orders` của người dùng hiện tại, sắp xếp theo thời gian đặt hàng mới nhất. Cho phép khách hàng gửi lệnh update cột `status` thành `'cancelled'` để hủy đơn hàng.
-* **`order_list_screen.dart`:** Giao diện Shopee-style hiển thị danh sách đơn hàng được phân loại thành các tab trạng thái: `Chờ xác nhận`, `Đã đóng gói`, `Đang giao`, `Đã hoàn thành`, `Đã hủy`.
-
----
-
-### 📍 6. Thư mục `address` (Quản lý Địa chỉ nhận hàng)
-* **Mục đích:** Cho phép khách hàng thiết lập danh sách địa chỉ nhận hàng cá nhân.
-
-#### 📂 Các tệp quan trọng:
-* **`address_remote_datasource.dart`:** Thực hiện thêm địa chỉ mới, cập nhật thông tin địa chỉ cũ, và đặt địa chỉ mặc định bằng cách cập nhật cột `is_default` trong bảng `user_addresses`.
-* **`address_list_screen.dart` & `address_form_screen.dart`:** Giao diện hiển thị danh sách địa chỉ giao hàng và form điền thông tin người nhận chuyên nghiệp.
-
----
-
-### 🌟 7. Thư mục `review` (Đánh giá sản phẩm)
-* **Mục đích:** Thu thập phản hồi từ người dùng sau khi nhận hàng để cải thiện chất lượng sản phẩm.
-
-#### 📂 Các tệp quan trọng:
-* **`review_remote_datasource.dart`:** Chèn bản ghi đánh giá sao và mô tả nhận xét của người dùng vào bảng `product_reviews`.
-* **`product_reviews_widget` (Hiển thị ở trang chi tiết sản phẩm):** Lấy danh sách các nhận xét của sản phẩm đó hiển thị ra giao diện giúp khách hàng mới tham khảo trước khi mua.
-
----
-
-### 👑 8. Thư mục `admin` (Cổng Quản trị Tối cao & Nhãn Hàng)
-* **Mục đích:** Portal quản lý toàn bộ hoạt động thương mại điện tử dành cho Super Admin (Quản trị sàn) và Brand Owner (Chủ nhãn hàng).
-
-#### 📂 Các tệp quan trọng:
-* **`admin_login_screen.dart`:** Màn hình đăng nhập cổng admin. Đã được lược bỏ hoàn toàn các trường điền sẵn tự động để nâng cao bảo mật. Hướng dẫn chi tiết tài khoản kiểm thử được mô tả rõ trong file `admin_accounts_info.md`.
-* **`admin_shops_screen.dart`:** Trang quản lý thương hiệu dành riêng cho Super Admin. Chỉ hiển thị danh sách thương hiệu, số lượng người theo dõi, đánh giá trung bình. Có nút "Cấp tích xanh uy tín", nút "Khóa/Mở khóa hoạt động của nhãn hàng" và hộp thoại chỉnh sửa mô tả/ảnh logo/ảnh bìa nhãn hàng.
-* **`admin_products_screen.dart`:** Kho quản lý sản phẩm. Hiển thị danh sách sản phẩm cùng giá bán và số lượng tồn kho. **Tích hợp tính năng đảo nhanh trạng thái trực tiếp (Đang bán <--> Ẩn/Ngừng)** bằng cách bấm trực tiếp lên nhãn trạng thái (Status Badge) vô cùng trực quan và mượt mà.
-* **`admin_product_form_screen.dart`:** Form đăng bán sản phẩm mới/Cập nhật sản phẩm cũ đa năng. Tự động chuyển đổi file ảnh từ máy tính tải lên Supabase Storage lấy link liên kết trực tiếp, tự động tạo mã SKU tiêu chuẩn theo định dạng `SKU-<Tên_Nhãn_Hàng>-STANDARD` và điền sẵn giá vốn, cân nặng mặc định.
-* **`admin_orders_screen.dart`:** Danh sách đơn hàng cần xử lý. Tích hợp kênh lắng nghe thời gian thực của Supabase để tự động tải lại danh sách khi có đơn mới phát sinh. Cung cấp nút "Xác nhận đóng gói" để chuyển trạng thái đơn hàng sang `'packed'` cực kỳ nhanh chóng.
-
----
-
-## 🔄 PHẦN 4: LUỒNG HOẠT ĐỘNG TIÊU BIỂU TRONG HỆ THỐNG
-
-Dưới đây là sơ đồ và giải thích chi tiết về luồng hoạt động cốt lõi của ứng dụng khi khách hàng đặt mua sản phẩm và cách hệ thống xử lý tồn kho:
-
-### 🛒 Luồng Đặt hàng & Trừ kho tự động (Checkout & Stock Update Flow)
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Customer as Khách hàng
-    participant CheckoutUI as Giao diện Checkout
-    participant CheckoutBloc as Checkout BLoC
-    participant DataSource as Checkout Remote DataSource
-    participant Supabase as Supabase Database
-
-    Customer->>CheckoutUI: Bấm nút "Đặt hàng"
-    CheckoutUI->>CheckoutBloc: Gửi sự kiện PlaceOrderEvent
-    CheckoutBloc->>DataSource: Gọi hàm placeCartOrder() hoặc placeDirectOrder()
-    
-    rect rgb(240, 240, 255)
-        note right of DataSource: Bắt đầu giao dịch tạo Đơn hàng & Trừ kho
-        DataSource->>Supabase: 1. Thêm bản ghi mới vào bảng 'orders'
-        Supabase-->>DataSource: Trả về ID đơn hàng vừa tạo (orderId)
-        
-        DataSource->>Supabase: 2. Thêm danh sách sản phẩm vào bảng 'order_items'
-        
-        loop Đối với từng sản phẩm đặt mua
-            DataSource->>Supabase: 3a. Lấy số lượng tồn kho hiện tại (stock_qty) của Biến thể
-            Supabase-->>DataSource: Trả về số lượng kho hiện tại
-            DataSource->>Supabase: 3b. Cập nhật bảng 'product_variants' (stock_qty = kho_hiện_tại - qty)
-            
-            DataSource->>Supabase: 4a. Lấy tổng kho hiện tại (stock_total) của Sản phẩm gốc
-            Supabase-->>DataSource: Trả về số lượng tổng kho hiện tại
-            DataSource->>Supabase: 4b. Cập nhật bảng 'products' (stock_total = tổng_kho_hiện_tại - qty)
-        end
-        
-        DataSource->>Supabase: 5. Xóa các sản phẩm đã mua khỏi giỏ hàng 'cart_items'
-    end
-
-    DataSource-->>CheckoutBloc: Trả về kết quả đặt hàng (CheckoutResult)
-    CheckoutBloc-->>CheckoutUI: Phát ra trạng thái CheckoutSuccess
-    CheckoutUI-->>Customer: Hiển thị màn hình đặt hàng thành công! 🎉
+```
+[Người dùng] 
+   │  (Bấm chọn thương hiệu)
+   ▼
+1. ShopDetailScreen (presentation/screen/) 
+   │  ↳ Gọi: initState()
+   │  ↳ Thực hiện: gửi sự kiện `FetchShopDetail(shopId)` vào ShopBloc.
+   ▼
+2. ShopBloc (presentation/bloc/)
+   │  ↳ Nhận Event: `FetchShopDetail`
+   │  ↳ Thực hiện: gọi hàm `call(shopId)` của UseCase `GetShopDetailUseCase`.
+   ▼
+3. GetShopDetailUseCase (domain/usecases/)
+   │  ↳ Hàm gọi: `call(shopId)`
+   │  ↳ Thực hiện: gọi phương thức `getShopDetail(shopId)` của interface `ShopRepository`.
+   ▼
+4. ShopRepository (domain/repositories/)
+   │  ↳ Định nghĩa Interface (hợp đồng trừu tượng)
+   │  ↳ Thực hiện: chuyển tiếp thực thi đến lớp cài đặt thực tế `ShopRepositoryImpl`.
+   ▼
+5. ShopRepositoryImpl (data/repositories/)
+   │  ↳ Lớp hiện thực thực tế
+   │  ↳ Thực hiện: gọi hàm `fetchShopDetail(shopId)` từ `ShopRemoteDataSource`.
+   ▼
+6. ShopRemoteDataSource (data/datasources/)
+   │  ↳ Hàm gọi: `fetchShopDetail(shopId)`
+   │  ↳ Tương tác Database: gọi API trực tiếp đến Supabase:
+   │    `client.from('shops').select().eq('id', shopId).single()`
+   │  ↳ Kết quả nhận về: một đối tượng thô kiểu `Map<String, dynamic> json`.
+   ▼
+7. ShopModel (data/models/)
+   │  ↳ Hàm khởi tạo: `ShopModel.fromJson(json)` được Datasource kích hoạt.
+   │  ↳ Thực hiện: Ánh xạ và chuyển đổi cấu trúc JSON thành đối tượng `ShopModel` trong Dart.
+   ▼
+[Trả ngược kết quả theo mô hình Dartz Either]
+   │  ↳ ShopRemoteDataSource trả `ShopModel` về cho ShopRepositoryImpl.
+   │  ↳ ShopRepositoryImpl đóng gói kết quả thành kiểu thành công `Right(Shop)` (hoặc lỗi `Left(Failure)`).
+   │  ↳ GetShopDetailUseCase trả kết quả `Either<Failure, Shop>` về cho ShopBloc.
+   ▼
+8. ShopBloc (presentation/bloc/)
+   │  ↳ Nhận kết quả từ UseCase, phân tích bằng hàm `.fold()`:
+   │    - Nếu thất bại (Left): Phát ra trạng thái `ShopError(message)`.
+   │    - Nếu thành công (Right): Phát ra trạng thái `ShopLoaded(shop)`.
+   ▼
+9. ShopDetailScreen (presentation/screen/)
+   │  ↳ BlocBuilder lắng nghe được trạng thái `ShopLoaded`.
+   │  ↳ Giải nén thực thể `Shop` để vẽ Logo, Ảnh bìa, Tên nhãn hàng tuyệt đẹp lên màn hình!
 ```
 
 ---
 
-## ⚡ PHẦN 5: CÁCH GỌI VÀ TƯƠNG TÁC VỚI SUPABASE CHI TIẾT
+### 🛒 2. Tính năng "CART" - Luồng Thêm Sản Phẩm Vào Giỏ Hàng
+**Kịch bản:** Người dùng bấm nút "Thêm vào giỏ hàng" tại trang chi tiết sản phẩm.
+
+```
+[Người dùng] 
+   │  (Bấm chọn biến thể và bấm nút "Thêm vào giỏ")
+   ▼
+1. ProductDetailScreen (features/product/presentation/screen/)
+   │  ↳ Thực hiện: gọi sự kiện `AddToCartEvent(productId, variantId, qty)` thông qua CartBloc.
+   ▼
+2. CartBloc (features/cart/presentation/bloc/)
+   │  ↳ Nhận Event: `AddToCartEvent`
+   │  ↳ Thực hiện: gọi hàm `call(params)` của UseCase `AddToCartUseCase`.
+   ▼
+3. AddToCartUseCase (features/cart/domain/usecases/)
+   │  ↳ Thực hiện: gọi hàm `addToCart()` trên interface `CartRepository`.
+   ▼
+4. CartRepositoryImpl (features/cart/data/repositories/)
+   │  ↳ Thực hiện: gọi hàm `addToCart()` của `CartRemoteDataSource`.
+   ▼
+5. CartRemoteDataSource (features/cart/data/datasources/)
+   │  ↳ Tương tác Database Supabase:
+   │    - Kiểm tra xem mặt hàng này đã có sẵn trong giỏ của User đó chưa:
+   │      `client.from('cart_items').select().eq('cart_id', cartId).eq('variant_id', variantId)`
+   │    - Nếu đã có: Thực hiện tăng số lượng bằng lệnh `UPDATE`:
+   │      `client.from('cart_items').update({'qty': existingQty + newQty}).eq('id', itemId)`
+   │    - Nếu chưa có: Thực hiện chèn mới bằng lệnh `INSERT`:
+   │      `client.from('cart_items').insert({...})`
+   │  ↳ Trả về trạng thái lưu thành công.
+   ▼
+[Trả ngược kết quả qua CartRepositoryImpl -> AddToCartUseCase -> CartBloc]
+   ▼
+6. CartBloc (features/cart/presentation/bloc/)
+   │  ↳ Phát ra trạng thái thành công: `CartItemAddedState`.
+   ▼
+7. ProductDetailScreen (features/product/presentation/screen/)
+   │  ↳ Nhận trạng thái thành công, hiển thị hộp thoại Toast/Snackbar thông báo:
+   │    "Đã thêm sản phẩm vào giỏ hàng thành công! 🛒" đầy sinh động!
+```
+
+---
+
+### 📍 3. Tính năng "ADDRESS" - Luồng Lưu Địa Chỉ Giao Hàng Mới
+**Kịch bản:** Người mua bấm chọn "Lưu địa chỉ" trong form nhập địa chỉ nhận hàng mới.
+
+```
+1. AddressFormScreen (features/address/presentation/screen/)
+   │  ↳ Người dùng điền Họ tên, SĐT, Địa chỉ chi tiết và bấm "Lưu".
+   │  ↳ Gọi sự kiện: gửi `SaveAddressEvent(addressData)` tới AddressBloc.
+   ▼
+2. AddressBloc (features/address/presentation/bloc/)
+   │  ↳ Nhận Event, gọi UseCase `SaveAddressUseCase`.
+   ▼
+3. SaveAddressUseCase (features/address/domain/usecases/)
+   │  ↳ Gọi phương thức `saveAddress(address)` trên interface `AddressRepository`.
+   ▼
+4. AddressRepositoryImpl (features/address/data/repositories/)
+   │  ↳ Gọi hàm `saveAddress(addressModel)` của `AddressRemoteDataSource`.
+   ▼
+5. AddressRemoteDataSource (features/address/data/datasources/)
+   │  ↳ Tương tác Database Supabase: thực hiện chèn dữ liệu địa chỉ mới vào bảng `user_addresses`:
+   │    `client.from('user_addresses').insert(addressModel.toJson())`
+   │  ↳ Trả về bản ghi vừa tạo thành công.
+   ▼
+[Trả ngược kết quả thành công qua AddressRepositoryImpl -> SaveAddressUseCase]
+   ▼
+6. AddressBloc (features/address/presentation/bloc/)
+   │  ↳ Phát ra trạng thái: `AddressSavedSuccess`.
+   │  ↳ Tự động kích hoạt nạp lại danh sách địa chỉ: phát ra sự kiện `FetchAddressesEvent`.
+   ▼
+7. AddressListScreen (features/address/presentation/screen/)
+   │  ↳ Lắng nghe được trạng thái lưu thành công, tự động tắt form nhập, 
+   │    hiển thị danh sách địa chỉ mới được cập nhật trên màn hình!
+```
+
+---
+
+### 💳 4. Tính năng "CHECKOUT" - Luồng Đặt Đơn Hàng & Trừ Tồn Kho
+**Kịch bản:** Người dùng xác nhận đơn hàng và bấm "Đặt hàng" tại trang thanh toán.
+
+```
+1. CheckoutScreen (features/checkout/presentation/screen/)
+   │  ↳ Khách bấm nút "Đặt hàng".
+   │  ↳ Gọi sự kiện: gửi `PlaceOrderEvent` đến CheckoutBloc.
+   ▼
+2. CheckoutBloc (features/checkout/presentation/bloc/)
+   │  ↳ Gọi UseCase `PlaceOrderUseCase`.
+   ▼
+3. PlaceOrderUseCase (features/checkout/domain/usecases/)
+   │  ↳ Gọi hàm `placeOrder()` trên interface `CheckoutRepository`.
+   ▼
+4. CheckoutRepositoryImpl (features/checkout/data/repositories/)
+   │  ↳ Gọi hàm `placeCartOrder()` trên lớp `CheckoutRemoteDataSource`.
+   ▼
+5. CheckoutRemoteDataSource (features/checkout/data/datasources/)
+   │  ↳ THỰC HIỆN TOÀN BỘ GIAO DỊCH (TRANSACTION) LÊN SUPABASE:
+   │    - Bước A: Chèn đơn hàng mới vào bảng `orders`:
+   │      `client.from('orders').insert({...}).select('id, order_code, total_amount')`
+   │    - Bước B: Chèn các chi tiết sản phẩm mua vào bảng `order_items`.
+   │    - Bước C (Trừ kho tự động): Duyệt danh sách sản phẩm đặt mua:
+   │      + Lấy tồn kho biến thể: `client.from('product_variants').select('stock_qty').eq('id', variantId)`
+   │      + Trừ kho biến thể: `client.from('product_variants').update({'stock_qty': currentStock - qty}).eq('id', variantId)`
+   │      + Lấy tổng kho sản phẩm: `client.from('products').select('stock_total').eq('id', productId)`
+   │      + Trừ tổng kho sản phẩm: `client.from('products').update({'stock_total': currentTotal - qty}).eq('id', productId)`
+   │    - Bước D: Xóa sạch các mặt hàng vừa mua trong giỏ hàng `cart_items`.
+   │  ↳ Trả về đối tượng `CheckoutResultModel` chứa mã đơn hàng và số tiền cuối cùng.
+   ▼
+[Trả ngược kết quả thành công qua các lớp]
+   ▼
+6. CheckoutBloc (features/checkout/presentation/bloc/)
+   │  ↳ Phát ra trạng thái thành công: `CheckoutSuccess(result)`.
+   ▼
+7. CheckoutScreen (features/checkout/presentation/screen/)
+   │  ↳ Điều hướng chuyển tiếp người dùng sang trang Đơn hàng thành công 
+   │    và hiển thị mã đơn hàng cùng tổng số tiền! 🎉
+```
+
+---
+
+### 📋 5. Tính năng "ORDER" - Luồng Khách Hàng Hủy Đơn Hàng
+**Kịch bản:** Người dùng muốn hủy một đơn hàng đang ở trạng thái Chờ xác nhận (`pending`).
+
+```
+1. OrderListScreen (features/order/presentation/screen/)
+   │  ↳ Người dùng bấm nút "Hủy đơn hàng" tại tab "Chờ xác nhận".
+   │  ↳ Gọi sự kiện: gửi `CancelOrderEvent(orderId)` tới OrderBloc.
+   ▼
+2. OrderBloc (features/order/presentation/bloc/)
+   │  ↳ Gọi UseCase `CancelOrderUseCase`.
+   ▼
+3. CancelOrderUseCase (features/order/domain/usecases/)
+   │  ↳ Gọi hàm `cancelOrder(orderId)` trên interface `OrderRepository`.
+   ▼
+4. OrderRepositoryImpl (features/order/data/repositories/)
+   │  ↳ Gọi hàm `cancelOrder(orderId)` của `OrderRemoteDataSource`.
+   ▼
+5. OrderRemoteDataSource (features/order/data/datasources/)
+   │  ↳ Tương tác Database Supabase: cập nhật trạng thái đơn hàng thành `'cancelled'`:
+   │    `client.from('orders').update({'status': 'cancelled'}).eq('id', orderId)`
+   │  ↳ Trả về kết quả cập nhật thành công.
+   ▼
+[Trả ngược kết quả thành công qua các lớp]
+   ▼
+6. OrderBloc (features/order/presentation/bloc/)
+   │  ↳ Phát ra trạng thái: `OrderCancelledSuccess`.
+   │  ↳ Tự động kích hoạt tải lại danh sách đơn hàng để cập nhật giao diện.
+   ▼
+7. OrderListScreen (features/order/presentation/screen/)
+   │  ↳ Đơn hàng biến mất khỏi tab "Chờ xác nhận" và chuyển sang tab "Đã hủy" tức thì!
+```
+
+---
+
+### 👑 6. Tính năng "ADMIN" - Luồng Cổng Quản Trị Đảo Trạng Thái Mở Bán/Ẩn Ngừng Sản Phẩm Tức Thì
+**Kịch bản:** Đối tác nhãn hàng mở cổng Web, bấm trực tiếp lên nút trạng thái của sản phẩm để khóa bán hoặc kích hoạt bán lại sản phẩm đó.
+
+```
+1. AdminProductsScreen (features/admin/presentation/screen/)
+   │  ↳ Admin rê chuột vào nhãn "Đang bán" (hiển thị Tooltip: "Bấm để ngừng bán") và bấm chuột.
+   │  ↳ Giao diện kích hoạt hàm xử lý bất đồng bộ trực tiếp (`onTap` của InkWell).
+   ▼
+2. Database Supabase (Tương tác trực tiếp từ UI để đạt tốc độ xử lý nhanh gọn):
+   │  - Bước A: Đảo trạng thái sản phẩm trong bảng `products` (từ 'active' thành 'inactive' hoặc ngược lại):
+   │    `await client.from('products').update({'status': nextStatus}).eq('id', productId)`
+   │  - Bước B: Đồng bộ hóa trạng thái trên bảng biến thể sản phẩm `product_variants`:
+   │    `await client.from('product_variants').update({'status': nextStatus}).eq('product_id', productId)`
+   ▼
+3. AdminProductsScreen (Hàm callback kết quả trả về thành công):
+   │  ↳ Gọi lệnh: `context.read<AdminBloc>().add(AdminFetchProducts(shopId: currentShopId))`
+   │  ↳ AdminBloc lập tức kéo danh sách sản phẩm mới nhất từ Supabase về.
+   │  ↳ Hiển thị thanh Snackbar thông báo trạng thái mới siêu mượt: 
+   │    "Đã chuyển trạng thái sản phẩm sang [Ẩn/Ngừng bán] 🛑" hoặc "Đã mở bán lại sản phẩm thành công! 🎉"
+   │  ↳ Màn hình tự cập nhật đổi màu thẻ trạng thái từ Xanh (Đang bán) sang Hồng (Ẩn/Ngừng) cực sống động!
+```
+
+---
+
+## ⚡ PHẦN 4: CÁCH GỌI VÀ TƯƠNG TÁC VỚI SUPABASE CHI TIẾT
 
 Hệ thống giao tiếp với cơ sở dữ liệu Supabase (được xây dựng trên nền tảng PostgreSQL) thông qua gói thư viện chính thức `supabase_flutter`. Dưới đây là các kỹ thuật gọi truy vấn chi tiết được áp dụng trong dự án:
 
@@ -333,14 +397,14 @@ _ordersChannel.subscribe();
 
 ---
 
-## 🎓 PHẦN 6: BỘ CÂU HỎI VÀ ĐÁP ÁN (Q&A CHEAT SHEET) THUYẾT TRÌNH TRƯỚC GIÁO VIÊN
+## 🎓 PHẦN 5: BỘ CÂU HỎI VÀ ĐÁP ÁN (Q&A CHEAT SHEET) THUYẾT TRÌNH TRƯỚC GIÁO VIÊN
 
 Dưới đây là những câu hỏi cực kỳ hóc búa mà các giáo viên hướng dẫn thường hỏi để kiểm tra xem bạn có thực sự hiểu bài hay không, đi kèm là gợi ý trả lời thông minh giúp bạn đạt điểm tối đa:
 
 #### 💬 Câu hỏi 1: Tại sao em lại phân tách thư mục của mình thành các phần "address", "cart", "checkout", "product", "shop" riêng biệt thay vì dồn chung vào một file?
 * **💡 Trả lời:** Thưa thầy/cô, việc chia nhỏ cấu trúc thư mục theo mô hình **Feature-First (Theo tính năng)** giúp hệ thống đạt được tính đóng gói rất cao. Mỗi module như `cart` hay `checkout` sẽ tự quản lý toàn bộ các lớp giao diện, nghiệp vụ và dữ liệu của riêng nó. Thiết kế này giúp dự án cực kỳ dễ đọc, dễ bảo trì, và khi có nhiều lập trình viên cùng làm việc, chúng em có thể phát triển song song các tính năng khác nhau mà không lo bị xung đột mã nguồn (code conflict).
 
-#### 💬 Câu hỏi 2: Sự khác nhau giữa lớp Entity (trong Domain) và lớp Model (trong Data) is gì? Tại sao không dùng chung một lớp cho đỡ tốn file?
+#### 💬 Câu hỏi 2: Sự khác nhau giữa lớp Entity (trong Domain) và lớp Model (trong Data) là gì? Tại sao không dùng chung một lớp cho đỡ tốn file?
 * **💡 Trả lời:** Đây là nguyên tắc cốt lõi của Clean Architecture nhằm đảm bảo **tính độc lập của lớp nghiệp vụ**. 
   * **Entity** là đối tượng thuần túy đại diện cho nghiệp vụ của doanh nghiệp ở lớp Domain, hoàn toàn không biết gì về cơ sở dữ liệu hay mạng internet.
   * **Model** nằm ở lớp Data, kế thừa từ Entity nhưng được trang bị thêm các hàm phân tích cú pháp dữ liệu như `fromJson` và `toJson`.
